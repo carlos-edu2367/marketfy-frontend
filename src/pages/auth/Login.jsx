@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { User, Lock, Store, ArrowRight } from 'lucide-react';
+import { User, Lock, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 
@@ -22,12 +22,26 @@ export default function Login() {
     resolver: zodResolver(loginSchema)
   });
 
+  // Função para truncar a senha em 72 bytes (limite do bcrypt)
+  const truncateTo72Bytes = (str) => {
+    const encoder = new TextEncoder();
+    let result = str;
+    while (encoder.encode(result).length > 72) {
+      result = result.slice(0, -1);
+    }
+    return result;
+  };
+
   const onSubmit = async (data) => {
     try {
       console.log("Tentando login...", data.email);
-      await login(data.email, data.password);
       
-      // Verificação rápida de acesso
+      // Sanitiza a senha antes de enviar
+      const safePassword = truncateTo72Bytes(data.password);
+      
+      await login(data.email, safePassword);
+      
+      // Verificação rápida de acesso e redirecionamento
       try {
          await api.get('/identity/plans'); 
          navigate('/dashboard');
@@ -37,24 +51,21 @@ export default function Login() {
       }
 
     } catch (error) {
-      console.error("Erro no login:", error);
-      const msg = error.response?.data?.detail || 'Credenciais inválidas. Verifique email e senha.';
-      toast.error(msg);
+      console.error(error);
+      toast.error("Email ou senha incorretos.");
     }
   };
 
   const onError = (errors) => {
-    console.log("Erros de validação login:", errors);
-    // Não mostramos toast aqui para não poluir, os campos já ficam vermelhos
+    console.log(errors);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-sm p-8 rounded-3xl shadow-xl border border-gray-100">
-        
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-brand-yellow rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-sm text-brand-dark">
-            <Store size={32} />
+          <div className="w-16 h-16 bg-brand-yellow rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-yellow-200">
+             <User size={32} className="text-brand-dark" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">SGM Marketfy</h1>
           <p className="text-gray-500 mt-2">Sistema de Gestão para Mercados</p>
@@ -95,7 +106,7 @@ export default function Login() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center text-xs text-gray-400">
-          &copy; {new Date().getFullYear()} Neectify Tecnologia
+          &copy; {new Date().getFullYear()} Neectify Tecnologia. Todos os direitos reservados.
         </div>
       </div>
     </div>

@@ -27,73 +27,73 @@ export default function Register() {
     resolver: zodResolver(registerSchema)
   });
 
+  // Função para truncar a senha em 72 bytes (limite do bcrypt)
+  const truncateTo72Bytes = (str) => {
+    const encoder = new TextEncoder();
+    let result = str;
+    while (encoder.encode(result).length > 72) {
+      result = result.slice(0, -1);
+    }
+    return result;
+  };
+
   const onSubmit = async (data) => {
     try {
-      console.log("Iniciando registro...", data);
+      // 1. Sanitiza a senha
+      const safePassword = truncateTo72Bytes(data.password);
+      const userData = { ...data, password: safePassword };
+
+      // 2. Registra o usuário com a senha tratada
+      await registerUser(userData);
       
-      // 1. Cria o usuário
-      await registerUser(data);
-      toast.success('Conta criada com sucesso!');
-      
-      // 2. Faz Login Automático
-      console.log("Realizando login automático...");
-      await login(data.email, data.password);
-      
-      // 3. Abre Modal de Oferta de Trial em vez de redirecionar direto
-      setShowTrialModal(true);
+      // 3. Realiza o login automático para obter o token e exibir o modal de Trial
+      try {
+          await login(data.email, safePassword);
+          setShowTrialModal(true);
+      } catch (e) {
+          toast.success("Conta criada! Faça login para continuar.");
+          navigate('/login');
+      }
 
     } catch (error) {
-      console.error("Erro no registro:", error);
-      const msg = error.response?.data?.detail || 'Erro ao criar conta. Verifique os dados.';
+      console.error(error);
+      const msg = error.response?.data?.detail || "Erro ao criar conta.";
       toast.error(msg);
     }
   };
 
-  // Callback para erros de validação (se o form não estiver enviando)
-  const onError = (errors) => {
-    console.log("Erros de validação:", errors);
-    toast.error("Verifique os campos em vermelho.");
-  };
-
   const handleAcceptTrial = async () => {
-      setActivatingTrial(true);
-      try {
-          // Chama a rota específica solicitada
-          await api.post('/auth/trial');
-          
-          // Atualiza dados do usuário no contexto para refletir o plano novo
-          await refreshUser();
-          
-          toast.success("Parabéns! Seus 14 dias grátis começaram.");
-          navigate('/dashboard');
-      } catch (error) {
-          console.error("Erro ao ativar trial:", error);
-          toast.error("Não foi possível ativar o trial. Redirecionando...");
-          navigate('/dashboard');
-      } finally {
-          setActivatingTrial(false);
-      }
+    try {
+        setActivatingTrial(true);
+        // Ativa o Trial PRO de 14 dias
+        await api.post('/identity/plans/trial/activate');
+        
+        await refreshUser(); // Atualiza contexto com o novo plano
+        toast.success("TRIAL PRO ATIVADO! Bem-vindo(a)!");
+        navigate('/dashboard');
+        
+    } catch (error) {
+        console.error(error);
+        toast.error("Erro ao ativar trial.");
+        navigate('/dashboard'); // Vai pro dash mesmo com erro (plano free)
+    } finally {
+        setActivatingTrial(false);
+    }
   };
 
   const handleDeclineTrial = () => {
-      navigate('/dashboard');
+    navigate('/dashboard');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      {/* BACKGROUND DECORATION */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] bg-brand-yellow/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-blue-500/5 rounded-full blur-3xl"></div>
-      </div>
-
-      <div className="bg-white w-full max-w-md p-8 rounded-3xl shadow-xl border border-gray-100 relative z-10">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-black text-gray-900">Crie sua conta</h1>
-          <p className="text-gray-500 mt-2">Comece a gerenciar seu negócio hoje.</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Crie sua Conta</h1>
+          <p className="text-gray-500 mt-2">Comece a gerenciar seu mercado hoje</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input 
             label="Nome Completo" 
             icon={User} 
@@ -103,7 +103,6 @@ export default function Register() {
           />
           <Input 
             label="Email" 
-            type="email"
             icon={Mail} 
             placeholder="seu@email.com"
             error={errors.email?.message}
@@ -120,7 +119,7 @@ export default function Register() {
             label="Senha" 
             type="password" 
             icon={Lock} 
-            placeholder="••••••"
+            placeholder="Mínimo 6 caracteres"
             error={errors.password?.message}
             {...register('password')}
           />
@@ -132,34 +131,33 @@ export default function Register() {
             isLoading={isSubmitting}
             type="submit"
           >
-            Criar Conta <ArrowRight size={18} />
+            Criar Conta Grátis <ArrowRight size={18} />
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          Já tem uma conta? <Link to="/login" className="text-brand-dark font-bold hover:underline">Fazer Login</Link>
+        <div className="mt-6 text-center text-sm">
+           <span className="text-gray-500">Já tem uma conta? </span>
+           <Link to="/login" className="text-brand-dark font-bold hover:underline">
+             Fazer Login
+           </Link>
         </div>
       </div>
 
-      {/* MODAL DE OFERTA TRIAL (Pós-Registro) */}
+      {/* MODAL DE OFERTA TRIAL */}
       {showTrialModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-sm animate-fade-in">
-              <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-scale-in">
-                  <div className="bg-brand-yellow p-8 text-center relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg text-brand-dark relative z-10">
-                          <Gift size={40} strokeWidth={2.5} />
-                      </div>
-                      <h2 className="text-3xl font-black text-brand-dark relative z-10">Presente de Boas-vindas!</h2>
-                      <p className="text-brand-dark/80 font-bold mt-2 relative z-10">Experimente o plano PRO sem compromisso.</p>
+          <div className="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4 animate-fade-in">
+              <div className="bg-white max-w-lg w-full rounded-3xl overflow-hidden shadow-2xl animate-scale-in relative">
+                  <div className="bg-brand-yellow p-6 text-center">
+                      <Gift size={48} className="mx-auto text-slate-900 mb-2" />
+                      <h2 className="text-2xl font-black text-slate-900 uppercase">Presente de Boas-vindas!</h2>
                   </div>
                   
                   <div className="p-8">
-                      <div className="space-y-4 mb-8">
-                          <div className="flex items-center gap-3 text-gray-700">
-                              <div className="bg-green-100 p-1 rounded-full text-green-600"><Check size={16} strokeWidth={3} /></div>
-                              <span className="font-medium">Acesso total ao Dashboard Financeiro</span>
-                          </div>
+                      <p className="text-center text-gray-600 mb-6 text-lg">
+                          Você ganhou <strong>14 Dias de Acesso PRO</strong> para testar todas as funcionalidades sem compromisso!
+                      </p>
+                      
+                      <div className="space-y-3 bg-gray-50 p-4 rounded-xl mb-8">
                           <div className="flex items-center gap-3 text-gray-700">
                               <div className="bg-green-100 p-1 rounded-full text-green-600"><Check size={16} strokeWidth={3} /></div>
                               <span className="font-medium">Emissão de NFC-e Ilimitada</span>
