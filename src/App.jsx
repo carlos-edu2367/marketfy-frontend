@@ -3,7 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
-// --- GUARDS ---
+// --- GUARDS ----
 import PlanGuard from './components/route/PlanGuard';
 
 // --- PÁGINAS PÚBLICAS & ONBOARDING ---
