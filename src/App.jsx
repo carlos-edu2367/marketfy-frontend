@@ -20,7 +20,7 @@ import Financial from './pages/dashboard/Financial';
 import Inventory from './pages/dashboard/Inventory';
 import Customers from './pages/dashboard/Customers';
 import Settings from './pages/dashboard/Settings'; 
-import PDV from './pages/pdv/PDV';
+import PDV from './pages/pdv/Pdv';
 import Support from './pages/support/Support';
 import AdminLayout from './components/layout/AdminLayout';
 
