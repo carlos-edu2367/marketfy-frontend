@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 // --- GUARDS ----
 import PlanGuard from './components/route/PlanGuard';
 
-// --- PÁGINAS PÚBLICAS & ONBOARDING ---
+// --- PÁGINAS PÚBLICAS & ONBOARDING ----
 import Home from './pages/Home'; 
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
