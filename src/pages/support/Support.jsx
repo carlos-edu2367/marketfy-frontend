@@ -141,7 +141,7 @@ export default function Support() {
                                   : 'bg-brand-yellow text-brand-dark rounded-tr-none'
                               }`}>
                                   <p className="font-bold text-xs mb-1 opacity-70">
-                                      {msg.is_internal ? 'Suporte' : 'Você'} • {formatDate(msg.created_at)}
+                                       • {formatDate(msg.created_at)}
                                   </p>
                                   <p className="whitespace-pre-wrap">{msg.content}</p>
                               </div>

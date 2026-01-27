@@ -99,16 +99,33 @@ export default function Inventory() {
       );
   });
 
+  // CORREÇÃO: Tratamento de Tipos para evitar 422
   const handleCreateProduct = async (data) => {
       try {
-          await api.post(`/inventory/${selectedMarketId}/products`, data);
+          const payload = {
+              name: data.name,
+              code: data.code,
+              barcode: data.barcode || null,
+              price: parseFloat(data.price), // Garante float
+              cost_price: data.cost_price ? parseFloat(data.cost_price) : 0.00, // Garante float ou 0.00
+              ncm: data.ncm || null,
+              origin: 0 // Default (Nacional) conforme spec
+          };
+
+          await api.post(`/inventory/${selectedMarketId}/products`, payload);
           toast.success("Produto criado com sucesso!");
           setShowCreateModal(false);
           resetCreate();
           loadProducts();
       } catch (error) {
+          console.error("Erro ao criar produto:", error);
           const msg = error.response?.data?.detail;
-          toast.error(typeof msg === 'string' ? msg : "Erro ao criar produto.");
+          
+          if (Array.isArray(msg)) {
+              toast.error("Erro de validação: Verifique os campos.");
+          } else {
+              toast.error(typeof msg === 'string' ? msg : "Erro ao criar produto.");
+          }
       }
   };
 
@@ -399,8 +416,8 @@ export default function Inventory() {
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <Input label="Preço de Custo (R$)" placeholder="0.00" {...registerCreate('cost_price')} />
-                            <Input label="Preço de Venda (R$)" placeholder="0.00" className="font-bold text-green-700" {...registerCreate('price', { required: true })} />
+                            <Input label="Preço de Custo (R$)" placeholder="0.00" type="number" step="0.01" {...registerCreate('cost_price')} />
+                            <Input label="Preço de Venda (R$)" placeholder="0.00" type="number" step="0.01" className="font-bold text-green-700" {...registerCreate('price', { required: true })} />
                         </div>
                         <div className="pt-2 flex gap-3">
                             <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowCreateModal(false)}>Cancelar</Button>

@@ -5,18 +5,20 @@ import api from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Check, ArrowRight, X, ShieldCheck} from 'lucide-react';
+import { Check, ArrowRight, X, ShieldCheck, Gift, Loader2, Store } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '../../lib/utils';
 
 export default function Plans() {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activatingTrial, setActivatingTrial] = useState(false);
+  
   const [selectedDuration, setSelectedDuration] = useState(30); 
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showModal, setShowModal] = useState(false);
   
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
@@ -25,15 +27,17 @@ export default function Plans() {
     async function fetchPlans() {
       try {
         const { data } = await api.get('/identity/plans');
-        // Filtra apenas ativos E remove planos cortesia/trial da vitrine pública de compra
+        // Filtra apenas ativos E remove planos cortesia/trial da vitrine pública de compra normal
+        // O Trial será exibido em um card dedicado fixo
         const publicPlans = data.filter(p => p.is_active && p.type !== 'cortesia' && p.type !== 'trial');
         
         // Ordena por preço
-        const sortedPlans = publicPlans.sort((a, b) => a.price_monthly - b.price_monthly);
-        setPlans(sortedPlans);
+        publicPlans.sort((a, b) => a.price_monthly - b.price_monthly);
+        
+        setPlans(publicPlans);
       } catch (error) {
-        console.error(error);
-        toast.error("Erro ao carregar planos.");
+        console.error("Erro ao carregar planos", error);
+        toast.error("Erro ao carregar opções de planos.");
       } finally {
         setLoading(false);
       }
@@ -41,154 +45,199 @@ export default function Plans() {
     fetchPlans();
   }, []);
 
-  const getPrice = (plan) => {
-    if (selectedDuration === 30) return plan.price_monthly;
-    if (selectedDuration === 180) return plan.price_180days;
-    if (selectedDuration === 365) return plan.price_annual;
-    return 0;
-  };
-
-  const getLabelDuration = () => {
-    if (selectedDuration === 30) return "/mês";
-    if (selectedDuration === 180) return "/semestre";
-    if (selectedDuration === 365) return "/ano";
-  }
-
   const handleSelectPlan = (plan) => {
     setSelectedPlan(plan);
     setShowModal(true);
   };
 
-  const handleConfirmInterest = async (data) => {
+  const onSubmitInterest = async (data) => {
     try {
-        await api.post('/support/tickets', {
-            subject: `Interesse no Plano: ${selectedPlan.name} (${selectedDuration} dias)`,
-            message: `Usuário ${user.name} tem interesse no plano ${selectedPlan.name}.\nWhatsapp: ${data.whatsapp1} / ${data.whatsapp2}\nValor Previsto: ${formatCurrency(getPrice(selectedPlan))}`
+        await api.post('/identity/plans/interest', {
+            plan_id: selectedPlan.id,
+            duration: selectedDuration,
+            whatsapp1: data.whatsapp1,
+            whatsapp2: data.whatsapp2
         });
-        
-        toast.success("Recebemos seu interesse! Entraremos em contato via WhatsApp.");
+        toast.success("Recebemos seu interesse! Entraremos em contato.");
         setShowModal(false);
         reset();
-        
-        // Se for upgrade, volta pro settings, se for onboarding, vai pro dashboard
-        if (window.location.pathname.includes('dashboard')) {
-            navigate('/dashboard/settings');
-        } else {
-            navigate('/dashboard');
-        }
-        
     } catch (error) {
-        toast.error("Erro ao enviar solicitação.");
+        toast.error("Erro ao enviar interesse.");
     }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center text-gray-400">Carregando planos...</div>;
+  const handleActivateTrial = async () => {
+    try {
+        setActivatingTrial(true);
+        await api.post('/auth/trial', {});
+        await refreshUser();
+        toast.success("Período de testes ativado com sucesso!");
+        navigate('/dashboard');
+    } catch (error) {
+        const msg = error.response?.data?.detail || "Erro ao ativar trial.";
+        toast.error(msg);
+    } finally {
+        setActivatingTrial(false);
+    }
+  };
+
+  const getPrice = (plan) => {
+      if (selectedDuration === 30) return plan.price_monthly;
+      if (selectedDuration === 180) return plan.price_180days;
+      if (selectedDuration === 365) return plan.price_annual;
+      return 0;
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4 font-sans">
+    <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
       
-      <div className="text-center max-w-2xl mb-12">
-        <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Escolha o plano ideal para seu negócio</h1>
-        <p className="text-gray-500 text-lg">Gerencie seu mercado com tecnologia de ponta. Cancele quando quiser.</p>
-        
-        {/* Toggle de Duração */}
-        <div className="flex items-center justify-center gap-2 mt-8 bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm w-fit mx-auto">
-            {[
-                { label: 'Mensal', days: 30 },
-                { label: 'Semestral (-10%)', days: 180 },
-                { label: 'Anual (-20%)', days: 365 }
-            ].map((opt) => (
-                <button
-                    key={opt.days}
-                    onClick={() => setSelectedDuration(opt.days)}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-                        selectedDuration === opt.days 
-                        ? 'bg-gray-900 text-white shadow-md' 
-                        : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                >
-                    {opt.label}
-                </button>
-            ))}
-        </div>
-      </div>
+      {/* HEADER SIMPLES */}
+      <header className="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-30">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+              <div className="font-black text-xl tracking-tight flex items-center gap-2">
+                  <div className="bg-brand-yellow w-8 h-8 rounded-lg flex items-center justify-center text-brand-dark">M</div>
+                  Marketfy
+              </div>
+              <div className="text-sm text-gray-500">
+                  Logado como <span className="font-bold text-gray-900">{user?.name}</span>
+              </div>
+          </div>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl w-full">
-        {plans.map((plan) => {
-            const price = getPrice(plan);
-            const isRecommended = plan.name.toLowerCase().includes('pro') || plan.name.toLowerCase().includes('recomendado');
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+            <h1 className="text-4xl font-black text-gray-900 mb-4">Escolha o plano ideal</h1>
+            <p className="text-gray-500 text-lg">
+                Desbloqueie todo o potencial do seu mercado. Sem fidelidade, cancele quando quiser.
+            </p>
             
-            return (
-                <div 
-                    key={plan.id} 
-                    className={`relative bg-white rounded-3xl p-8 flex flex-col transition-all duration-300 hover:-translate-y-2 ${
-                        isRecommended 
-                        ? 'border-2 border-brand-yellow shadow-2xl shadow-yellow-100 ring-4 ring-yellow-50' 
-                        : 'border border-gray-200 shadow-xl'
-                    }`}
-                >
-                    {isRecommended && (
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand-yellow text-brand-dark px-4 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-sm">
-                            Mais Popular
-                        </div>
-                    )}
+            {/* SELETOR DE PERÍODO */}
+            <div className="flex justify-center mt-8 gap-4">
+                {[
+                    { label: 'Mensal', value: 30 },
+                    { label: 'Semestral (-5%)', value: 180 },
+                    { label: 'Anual (-10%)', value: 365 }
+                ].map(opt => (
+                    <button
+                        key={opt.value}
+                        onClick={() => setSelectedDuration(opt.value)}
+                        className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                            selectedDuration === opt.value 
+                            ? 'bg-slate-900 text-white shadow-lg scale-105' 
+                            : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-400'
+                        }`}
+                    >
+                        {opt.label}
+                    </button>
+                ))}
+            </div>
+        </div>
 
+        {loading ? (
+            <div className="flex justify-center py-20">
+                <Loader2 className="animate-spin text-brand-yellow" size={48} />
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                
+                {/* CARD TRIAL - SEMPRE VISÍVEL SE ELEGÍVEL */}
+                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-6 rounded-3xl border-2 border-brand-yellow/50 relative overflow-hidden shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
+                    <div className="absolute top-0 right-0 bg-brand-yellow text-brand-dark text-[10px] font-black uppercase px-3 py-1 rounded-bl-xl">
+                        Recomendado
+                    </div>
+                    
+                    <div className="w-12 h-12 bg-brand-yellow rounded-2xl flex items-center justify-center text-brand-dark mb-4 shadow-sm">
+                        <Gift size={24} />
+                    </div>
+                    
+                    <h3 className="text-2xl font-black text-gray-900 mb-2">Teste Grátis</h3>
+                    <p className="text-sm text-gray-600 mb-6 min-h-[40px]">
+                        Experimente o plano PRO completo por 14 dias sem compromisso.
+                    </p>
+                    
                     <div className="mb-6">
-                        <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                        <p className="text-gray-400 text-sm mt-1">{plan.description || "Para mercados em crescimento"}</p>
+                        <span className="text-4xl font-black text-gray-900">R$ 0</span>
+                        <span className="text-gray-500 font-medium">/14 dias</span>
                     </div>
 
-                    <div className="mb-6 flex items-end gap-1">
-                        <span className="text-4xl font-black text-gray-900">{formatCurrency(price).replace(',00', '')}</span>
-                        <span className="text-gray-500 font-medium mb-1.5">{getLabelDuration()}</span>
-                    </div>
+                    <ul className="space-y-3 mb-8">
+                        <li className="flex gap-2 text-sm text-gray-700 font-medium"><Check size={18} className="text-green-600 shrink-0"/> Todas as funções PRO</li>
+                        <li className="flex gap-2 text-sm text-gray-700 font-medium"><Check size={18} className="text-green-600 shrink-0"/> Emissão Fiscal</li>
+                        <li className="flex gap-2 text-sm text-gray-700 font-medium"><Check size={18} className="text-green-600 shrink-0"/> Suporte Completo</li>
+                    </ul>
 
                     <Button 
-                        onClick={() => handleSelectPlan(plan)}
-                        className={`w-full py-6 font-bold text-lg mb-8 ${isRecommended ? 'bg-brand-yellow text-brand-dark' : 'bg-gray-900 text-white'}`}
+                        onClick={handleActivateTrial} 
+                        isLoading={activatingTrial}
+                        className="w-full bg-slate-900 text-white hover:bg-slate-800 font-bold h-12 shadow-lg"
                     >
-                        Assinar Agora
+                        Ativar Agora
                     </Button>
-
-                    <div className="space-y-4 flex-1">
-                        <FeatureItem text={`${plan.max_users} Usuários`} />
-                        <FeatureItem text={`${plan.max_terminals} Caixas PDV`} />
-                        <FeatureItem text="Suporte Prioritário" highlighted={isRecommended} />
-                        <FeatureItem text="Dashboard Financeiro" highlighted={isRecommended} />
-                        <FeatureItem text="Emissão Fiscal NFC-e" highlighted={isRecommended} />
-                        <FeatureItem text="Backup Automático" />
-                    </div>
+                    <p className="text-xs text-center text-gray-400 mt-3">Não pede cartão de crédito.</p>
                 </div>
-            );
-        })}
-      </div>
 
-      <p className="mt-12 text-gray-400 text-sm flex items-center gap-2">
-          <ShieldCheck size={16} /> Pagamento seguro e sem fidelidade.
-      </p>
+                {/* PLANOS NORMAIS */}
+                {plans.map(plan => (
+                    <div key={plan.id} className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:shadow-xl transition-all hover:border-brand-yellow/30 hover:-translate-y-1">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                        <p className="text-xs text-gray-500 mb-6 min-h-[32px]">
+                            {plan.description || "Para negócios em crescimento."}
+                        </p>
+                        
+                        <div className="mb-6">
+                            <span className="text-4xl font-black text-gray-900">{formatCurrency(getPrice(plan))}</span>
+                            <span className="text-gray-400 font-medium text-xs block mt-1">
+                                {selectedDuration === 30 ? '/mês' : (selectedDuration === 180 ? '/semestre' : '/ano')}
+                            </span>
+                        </div>
 
-      {/* MODAL DE CONTATO */}
+                        <div className="space-y-3 mb-8">
+                            <div className="flex gap-2 text-sm text-gray-600">
+                                <Store size={18} className="text-brand-yellow shrink-0" /> 
+                                <span>Até <strong>{plan.max_markets}</strong> lojas</span>
+                            </div>
+                            <div className="flex gap-2 text-sm text-gray-600">
+                                <ShieldCheck size={18} className="text-brand-yellow shrink-0" />
+                                <span>Até <strong>{plan.max_terminals}</strong> caixas</span>
+                            </div>
+                        </div>
+
+                        <Button 
+                            onClick={() => handleSelectPlan(plan)}
+                            variant="secondary"
+                            className="w-full border-2 border-gray-100 hover:border-brand-yellow hover:bg-yellow-50 text-gray-700 font-bold h-12"
+                        >
+                            Contratar
+                        </Button>
+                    </div>
+                ))}
+            </div>
+        )}
+      </main>
+
+      {/* MODAL DE INTERESSE */}
       {showModal && selectedPlan && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold">Quase lá! 🚀</h3>
-                    <button onClick={() => setShowModal(false)}><X className="text-gray-400" /></button>
-                </div>
-                
-                <form onSubmit={handleSubmit(handleConfirmInterest)} className="space-y-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+                <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <X />
+                </button>
+
+                <h2 className="text-2xl font-black text-gray-900 mb-2">Finalizar Contratação</h2>
+                <p className="text-gray-500 mb-6">Nossa equipe ativará seu plano em instantes.</p>
+
+                <form onSubmit={handleSubmit(onSubmitInterest)} className="space-y-4">
                     <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 border border-blue-100">
-                        <p className="font-bold mb-1">Confirmação de Plano</p>
-                        <p>Você escolheu o plano <strong>{selectedPlan.name}</strong>.</p>
-                        <p className="mt-2">Para ativar, precisamos alinhar o pagamento. Informe seu WhatsApp e nosso time entrará em contato em instantes.</p>
+                        <p className="font-bold mb-1">Resumo do Pedido</p>
+                        <p>Plano: <strong>{selectedPlan.name}</strong></p>
+                        <p>Valor: <strong>{formatCurrency(getPrice(selectedPlan))}</strong> ({selectedDuration === 30 ? 'Mensal' : (selectedDuration === 180 ? 'Semestral' : 'Anual')})</p>
                     </div>
 
-                    <Input label="WhatsApp Principal" placeholder="(00) 00000-0000" {...register('whatsapp1', { required: true })} autoFocus />
-                    <Input label="WhatsApp Secundário (Opcional)" placeholder="(00) 00000-0000" {...register('whatsapp2')} />
-
+                    <Input label="Seu WhatsApp" placeholder="(00) 00000-0000" {...register('whatsapp1', { required: true })} autoFocus />
+                    
                     <div className="pt-4">
-                        <Button type="submit" variant="primary" size="lg" className="w-full" isLoading={isSubmitting}>
-                            Confirmar Interesse <ArrowRight size={20} />
+                        <Button type="submit" variant="primary" size="lg" className="w-full font-bold" isLoading={isSubmitting}>
+                            Solicitar Ativação <ArrowRight size={20} />
                         </Button>
                     </div>
                 </form>
@@ -198,12 +247,3 @@ export default function Plans() {
     </div>
   );
 }
-
-const FeatureItem = ({ text, highlighted }) => (
-    <div className={`flex items-center gap-3 ${highlighted ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
-        <div className={`rounded-full p-1 ${highlighted ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-            <Check size={12} strokeWidth={4} />
-        </div>
-        <span>{text}</span>
-    </div>
-);

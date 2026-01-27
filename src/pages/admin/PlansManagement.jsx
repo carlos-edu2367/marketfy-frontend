@@ -18,8 +18,7 @@ export default function PlansManagement() {
 
   const { register, handleSubmit, reset, setValue } = useForm();
 
-  const fetchPlans = useCallback(async () => {
-    try {
+  const fetchPlans = useCallback(async () => {    try {
       const { data } = await api.get('/admin/plans');
       setPlans(data);
     } catch (error) {
@@ -37,145 +36,106 @@ export default function PlansManagement() {
     setEditingPlan(plan);
     if (plan) {
         setValue('name', plan.name);
-        setValue('type', plan.type);
         setValue('max_markets', plan.max_markets);
         setValue('max_terminals', plan.max_terminals);
         setValue('price_monthly', plan.price_monthly);
-        setValue('price_180days', plan.price_180days); // CORREÇÃO: Preço Semestral
+        setValue('price_180days', plan.price_180days);
         setValue('price_annual', plan.price_annual);
-        setValue('is_active', plan.is_active);
     } else {
-        reset({ 
-            type: 'pago', 
-            is_active: true,
-            max_markets: 1,
-            max_terminals: 1,
-            price_monthly: 0,
-            price_180days: 0, // Default
-            price_annual: 0
-        });
+        reset();
     }
     setIsModalOpen(true);
   };
 
-  const onSubmit = async (data) => {
+  // CORREÇÃO: Tratamento de Tipos para PUT (Edição)
+  const handleSavePlan = async (data) => {
     try {
         const payload = {
-            ...data,
-            max_markets: parseInt(data.max_markets),
-            max_terminals: parseInt(data.max_terminals),
-            price_monthly: parseFloat(data.price_monthly),
-            price_180days: parseFloat(data.price_180days || 0), // Envia semestral
-            price_annual: parseFloat(data.price_annual),
-            is_active: data.is_active === 'true' || data.is_active === true
+            name: data.name,
+            max_markets: parseInt(data.max_markets), // Garante int
+            max_terminals: parseInt(data.max_terminals), // Garante int
+            price_monthly: parseFloat(data.price_monthly), // Garante float
+            price_180days: parseFloat(data.price_180days || 0),
+            price_annual: parseFloat(data.price_annual || 0)
         };
 
         if (editingPlan) {
+            // PUT para edição conforme spec
             await api.put(`/admin/plans/${editingPlan.id}`, payload);
-            toast.success("Plano atualizado!");
+            toast.success('Plano atualizado!');
         } else {
+            // POST para criação (se existir endpoint, assumindo que seja similar)
             await api.post('/admin/plans', payload);
-            toast.success("Plano criado!");
+            toast.success('Plano criado!');
         }
+        
         setIsModalOpen(false);
         fetchPlans();
     } catch (error) {
-        console.error(error);
-        toast.error("Erro ao salvar plano.");
+        console.error("Erro ao salvar plano:", error);
+        toast.error('Erro ao salvar plano. Verifique os dados.');
     }
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" onClick={() => navigate('/admin')}>
-                <ArrowLeft /> Voltar
-            </Button>
-            <div>
-                <h1 className="text-3xl font-black text-slate-800">Planos de Assinatura</h1>
-                <p className="text-slate-500">Defina os pacotes disponíveis para contratação.</p>
-            </div>
-            <div className="ml-auto">
-                <Button onClick={() => handleOpenModal()} className="bg-slate-900 text-white hover:bg-slate-800">
-                    <Plus size={20} /> Novo Plano
+    <div className="p-6 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+                <Button variant="ghost" onClick={() => navigate('/admin')}>
+                    <ArrowLeft size={18} /> Voltar
                 </Button>
-            </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {loading ? (
-                <div className="col-span-3 text-center py-10"><Loader2 className="animate-spin inline text-slate-400" /></div>
-            ) : plans.map(plan => (
-                <div key={plan.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col relative group overflow-hidden">
-                    {!plan.is_active && (
-                        <div className="absolute top-0 right-0 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-1 rounded-bl-lg">
-                            ARQUIVADO
-                        </div>
-                    )}
-                    
-                    <div className="mb-4">
-                        <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
-                            {plan.type}
-                        </span>
-                        <h3 className="text-2xl font-black text-slate-900 mt-2">{plan.name}</h3>
-                        <p className="text-3xl font-light text-slate-600 mt-1">
-                            {formatCurrency(plan.price_monthly)}<span className="text-sm text-slate-400">/mês</span>
-                        </p>
-                    </div>
-
-                    <div className="space-y-2 text-sm text-slate-600 mb-6 flex-1">
-                        <div className="flex items-center gap-2">
-                            <Store size={16} className="text-slate-400" />
-                            <strong>{plan.max_markets}</strong> Lojas
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <LayoutDashboard size={16} className="text-slate-400" />
-                            <strong>{plan.max_terminals}</strong> Terminais/PDV
-                        </div>
-                    </div>
-
-                    <Button variant="secondary" className="w-full border-slate-200 hover:border-slate-400" onClick={() => handleOpenModal(plan)}>
-                        <Edit2 size={16} /> Editar
-                    </Button>
+                <div>
+                    <h1 className="text-2xl font-black text-gray-900">Gestão de Planos</h1>
+                    <p className="text-gray-500">Configuração de preços e limites do SaaS.</p>
                 </div>
-            ))}
+            </div>
+            <Button onClick={() => handleOpenModal()}>
+                <Plus size={18} /> Novo Plano
+            </Button>
         </div>
 
-        {/* MODAL PORTAL */}
+        {loading ? (
+            <div className="flex justify-center p-10"><Loader2 className="animate-spin text-brand-dark" /></div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {plans.map(plan => (
+                    <div key={plan.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative group hover:border-gray-300 transition-all">
+                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => handleOpenModal(plan)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-brand-dark">
+                                <Edit2 size={18} />
+                            </button>
+                        </div>
+                        
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">{plan.name}</h3>
+                        <p className="text-3xl font-black text-brand-dark mb-4">{formatCurrency(plan.price_monthly)}<span className="text-sm text-gray-400 font-medium">/mês</span></p>
+                        
+                        <div className="space-y-2 text-sm text-gray-600 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <div className="flex items-center gap-2">
+                                <Store size={16} className="text-brand-yellow" />
+                                <span>Até <strong>{plan.max_markets}</strong> Lojas</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <LayoutDashboard size={16} className="text-brand-yellow" />
+                                <span>Até <strong>{plan.max_terminals}</strong> PDVs por loja</span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )}
+
         {isModalOpen && createPortal(
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in">
-                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                        <h2 className="text-xl font-bold text-slate-800">
-                            {editingPlan ? `Editar ${editingPlan.name}` : 'Novo Plano'}
-                        </h2>
-                        <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors">
-                            <X size={24} />
-                        </button>
+            <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 animate-fade-in">
+                <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
+                    <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
+                        <h2 className="text-xl font-bold">{editingPlan ? 'Editar Plano' : 'Novo Plano'}</h2>
+                        <button onClick={() => setIsModalOpen(false)}><X className="text-gray-400" /></button>
                     </div>
                     
                     <div className="p-6">
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                            <Input label="Nome do Plano" placeholder="Ex: Enterprise" {...register('name', { required: true })} />
+                        <form onSubmit={handleSubmit(handleSavePlan)} className="space-y-4">
+                            <Input label="Nome do Plano" placeholder="Ex: Basic, Pro..." {...register('name', { required: true })} />
                             
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-gray-700">Tipo</label>
-                                    <select {...register('type')} className="w-full border border-gray-300 rounded-lg p-2.5 bg-white">
-                                        <option value="pago">Pago</option>
-                                        <option value="trial">Trial (Teste)</option>
-                                        <option value="cortesia">Cortesia</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-gray-700">Status</label>
-                                    <select {...register('is_active')} className="w-full border border-gray-300 rounded-lg p-2.5 bg-white">
-                                        <option value={true}>Ativo</option>
-                                        <option value={false}>Inativo</option>
-                                    </select>
-                                </div>
-                            </div>
-
                             <div className="grid grid-cols-2 gap-4">
                                 <Input label="Max. Lojas" type="number" {...register('max_markets', { required: true })} />
                                 <Input label="Max. Terminais" type="number" {...register('max_terminals', { required: true })} />

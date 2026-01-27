@@ -62,11 +62,12 @@ export default function Register() {
     }
   };
 
+  // CORREÇÃO: Atualizado para nova rota e body vazio
   const handleAcceptTrial = async () => {
     try {
         setActivatingTrial(true);
-        // Ativa o Trial PRO de 14 dias
-        await api.post('/identity/plans/trial/activate');
+        // POST /auth/trial - Body vazio ({})
+        await api.post('/auth/trial', {});
         
         await refreshUser(); // Atualiza contexto com o novo plano
         toast.success("TRIAL PRO ATIVADO! Bem-vindo(a)!");
@@ -74,15 +75,20 @@ export default function Register() {
         
     } catch (error) {
         console.error(error);
-        toast.error("Erro ao ativar trial.");
-        navigate('/dashboard'); // Vai pro dash mesmo com erro (plano free)
+        const msg = error.response?.data?.detail;
+        
+        // Se já tiver usado trial (400) ou outro erro, avisa e manda pro dashboard
+        if (msg) toast.error(msg);
+        else toast.error("Erro ao ativar trial.");
+        
+        navigate('/dashboard');
     } finally {
         setActivatingTrial(false);
     }
   };
 
   const handleDeclineTrial = () => {
-    navigate('/dashboard');
+    navigate('/plans'); // Se recusou trial, manda escolher um plano pago ou ver as opções
   };
 
   return (
