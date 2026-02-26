@@ -108,7 +108,7 @@ export default function Dashboard() {
               className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                 <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); navigate('/inventory'); }}>
+                 <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); navigate('/dashboard/inventory'); }}>
                     Gerir Estoque
                  </Button>
               </div>
