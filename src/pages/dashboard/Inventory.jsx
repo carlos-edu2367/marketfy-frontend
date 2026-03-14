@@ -5,7 +5,8 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { 
     Plus, Package, ArrowUpCircle, ArrowDownCircle, History, 
-    Search, Store, Loader2, Barcode, ScanBarcode, X, Wand2, Download, RefreshCw 
+    Search, Store, Loader2, Barcode, ScanBarcode, X, Wand2, Download, RefreshCw,
+    Edit2, Check 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProductHistoryModal from '../../components/inventory/ProductHistoryModal';
@@ -27,6 +28,13 @@ export default function Inventory() {
   const [historyModalProduct, setHistoryModalProduct] = useState(null);
   
   const [loading, setLoading] = useState(false);
+  const [editingProductId, setEditingProductId] = useState(null);
+  const { 
+    register: registerEdit, 
+    handleSubmit: handleSubmitEdit, 
+    reset: resetEdit, 
+    formState: { isSubmitting: isEditing } 
+  } = useForm();
 
   const { register: registerCreate, handleSubmit: handleSubmitCreate, reset: resetCreate, setValue: setValueCreate, getValues: getValuesCreate, formState: { isSubmitting: creating } } = useForm();
   const { register: registerMove, handleSubmit: handleSubmitMove, reset: resetMove, formState: { isSubmitting: moving } } = useForm();
@@ -244,6 +252,42 @@ export default function Inventory() {
     link.click();
     document.body.removeChild(link);
   };
+  const startEditing = (product) => {
+      resetEdit({
+          name: product.name,
+          price: product.price,
+          cost_price: product.cost_price || '',
+          ncm: product.ncm || ''
+      });
+      setEditingProductId(product.id);
+  };
+
+  const cancelEditing = () => {
+      setEditingProductId(null);
+      resetEdit();
+  };
+
+  const handleSaveEdit = async (data) => {
+      try {
+          const payload = {
+              name: data.name,
+              price: parseFloat(data.price),
+              cost_price: data.cost_price ? parseFloat(data.cost_price) : 0.00,
+              ncm: data.ncm || null,
+              origin: 0 // Mantendo o default
+          };
+
+          // Chamada PUT conforme solicitado
+          await api.put(`/inventory/${selectedMarketId}/product/${editingProductId}`, payload);
+          
+          toast.success("Produto atualizado com sucesso!");
+          setEditingProductId(null);
+          loadProducts(); // Recarrega a listagem para refletir os dados
+      } catch (error) {
+          console.error("Erro ao editar produto:", error);
+          toast.error("Erro ao atualizar os dados do produto.");
+      }
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -308,61 +352,127 @@ export default function Inventory() {
             ) : (
                 <div className="divide-y divide-gray-100">
                     {filteredProducts.map(p => (
-                        <div key={p.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 transition-colors gap-4">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <p className="font-bold text-gray-900 text-lg">{p.name}</p>
-                                    <span className="text-[10px] font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-500 border border-gray-200">
-                                        Cód: {p.code}
-                                    </span>
-                                </div>
-                                <div className="flex gap-4 text-sm text-gray-500">
-                                    <span className="flex items-center gap-1" title="Código de Barras">
-                                        <Barcode size={14}/> {p.barcode || 'S/N'}
-                                    </span>
-                                    {p.ncm && (
-                                        <span className="flex items-center gap-1" title="NCM (Fiscal)">
-                                            <span className="text-[10px] font-bold border border-gray-200 px-1 rounded">NCM</span> {p.ncm}
-                                        </span>
-                                    )}
-                                    <span className="font-medium text-green-600">Venda: {formatCurrency(p.price)}</span>
-                                </div>
-                            </div>
+    editingProductId === p.id ? (
+        /* --- MODO DE EDIÇÃO INLINE --- */
+        <div key={`edit-${p.id}`} className="p-5 bg-brand-yellow/5 border-l-4 border-brand-yellow shadow-inner transition-all flex flex-col gap-4">
+            <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-bold text-brand-dark uppercase tracking-wider flex items-center gap-2">
+                    <Edit2 size={16} /> Editando Produto
+                </span>
+                <span className="text-xs font-mono bg-white px-2 py-1 rounded shadow-sm border border-gray-200">
+                    Cód: {p.code}
+                </span>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-start">
+                <div className="md:col-span-2">
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Nome do Produto</label>
+                    <input 
+                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-yellow bg-white" 
+                        {...registerEdit('name', { required: true })} 
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">NCM (Fiscal)</label>
+                    <input 
+                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-yellow bg-white" 
+                        {...registerEdit('ncm')} 
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Custo (R$)</label>
+                    <input 
+                        type="number" step="0.01" 
+                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-yellow bg-white" 
+                        {...registerEdit('cost_price')} 
+                    />
+                </div>
+                <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Venda (R$)</label>
+                    <input 
+                        type="number" step="0.01" 
+                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold text-green-700 outline-none focus:ring-2 focus:ring-green-500 bg-white" 
+                        {...registerEdit('price', { required: true })} 
+                    />
+                </div>
+            </div>
 
-                            <div className="flex items-center gap-6 justify-between sm:justify-end">
-                                <div className="text-right">
-                                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Estoque Atual</p>
-                                    <p className={`font-black text-2xl ${p.current_stock <= 5 ? 'text-red-500' : 'text-gray-800'}`}>
-                                        {Number(p.current_stock).toFixed(2)} <span className="text-sm font-medium text-gray-400">un</span>
-                                    </p>
-                                </div>
-                                
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={() => setMovementModal({ open: true, product: p, type: 'entrada' })}
-                                        className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 border border-green-100 transition-colors"
-                                        title="Adicionar Estoque"
-                                    >
-                                        <ArrowUpCircle size={20} />
-                                    </button>
-                                    <button 
-                                        onClick={() => setMovementModal({ open: true, product: p, type: 'saida' })}
-                                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-colors"
-                                        title="Remover Estoque"
-                                    >
-                                        <ArrowDownCircle size={20} />
-                                    </button>
-                                    <button 
-                                        onClick={() => setHistoryModalProduct(p)}
-                                        className="p-2 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100 transition-colors"
-                                        title="Ver Histórico"
-                                    >
-                                        <History size={20} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+            <div className="flex gap-3 justify-end mt-2">
+                <Button type="button" variant="secondary" size="sm" onClick={cancelEditing} disabled={isEditing}>
+                    Cancelar
+                </Button>
+                <Button type="button" variant="primary" size="sm" onClick={handleSubmitEdit(handleSaveEdit)} isLoading={isEditing}>
+                    <Check size={18} className="mr-1" /> Salvar Edição
+                </Button>
+            </div>
+        </div>
+    ) : (
+        /* --- MODO DE VISUALIZAÇÃO PADRÃO --- */
+        <div key={p.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 transition-colors gap-4">
+            <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                    <p className="font-bold text-gray-900 text-lg">{p.name}</p>
+                    <span className="text-[10px] font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-500 border border-gray-200">
+                        Cód: {p.code}
+                    </span>
+                </div>
+                <div className="flex gap-4 text-sm text-gray-500">
+                    <span className="flex items-center gap-1" title="Código de Barras">
+                        <Barcode size={14}/> {p.barcode || 'S/N'}
+                    </span>
+                    {p.ncm && (
+                        <span className="flex items-center gap-1" title="NCM (Fiscal)">
+                            <span className="text-[10px] font-bold border border-gray-200 px-1 rounded">NCM</span> {p.ncm}
+                        </span>
+                    )}
+                    <span className="font-medium text-green-600">Venda: {formatCurrency(p.price)}</span>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-6 justify-between sm:justify-end">
+                <div className="text-right">
+                    <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Estoque Atual</p>
+                    <p className={`font-black text-2xl ${p.current_stock <= 5 ? 'text-red-500' : 'text-gray-800'}`}>
+                        {Number(p.current_stock).toFixed(2)} <span className="text-sm font-medium text-gray-400">un</span>
+                    </p>
+                </div>
+                
+                <div className="flex gap-2">
+                    {/* NOVO BOTÃO DE EDITAR */}
+                    <button 
+                        onClick={() => startEditing(p)}
+                        className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 transition-colors"
+                        title="Editar Produto"
+                    >
+                        <Edit2 size={20} />
+                    </button>
+                    {/* FIM BOTÃO DE EDITAR */}
+                    <button 
+                        onClick={() => setMovementModal({ open: true, product: p, type: 'entrada' })}
+                        className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 border border-green-100 transition-colors"
+                        title="Adicionar Estoque"
+                    >
+                        <ArrowUpCircle size={20} />
+                    </button>
+                    <button 
+                        onClick={() => setMovementModal({ open: true, product: p, type: 'saida' })}
+                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-colors"
+                        title="Remover Estoque"
+                    >
+                        <ArrowDownCircle size={20} />
+                    </button>
+                    <button 
+                        onClick={() => setHistoryModalProduct(p)}
+                        className="p-2 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100 transition-colors"
+                        title="Ver Histórico"
+                    >
+                        <History size={20} />
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+))}
                 </div>
             )}
         </div>

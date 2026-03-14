@@ -109,15 +109,27 @@ export default function PDV() {
 
   useEffect(() => {
     if (!searchTerm || searchTerm.length < 1) { 
-      setSearchResults([]); setSelectedIndex(0); return;
+      setSearchResults([]); 
+      setSelectedIndex(0); 
+      return;
     }
-    const lower = searchTerm.toLowerCase();
-    db.products.where('market_id').equals(marketId).toArray().then(prods => {
-      const matches = prods.filter(p => 
-        (p.barcode && p.barcode.includes(searchTerm)) || (p.code && p.code.toLowerCase().includes(lower)) || p.name.toLowerCase().includes(lower)
-      ).slice(0, 8);
-      setSearchResults(matches); setSelectedIndex(0);
-    });
+
+    // Cria um atraso de 150ms. O leitor bipa mais rápido que isso, 
+    // então a busca async só roda se o usuário digitar manualmente e pausar.
+    const delaySearch = setTimeout(() => {
+      const lower = searchTerm.toLowerCase();
+      db.products.where('market_id').equals(marketId).toArray().then(prods => {
+        const matches = prods.filter(p => 
+          (p.barcode && p.barcode.includes(searchTerm)) || 
+          (p.code && p.code.toLowerCase().includes(lower)) || 
+          p.name.toLowerCase().includes(lower)
+        ).slice(0, 8);
+        setSearchResults(matches); 
+        setSelectedIndex(0);
+      });
+    }, 150);
+
+    return () => clearTimeout(delaySearch);
   }, [searchTerm, marketId]);
 
   const addToCart = (product) => {
@@ -168,7 +180,7 @@ export default function PDV() {
             case 'Escape': e.preventDefault(); if (searchTerm) setSearchTerm(''); else if (cart.length > 0) clearCart(); break;
             case 'ArrowDown': if (searchResults.length > 0) { e.preventDefault(); setSelectedIndex(prev => (prev + 1) % searchResults.length); } break;
             case 'ArrowUp': if (searchResults.length > 0) { e.preventDefault(); setSelectedIndex(prev => (prev - 1 + searchResults.length) % searchResults.length); } break;
-            case 'Enter': if (searchResults.length > 0) { e.preventDefault(); addToCart(searchResults[selectedIndex]); } break;
+            //case 'Enter': if (searchResults.length > 0) { e.preventDefault(); addToCart(searchResults[selectedIndex]); } break;
             default: break;
         }
     };
@@ -254,8 +266,43 @@ export default function PDV() {
       } catch (error) { toast.error(error.response?.data?.detail || "Erro ao fechar caixa."); }
   };
 
+  // --- ADICIONADO: Controlador de Enter do Input (Scanner vs Busca) ---
+  const handleSearchKeyDown = async (e) => {
+    // Se não for Enter ou se modais estiverem abertos, ignora
+    if (e.key !== 'Enter' || saleSuccess.open || showPayment || showCloseBoxModal || showOpenBoxModal) return;
+    
+    e.preventDefault();
+    if (!searchTerm) return;
+
+    // 1. MODO SCANNER: Só números (ex: código de barras ou código numérico interno)
+    const isScannerMode = /^\d+$/.test(searchTerm);
+
+    if (isScannerMode) {
+        // Busca EXATA e direta no banco (muito mais rápido que toArray)
+        const exactMatch = await db.products
+            .where('market_id').equals(marketId)
+            .filter(p => p.barcode === searchTerm || p.code === searchTerm)
+            .first();
+
+        if (exactMatch) {
+            addToCart(exactMatch);
+            return; // Termina a execução aqui
+        }
+    }
+
+    // 2. MODO BUSCA MANUAL: Usa o fallback do searchResults
+    if (searchResults.length > 0) {
+        addToCart(searchResults[selectedIndex]);
+    } else if (isScannerMode) {
+        toast.error("Produto não encontrado no estoque.");
+        setSearchTerm(''); // Limpa para o próximo bip não acumular
+    }
+  };
+
   if (loadingBox) return <div className="h-screen flex items-center justify-center bg-gray-50 flex-col gap-4"><Loader2 className="animate-spin text-brand-yellow" size={64} /><p className="text-gray-500 font-bold animate-pulse">Iniciando PDV...</p></div>;
   if (!terminalId) return <TerminalSelector marketId={marketId} onSelect={(id) => setTerminalId(cleanUUID(id))} />;
+
+  
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden font-sans select-none">
@@ -264,8 +311,16 @@ export default function PDV() {
             <button onClick={() => navigate('/dashboard')} className="p-3 hover:bg-red-50 hover:text-red-600 rounded-xl text-gray-400 transition-colors group"><LogOut size={22} className="group-hover:-translate-x-1 transition-transform" /></button>
             <div className="relative flex-1 group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-yellow transition-colors" size={24} />
-                <input ref={searchInputRef} className="w-full pl-14 pr-4 py-4 rounded-xl bg-gray-50 border-2 border-transparent focus:border-brand-yellow focus:bg-white outline-none transition-all text-xl font-bold text-gray-800 placeholder:text-gray-300 placeholder:font-normal" placeholder="Buscar produto (F4)" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} autoFocus disabled={!box} />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2"><span className="bg-gray-200 text-gray-500 px-2 py-1 rounded text-xs font-bold">F4</span></div>
+                <input 
+                    ref={searchInputRef} 
+                    className="w-full pl-14 pr-4 py-4 rounded-xl bg-gray-50 border-2 border-transparent focus:border-brand-yellow focus:bg-white outline-none transition-all text-xl font-bold text-gray-800 placeholder:text-gray-300 placeholder:font-normal" 
+                    placeholder="Buscar produto (F4)" 
+                    value={searchTerm} 
+                    onChange={e => setSearchTerm(e.target.value)} 
+                    onKeyDown={handleSearchKeyDown} // <--- ADICIONADO AQUI
+                    autoFocus 
+                    disabled={!box} 
+                />
             </div>
             <div className={`px-4 py-3 rounded-xl flex items-center gap-2 text-sm font-black border transition-colors ${isOnline ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'}`}>{isOnline ? <Wifi size={20} /> : <WifiOff size={20} />}{isOnline ? 'ONLINE' : 'OFFLINE'}</div>
         </div>
