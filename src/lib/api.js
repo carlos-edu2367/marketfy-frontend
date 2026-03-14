@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Configuração base apontando para o Backend FastAPI
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/v1',
+  baseURL: 'https://marketfy-backend.neectify.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
