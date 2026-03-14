@@ -407,7 +407,22 @@ export default function Financial() {
                         </div>
                         <div>
                             <p className="font-bold text-slate-800">{t.desc}</p>
-                            <p className="text-xs text-slate-500">{t.date}</p>
+                            
+                            <p className="text-xs text-slate-500">
+                                {t.date
+                                ? (() => {
+                                    const date = new Date(t.date);
+                                    date.setHours(date.getHours() - 3);
+
+                                    return date.toLocaleString('pt-BR', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    });
+                                    })()
+                                : 'Sem data'}
+                                </p>
                         </div>
                     </div>
                     <span className={clsx(
