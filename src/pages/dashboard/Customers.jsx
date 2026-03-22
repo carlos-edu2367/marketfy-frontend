@@ -26,7 +26,10 @@ export default function Customers() {
   
   // Estado do Extrato
   const [ledgerState, setLedgerState] = useState({ open: false, customer: null, transactions: [], loading: false });
-  
+
+  // Estado de loading do pagamento
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
   const { register, handleSubmit, reset } = useForm();
   
   // Form do Pagamento (adicionado payment_method)
@@ -100,19 +103,20 @@ export default function Customers() {
   const handlePayment = async (data) => {
       if (!paymentModal.customer) return;
       try {
+          setPaymentLoading(true);
           const payload = {
               amount: parseFloat(data.amount),
               payment_method: data.payment_method, // Obrigatório: dinheiro, pix, cartao_debito
               description: data.description || "Pagamento Avulso"
           };
 
-          await api.post(`/finance/${selectedMarketId}/customers/${paymentModal.customer.id}/pay`, payload);
-          
+          await api.post(`/finance/${selectedMarketId}/customers/${paymentModal.customer.id}/payment`, payload);
+
           toast.success("Pagamento registrado!");
           setPaymentModal({ open: false, customer: null });
           resetPay();
           loadCustomers();
-          
+
           // Se extrato estiver aberto, atualiza
           if (ledgerState.open && ledgerState.customer?.id === paymentModal.customer.id) {
               openLedger(paymentModal.customer);
@@ -120,6 +124,8 @@ export default function Customers() {
       } catch (error) {
           console.error(error);
           toast.error("Erro ao registrar pagamento.");
+      } finally {
+          setPaymentLoading(false);
       }
   };
 
@@ -376,8 +382,16 @@ export default function Customers() {
                         />
                         
                         <div className="flex gap-3 mt-6">
-                            <Button type="button" variant="secondary" className="flex-1" onClick={() => setPaymentModal({ open: false, customer: null })}>Cancelar</Button>
-                            <Button type="submit" variant="success" className="flex-1 font-bold">Confirmar</Button>
+                            <Button type="button" variant="secondary" className="flex-1" onClick={() => setPaymentModal({ open: false, customer: null })} disabled={paymentLoading}>Cancelar</Button>
+                            <Button type="submit" variant="success" className="flex-1 font-bold flex items-center justify-center gap-2" disabled={paymentLoading}>
+                                {paymentLoading ? (
+                                    <>
+                                        <Loader2 size={18} className="animate-spin" /> Processando...
+                                    </>
+                                ) : (
+                                    'Confirmar'
+                                )}
+                            </Button>
                         </div>
                     </form>
                 </div>
