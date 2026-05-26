@@ -5,10 +5,8 @@ import { formatCurrency } from '../../lib/utils';
 import api from '../../lib/api';
 
 const DEBOUNCE_MS = 400;
-const MIN_QTY = 10;
-const MAX_QTY = 10_000;
 
-export default function CustomQuantityInput({ onPurchase, loading = false }) {
+export default function CustomQuantityInput({ onPurchase, loading = false, minQty = 1, maxQty = 10_000 }) {
   const [qty, setQty] = useState('');
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -23,12 +21,12 @@ export default function CustomQuantityInput({ onPurchase, loading = false }) {
 
     if (!qty || isNaN(parsed)) return;
 
-    if (parsed < MIN_QTY) {
-      setError(`Minimo ${MIN_QTY} creditos.`);
+    if (parsed < minQty) {
+      setError(`Minimo ${minQty} creditos.`);
       return;
     }
-    if (parsed > MAX_QTY) {
-      setError(`Maximo ${MAX_QTY} creditos por compra.`);
+    if (parsed > maxQty) {
+      setError(`Maximo ${maxQty} creditos por compra.`);
       return;
     }
 
@@ -51,7 +49,7 @@ export default function CustomQuantityInput({ onPurchase, loading = false }) {
 
   const handlePurchase = () => {
     const parsed = parseInt(qty, 10);
-    if (!parsed || parsed < MIN_QTY || parsed > MAX_QTY) return;
+    if (!parsed || parsed < minQty || parsed > maxQty) return;
     onPurchase(parsed);
   };
 
@@ -65,8 +63,8 @@ export default function CustomQuantityInput({ onPurchase, loading = false }) {
               type="number"
               inputMode="numeric"
               aria-label="Quantidade de creditos"
-              min={MIN_QTY}
-              max={MAX_QTY}
+              min={minQty}
+              max={maxQty}
               placeholder="Ex: 250"
               value={qty}
               onChange={(e) => setQty(e.target.value)}
@@ -104,7 +102,7 @@ export default function CustomQuantityInput({ onPurchase, loading = false }) {
         </Button>
       </div>
       <p className="mt-3 text-xs text-gray-400">
-        Minimo {MIN_QTY} creditos
+        Minimo {minQty} creditos
         {unitPrice && (
           <span> · R$ {Number(unitPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} por credito</span>
         )}

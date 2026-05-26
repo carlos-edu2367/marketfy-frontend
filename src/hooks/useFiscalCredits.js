@@ -11,6 +11,7 @@ export function useFiscalCredits(marketId) {
   const [purchaseLoadingSlug, setPurchaseLoadingSlug] = useState(null);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+  const [config, setConfig] = useState({ min_qty: 1, max_qty: 10_000, unit_price: '0.72' });
 
   const fetchHistory = useCallback(async (nextPage = page) => {
     if (!marketId) return;
@@ -26,17 +27,19 @@ export function useFiscalCredits(marketId) {
     setLoading(true);
     setError(null);
     try {
-      const [balanceRes, packagesRes, historyRes] = await Promise.all([
+      const [balanceRes, packagesRes, historyRes, configRes] = await Promise.all([
         api.get(`/fiscal/${marketId}/credits/balance`),
         api.get('/fiscal/credits/packages'),
         api.get(`/fiscal/${marketId}/credits/history`, {
           params: { page: 1, per_page: 10 },
         }),
+        api.get('/fiscal/credits/config'),
       ]);
       setBalance(balanceRes.data);
       setPackages(packagesRes.data.items || []);
       setHistory(historyRes.data.items || []);
       setPage(historyRes.data.page || 1);
+      setConfig(configRes.data);
     } catch (err) {
       setError(err);
     } finally {
@@ -102,6 +105,7 @@ export function useFiscalCredits(marketId) {
     error,
     page,
     purchaseLoadingSlug,
+    config,
     fetchAll,
     fetchHistory,
     refreshBalance,

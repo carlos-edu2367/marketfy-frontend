@@ -56,6 +56,7 @@ export default function FiscalCredits() {
     error,
     page,
     purchaseLoadingSlug,
+    config,
     fetchAll,
     fetchHistory,
     initiatePurchase,
@@ -222,6 +223,8 @@ export default function FiscalCredits() {
             <CustomQuantityInput
               loading={customPurchaseLoading}
               onPurchase={handleCustomPurchase}
+              minQty={config?.min_qty ?? 1}
+              maxQty={config?.max_qty ?? 10_000}
             />
           </div>
         </section>

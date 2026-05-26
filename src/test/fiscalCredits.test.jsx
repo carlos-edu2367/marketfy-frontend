@@ -54,6 +54,8 @@ const historyPayload = {
   ],
 };
 
+const configPayload = { min_qty: 10, max_qty: 10_000, unit_price: '0.72' };
+
 function mockFiscalResponses() {
   api.get.mockImplementation((url) => {
     if (url === '/identity/markets') {
@@ -67,6 +69,9 @@ function mockFiscalResponses() {
     }
     if (url === '/fiscal/market-1/credits/history') {
       return Promise.resolve({ data: historyPayload });
+    }
+    if (url === '/fiscal/credits/config') {
+      return Promise.resolve({ data: configPayload });
     }
     return Promise.reject(new Error(`unexpected GET ${url}`));
   });
@@ -149,7 +154,7 @@ describe('CustomQuantityInput', () => {
 
   it('shows error when quantity is below minimum', async () => {
     const user = userEvent.setup({ delay: null });
-    render(<CustomQuantityInput onPurchase={vi.fn()} />);
+    render(<CustomQuantityInput onPurchase={vi.fn()} minQty={10} />);
     const input = screen.getByLabelText(/quantidade de creditos/i);
     await user.type(input, '5');
     const alert = await screen.findByRole('alert');
