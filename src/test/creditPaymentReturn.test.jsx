@@ -11,6 +11,15 @@ vi.mock('../lib/api', () => ({
   },
 }));
 
+vi.mock('react-hot-toast', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+import toast from 'react-hot-toast';
+
 describe('CreditPaymentReturn', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -27,6 +36,7 @@ describe('CreditPaymentReturn', () => {
             period: '202605',
             included_limit: 200,
             addon_limit: 310,
+            addon_total: 400,
             used_count: 147,
             remaining: 363,
             percentage_used: 73.5,
@@ -47,6 +57,43 @@ describe('CreditPaymentReturn', () => {
       expect(api.get).toHaveBeenCalledWith('/fiscal/market-1/credits/balance');
     });
     expect(await screen.findByText(/363 creditos disponiveis/i)).toBeInTheDocument();
+  });
+
+  it('detects activation when addon_limit increases and shows toast', async () => {
+    let callCount = 0;
+    api.get.mockImplementation((url) => {
+      if (url === '/identity/markets') {
+        return Promise.resolve({ data: [{ id: 'market-1' }] });
+      }
+      if (url === '/fiscal/market-1/credits/balance') {
+        callCount += 1;
+        const addonLimit = callCount === 1 ? 60 : 310;
+        return Promise.resolve({
+          data: {
+            period: '202605',
+            included_limit: 200,
+            addon_limit: addonLimit,
+            addon_total: 400,
+            used_count: 100,
+            remaining: 260 + addonLimit - 60,
+            percentage_used: 20.0,
+          },
+        });
+      }
+      return Promise.reject(new Error(`unexpected GET ${url}`));
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/fiscal/credits/return?status=success&marketId=market-1']}>
+        <CreditPaymentReturn />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/250 creditos adicionados/i));
+    }, { timeout: 8000 });
+
+    expect(await screen.findByText(/creditos ativados com sucesso/i)).toBeInTheDocument();
   });
 
   it('failure page shows retry button', () => {
@@ -73,4 +120,3 @@ describe('CreditPaymentReturn', () => {
     expect(screen.getByText('Pagamento em processamento')).toBeInTheDocument();
   });
 });
-

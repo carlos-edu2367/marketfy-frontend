@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 import CreditPackageCard from '../components/fiscal/CreditPackageCard';
 import CreditUsageBar from '../components/fiscal/CreditUsageBar';
+import CustomQuantityInput from '../components/fiscal/CustomQuantityInput';
 import PurchaseConfirmModal from '../components/fiscal/PurchaseConfirmModal';
 import { Button } from '../components/ui/Button';
 import { useFiscalCredits } from '../hooks/useFiscalCredits';
@@ -16,6 +17,16 @@ const PACKAGE_LABELS = {
   pack_250: '250 emissoes extras',
   pack_500: '500 emissoes extras',
 };
+
+function packageLabel(slug) {
+  if (!slug) return '-';
+  if (PACKAGE_LABELS[slug]) return PACKAGE_LABELS[slug];
+  if (slug.startsWith('custom_')) {
+    const qty = slug.replace('custom_', '');
+    return `${qty} emissoes (personalizado)`;
+  }
+  return slug;
+}
 
 const STATUS_LABELS = {
   paid: 'Pago',
@@ -35,6 +46,7 @@ export default function FiscalCredits() {
   const [selectedMarketId, setSelectedMarketId] = useState(searchParams.get('marketId') || '');
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [confirming, setConfirming] = useState(false);
+  const [customPurchaseLoading, setCustomPurchaseLoading] = useState(false);
 
   const {
     balance,
@@ -47,6 +59,7 @@ export default function FiscalCredits() {
     fetchAll,
     fetchHistory,
     initiatePurchase,
+    initiateCustomPurchase,
   } = useFiscalCredits(selectedMarketId);
 
   useEffect(() => {
@@ -95,6 +108,17 @@ export default function FiscalCredits() {
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Nao foi possivel iniciar o checkout.'));
       setConfirming(false);
+    }
+  };
+
+  const handleCustomPurchase = async (qty) => {
+    setCustomPurchaseLoading(true);
+    try {
+      await initiateCustomPurchase(qty);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Nao foi possivel iniciar o checkout.'));
+    } finally {
+      setCustomPurchaseLoading(false);
     }
   };
 
@@ -173,6 +197,7 @@ export default function FiscalCredits() {
               used={balance?.used_count || 0}
               includedLimit={balance?.included_limit || 0}
               addonLimit={balance?.addon_limit || 0}
+              addonTotal={balance?.addon_total || 0}
               period={balance?.period}
             />
           )}
@@ -193,6 +218,12 @@ export default function FiscalCredits() {
               />
             ))}
           </div>
+          <div className="mt-4">
+            <CustomQuantityInput
+              loading={customPurchaseLoading}
+              onPurchase={handleCustomPurchase}
+            />
+          </div>
         </section>
 
         <section className="rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -204,12 +235,13 @@ export default function FiscalCredits() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] text-left text-sm">
+            <table className="w-full min-w-[700px] text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-400">
                 <tr>
                   <th className="px-6 py-3">Data</th>
                   <th className="px-6 py-3">Pacote</th>
                   <th className="px-6 py-3">Qtd</th>
+                  <th className="px-6 py-3">Restante</th>
                   <th className="px-6 py-3">Valor</th>
                   <th className="px-6 py-3">Status</th>
                 </tr>
@@ -217,15 +249,23 @@ export default function FiscalCredits() {
               <tbody className="divide-y divide-gray-100">
                 {history.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
-                      Nenhuma compra registrada.
+                    <td colSpan="6" className="px-6 py-10 text-center text-gray-400">
+                      Voce ainda nao comprou creditos extras.{' '}
+                      <button
+                        type="button"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="font-bold text-blue-600 hover:underline"
+                      >
+                        Compre acima
+                      </button>
                     </td>
                   </tr>
                 ) : history.map(item => (
                   <tr key={item.package_id}>
                     <td className="px-6 py-4 font-medium text-gray-700">{formatDateOnly(item.created_at)}</td>
-                    <td className="px-6 py-4 text-gray-600">{PACKAGE_LABELS[item.package_slug] || item.package_slug}</td>
+                    <td className="px-6 py-4 text-gray-600">{packageLabel(item.package_slug)}</td>
                     <td className="px-6 py-4 font-mono text-gray-600">{item.quantity}</td>
+                    <td className="px-6 py-4 font-mono text-gray-600">{item.remaining}</td>
                     <td className="px-6 py-4 font-bold text-gray-800">{formatCurrency(Number(item.price_gross || 0))}</td>
                     <td className="px-6 py-4">
                       <span className="rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-black text-gray-700">

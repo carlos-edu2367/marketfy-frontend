@@ -70,6 +70,26 @@ export function useFiscalCredits(marketId) {
     }
   }, [marketId, purchaseLoadingSlug, user?.id]);
 
+  const previewPrice = useCallback(async (qty) => {
+    if (!qty || qty < 1) return null;
+    const { data } = await api.get('/fiscal/credits/price', { params: { qty } });
+    return data;
+  }, []);
+
+  const initiateCustomPurchase = useCallback(async (qty) => {
+    if (!marketId) return null;
+    const ownerPart = user?.id || 'owner';
+    const idempotencyKey = `mktf:${ownerPart}:custom_${qty}:${Date.now()}`;
+    const { data } = await api.post(`/fiscal/${marketId}/credits/checkout/custom`, {
+      quantity: qty,
+      idempotency_key: idempotencyKey,
+    });
+    if (data?.init_point) {
+      window.location.href = data.init_point;
+    }
+    return data;
+  }, [marketId, user?.id]);
+
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
@@ -86,5 +106,7 @@ export function useFiscalCredits(marketId) {
     fetchHistory,
     refreshBalance,
     initiatePurchase,
+    previewPrice,
+    initiateCustomPurchase,
   };
 }

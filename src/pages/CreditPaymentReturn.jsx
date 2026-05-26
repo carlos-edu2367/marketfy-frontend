@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, CheckCircle2, Clock, Loader2, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -59,6 +59,8 @@ export default function CreditPaymentReturn() {
   const [marketId, setMarketId] = useState(searchParams.get('marketId') || '');
   const [balance, setBalance] = useState(null);
   const [polling, setPolling] = useState(false);
+  const [activated, setActivated] = useState(false);
+  const prevAddonLimitRef = useRef(null);
   const status = searchParams.get('status') || 'success';
   const content = statusContent(status, marketId);
   const Icon = content.icon;
@@ -81,7 +83,16 @@ export default function CreditPaymentReturn() {
       setPolling(true);
       try {
         const { data } = await api.get(`/fiscal/${marketId}/credits/balance`);
-        if (!cancelled) setBalance(data);
+        if (!cancelled) {
+          const prev = prevAddonLimitRef.current;
+          if (prev !== null && data.addon_limit > prev && !activated) {
+            const added = data.addon_limit - prev;
+            toast.success(`${added} creditos adicionados!`);
+            setActivated(true);
+          }
+          prevAddonLimitRef.current = data.addon_limit;
+          setBalance(data);
+        }
       } catch {
         if (!cancelled && attempts === 1) {
           toast.error('Ainda nao foi possivel atualizar o saldo.');
@@ -100,7 +111,7 @@ export default function CreditPaymentReturn() {
       cancelled = true;
       clearTimeout(timerId);
     };
-  }, [marketId, status]);
+  }, [marketId, status, activated]);
 
   return (
     <main className="min-h-screen bg-gray-50 p-6 md:p-10">
@@ -113,6 +124,12 @@ export default function CreditPaymentReturn() {
 
         {status === 'success' && (
           <div className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 p-5 text-left">
+            {activated && (
+              <div className="mb-4 flex items-center justify-center gap-2 rounded-xl bg-green-50 py-3 text-sm font-black text-green-700">
+                <CheckCircle2 size={18} />
+                Creditos ativados com sucesso!
+              </div>
+            )}
             {polling && !balance ? (
               <div className="flex items-center justify-center gap-2 py-8 text-sm font-bold text-gray-500">
                 <Loader2 size={18} className="animate-spin" />
@@ -127,6 +144,7 @@ export default function CreditPaymentReturn() {
                   used={balance.used_count}
                   includedLimit={balance.included_limit}
                   addonLimit={balance.addon_limit}
+                  addonTotal={balance.addon_total || 0}
                   period={balance.period}
                 />
               </div>
@@ -146,4 +164,3 @@ export default function CreditPaymentReturn() {
     </main>
   );
 }
-
