@@ -5,8 +5,9 @@ import { useSync } from '../../hooks/useSync';
 import { 
   LogOut, Wifi, WifiOff, LayoutDashboard, Package, Users, 
   Settings, LifeBuoy, ShoppingBag, PieChart, RefreshCw, CloudOff, 
-  CheckCircle, AlertTriangle, Crown, Calendar, Lock, AlertCircle, XCircle
+  CheckCircle, AlertTriangle, Crown, Calendar, Lock, AlertCircle, XCircle, ShieldCheck
 } from 'lucide-react';
+import api from '../../lib/api';
 import clsx from 'clsx';
 import { differenceInDays, parseISO } from 'date-fns';
 import WelcomeModal from '../onboarding/WelcomeModal';
@@ -20,6 +21,27 @@ export default function AdminLayout() {
   
   const navigate = useNavigate();
   const location = useLocation();
+  const [fiscalBalance, setFiscalBalance] = React.useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (user && isOnline) {
+      api.get('/identity/markets')
+        .then(({ data }) => {
+          if (cancelled) return;
+          if (data && data.length > 0) {
+            api.get(`/fiscal/${data[0].id}/credits/balance`)
+              .then(({ data: balance }) => {
+                if (cancelled) return;
+                setFiscalBalance(balance);
+              })
+              .catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+    return () => { cancelled = true; };
+  }, [user, isOnline]);
 
   useEffect(() => {
     if (isOnline) {
@@ -76,6 +98,7 @@ export default function AdminLayout() {
     },
     { icon: Package, label: 'Estoque', path: '/dashboard/inventory' },
     { icon: Users, label: 'Clientes & Fiado', path: '/dashboard/customers' },
+    { icon: ShieldCheck, label: 'Créditos Fiscais', path: '/fiscal/credits' },
     { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
     { icon: LifeBuoy, label: 'Suporte', path: '/dashboard/support' },
   ];
@@ -278,6 +301,32 @@ export default function AdminLayout() {
                  )}
              </div>
           </div>
+
+          {fiscalBalance !== null && (
+            <Link to="/fiscal/credits" className="block">
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 space-y-1 text-left hover:bg-gray-100 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-gray-400">Créditos NFC-e</span>
+                  <span className="text-xs font-black text-brand-dark">
+                    {fiscalBalance.remaining} rest.
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className={clsx(
+                      "h-full rounded-full transition-all duration-300",
+                      fiscalBalance.remaining <= 10 ? "bg-red-500" : (fiscalBalance.remaining <= 50 ? "bg-yellow-500" : "bg-emerald-500")
+                    )}
+                    style={{ width: `${Math.max(0, Math.min(100, 100 - fiscalBalance.percentage_used))}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[9px] text-gray-400">
+                  <span>Usado: {fiscalBalance.used_count}</span>
+                  <span>Total: {fiscalBalance.included_limit + fiscalBalance.addon_limit}</span>
+                </div>
+              </div>
+            </Link>
+          )}
 
           {renderSyncStatus()}
 
