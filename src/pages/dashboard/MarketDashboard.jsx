@@ -52,7 +52,7 @@ export default function MarketDashboard() {
                 <p className="text-gray-500">Visão geral e desempenho da loja.</p>
             </div>
             <div className="flex gap-3">
-                <Button variant="secondary" onClick={() => navigate('/inventory')}>
+                <Button variant="secondary" onClick={() => navigate('/dashboard/inventory')}>
                     Gerir Estoque
                 </Button>
                 <Button variant="primary" onClick={() => navigate(`/pdv/${marketId}`)}>
@@ -84,7 +84,7 @@ export default function MarketDashboard() {
                     <Wallet size={16} /> A Receber (Fiado)
                 </div>
                 <p className="text-3xl font-black text-gray-900">{formatCurrency(stats?.total_receivables || 0)}</p>
-                <Button variant="ghost" size="sm" className="mt-auto -ml-3 text-yellow-600 hover:bg-yellow-50" onClick={() => navigate('/customers')}>
+                <Button variant="ghost" size="sm" className="mt-auto -ml-3 text-yellow-600 hover:bg-yellow-50" onClick={() => navigate('/dashboard/customers')}>
                     Gerenciar Clientes →
                 </Button>
             </div>

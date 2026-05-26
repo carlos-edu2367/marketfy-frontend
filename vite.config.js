@@ -27,5 +27,10 @@ export default defineConfig({
         secure: false,
       }
     }
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.js',
+    globals: true,
   }
 })

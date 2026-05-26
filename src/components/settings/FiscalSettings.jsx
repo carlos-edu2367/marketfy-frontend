@@ -46,8 +46,8 @@ export default function FiscalSettings({ marketId }) {
       const formData = new FormData();
       formData.append('environment', data.environment);
       formData.append('csc_id', data.csc_id);
-      formData.append('csc_token', data.csc_token);
-      formData.append('certificate_password', data.certificate_password);
+      if (data.csc_token?.trim()) formData.append('csc_token', data.csc_token.trim());
+      if (data.certificate_password?.trim()) formData.append('certificate_password', data.certificate_password);
       if (data.default_ncm) formData.append('default_ncm', data.default_ncm);
       
       // Só anexa arquivo se o usuário selecionou um novo

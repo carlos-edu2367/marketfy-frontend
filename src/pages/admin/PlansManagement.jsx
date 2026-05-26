@@ -36,13 +36,15 @@ export default function PlansManagement() {
     setEditingPlan(plan);
     if (plan) {
         setValue('name', plan.name);
+        setValue('type', plan.type || 'pago');
+        setValue('is_active', plan.is_active ?? true);
         setValue('max_markets', plan.max_markets);
         setValue('max_terminals', plan.max_terminals);
         setValue('price_monthly', plan.price_monthly);
         setValue('price_180days', plan.price_180days);
         setValue('price_annual', plan.price_annual);
     } else {
-        reset();
+        reset({ type: 'pago', is_active: true });
     }
     setIsModalOpen(true);
   };
@@ -52,6 +54,8 @@ export default function PlansManagement() {
     try {
         const payload = {
             name: data.name,
+            type: data.type || 'pago',
+            is_active: Boolean(data.is_active),
             max_markets: parseInt(data.max_markets), // Garante int
             max_terminals: parseInt(data.max_terminals), // Garante int
             price_monthly: parseFloat(data.price_monthly), // Garante float
@@ -135,6 +139,20 @@ export default function PlansManagement() {
                     <div className="p-6">
                         <form onSubmit={handleSubmit(handleSavePlan)} className="space-y-4">
                             <Input label="Nome do Plano" placeholder="Ex: Basic, Pro..." {...register('name', { required: true })} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 block mb-1">Tipo</label>
+                                    <select {...register('type', { required: true })} className="w-full border border-gray-300 rounded-lg p-2.5 bg-white outline-none">
+                                        <option value="pago">Pago</option>
+                                        <option value="trial">Trial</option>
+                                        <option value="cortesia">Cortesia</option>
+                                    </select>
+                                </div>
+                                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 pt-7">
+                                    <input type="checkbox" {...register('is_active')} />
+                                    Plano ativo
+                                </label>
+                            </div>
                             
                             <div className="grid grid-cols-2 gap-4">
                                 <Input label="Max. Lojas" type="number" {...register('max_markets', { required: true })} />

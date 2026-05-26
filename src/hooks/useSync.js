@@ -3,15 +3,16 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../lib/db';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 // --- LOGGER ---
 const logger = {
-  success: (title, data) => {
+  success: (title) => {
     console.groupCollapsed(`%c✅ [SYNC SUCCESS] ${title}`, 'color: #10B981; font-weight: bold;');
-    console.log('📦 Dados:', data);
+    console.log('Sincronizacao concluida.');
     console.groupEnd();
   },
-  error: (title, error, payload) => {
+  error: (title, error) => {
     console.group(`%c❌ [SYNC ERROR] ${title}`, 'color: #EF4444; font-weight: bold;');
     console.log('🚨 Mensagem:', error.response?.data?.detail || error.message);
     
@@ -22,13 +23,12 @@ const logger = {
 
     console.log('🔢 Status:', error.response?.status);
     console.log('🔗 URL:', error.config?.url);
-    console.log('📤 Payload Real Enviado:', payload); 
-    if (error.response?.data) console.log('📥 Resposta Backend:', error.response.data);
     console.groupEnd();
   }
 };
 
 export function useSync() {
+  const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -88,8 +88,7 @@ export function useSync() {
     
     const toastId = toast.loading(`Sincronizando ${pendingSales.length} vendas pendentes...`);
 
-    const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
-    const currentUserId = userData.id || null;
+    const currentUserId = user?.id || null;
 
     let syncedCount = 0;
     let errorsCount = 0;
@@ -97,7 +96,6 @@ export function useSync() {
 
     try {
         for (const sale of pendingSales) {
-            let payloadForLog = null;
             try {
               // === SANITIZAÇÃO DE DADOS ===
               let customer_cpf = sale.customer_cpf;
@@ -139,14 +137,13 @@ export function useSync() {
               };
 
               const payload = { sales: [singleSalePayload] };
-              payloadForLog = payload; 
 
               const response = await api.post(`/sales/${sale.market_id}/sync`, payload);
               
               await db.sales_queue.update(sale.id, { status: 'synced', synced_at: new Date() });
               await db.sales_queue.delete(sale.id);
 
-              logger.success(`Venda ${sale.id}`, response.data);
+              logger.success(`Venda ${sale.id}`);
               syncedCount++;
 
             } catch (error) {
@@ -158,7 +155,7 @@ export function useSync() {
               const currentRetries = (sale.retry_count || 0) + 1;
               const MAX_RETRIES = 3;
 
-              logger.error(`Falha na Venda ${sale.id} (Tentativa ${currentRetries}/${MAX_RETRIES})`, error, payloadForLog || sale);
+              logger.error(`Falha na Venda ${sale.id} (Tentativa ${currentRetries}/${MAX_RETRIES})`, error);
 
               if (currentRetries >= MAX_RETRIES) {
                   droppedCount++;
@@ -194,13 +191,13 @@ export function useSync() {
         }
 
     } catch (err) {
-        console.error("Erro fatal no sync:", err);
+        console.error("Erro fatal no sync.");
         toast.error("Erro crítico na sincronização.", { id: toastId });
     } finally {
         setIsSyncing(false);
         syncInProgress.current = false;
     }
-  }, [isOnline]);
+  }, [isOnline, user?.id]);
 
   // Função para reportar vendas falhas ao suporte automaticamente
   const reportFailedSales = useCallback(async () => {
@@ -281,7 +278,7 @@ Solicito análise técnica para processamento manual ou correção dos dados.
         toast.success("Relatório detalhado enviado ao suporte!", { id: toastId });
 
     } catch (error) {
-        console.error("Erro ao reportar:", error);
+        console.error("Erro ao reportar falhas ao suporte.");
         toast.error("Erro ao notificar suporte. Verifique o console.", { id: toastId });
     } finally {
         setReporting(false);

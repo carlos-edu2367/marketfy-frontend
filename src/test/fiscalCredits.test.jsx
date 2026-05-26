@@ -1,0 +1,159 @@
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import api from '../lib/api';
+import CreditUsageBar from '../components/fiscal/CreditUsageBar';
+import CreditPackageCard from '../components/fiscal/CreditPackageCard';
+import FiscalCredits from '../pages/FiscalCredits';
+
+vi.mock('../lib/api', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+  },
+}));
+
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 'owner-1', name: 'Carlos' } }),
+}));
+
+const packagesPayload = {
+  items: [
+    { slug: 'pack_100', emission_count: 100, price_gross: '41.99', price_net_target: '39.90' },
+    { slug: 'pack_250', emission_count: 250, price_gross: '73.57', price_net_target: '69.90' },
+    { slug: 'pack_500', emission_count: 500, price_gross: '126.20', price_net_target: '119.90' },
+  ],
+};
+
+const balancePayload = {
+  period: '202605',
+  included_limit: 200,
+  addon_limit: 60,
+  used_count: 147,
+  remaining: 113,
+  percentage_used: 73.5,
+};
+
+const historyPayload = {
+  page: 1,
+  per_page: 10,
+  items: [
+    {
+      package_id: 'pkg-1',
+      package_slug: 'pack_100',
+      quantity: 100,
+      remaining: 60,
+      payment_status: 'paid',
+      price_gross: '41.99',
+      created_at: '2026-05-15T10:00:00Z',
+    },
+  ],
+};
+
+function mockFiscalResponses() {
+  api.get.mockImplementation((url) => {
+    if (url === '/identity/markets') {
+      return Promise.resolve({ data: [{ id: 'market-1', name: 'Loja Centro' }] });
+    }
+    if (url === '/fiscal/credits/packages') {
+      return Promise.resolve({ data: packagesPayload });
+    }
+    if (url === '/fiscal/market-1/credits/balance') {
+      return Promise.resolve({ data: balancePayload });
+    }
+    if (url === '/fiscal/market-1/credits/history') {
+      return Promise.resolve({ data: historyPayload });
+    }
+    return Promise.reject(new Error(`unexpected GET ${url}`));
+  });
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  delete window.location;
+  window.location = { href: 'http://localhost/fiscal/credits' };
+});
+
+describe('CreditUsageBar', () => {
+  it('shows credit usage bar with correct percentage', () => {
+    render(<CreditUsageBar used={147} includedLimit={200} addonLimit={60} period="202605" />);
+
+    expect(screen.getByText('147/200')).toBeInTheDocument();
+    expect(screen.getByText('73,5%')).toBeInTheDocument();
+    expect(screen.getByText('60 disponiveis')).toBeInTheDocument();
+  });
+});
+
+describe('CreditPackageCard', () => {
+  it('renders package price and popular marker', () => {
+    render(
+      <CreditPackageCard
+        packageItem={packagesPayload.items[1]}
+        loading={false}
+        onPurchase={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('article', { name: /250 emissoes extras/i })).toBeInTheDocument();
+    expect(screen.getByText('R$ 73,57')).toBeInTheDocument();
+    expect(screen.getByText('Mais popular')).toBeInTheDocument();
+  });
+});
+
+describe('FiscalCredits', () => {
+  it('renders three package cards and purchase history', async () => {
+    mockFiscalResponses();
+
+    render(
+      <MemoryRouter initialEntries={['/fiscal/credits?marketId=market-1']}>
+        <FiscalCredits />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('Creditos fiscais')).toBeInTheDocument();
+    const cards = await screen.findAllByRole('article');
+    expect(cards).toHaveLength(3);
+    expect(within(cards[0]).getByText('100 emissoes extras')).toBeInTheDocument();
+    expect(within(cards[1]).getByText('250 emissoes extras')).toBeInTheDocument();
+    expect(within(cards[2]).getByText('500 emissoes extras')).toBeInTheDocument();
+    expect(screen.getByText('15/05/2026')).toBeInTheDocument();
+    expect(screen.getByText('Pago')).toBeInTheDocument();
+  });
+
+  it('clicking buy opens confirmation modal and redirects to init_point', async () => {
+    const user = userEvent.setup();
+    mockFiscalResponses();
+    api.post.mockResolvedValue({
+      data: {
+        package_id: 'pkg-250',
+        init_point: 'https://sandbox.mercadopago.com/checkout',
+        package: packagesPayload.items[1],
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/fiscal/credits?marketId=market-1']}>
+        <FiscalCredits />
+      </MemoryRouter>
+    );
+
+    const pack250 = await screen.findByRole('article', { name: /250 emissoes extras/i });
+    await user.click(within(pack250).getByRole('button', { name: /comprar/i }));
+    expect(screen.getByRole('dialog', { name: /confirmar compra/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /continuar no mercado pago/i }));
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalledWith(
+        '/fiscal/market-1/credits/checkout',
+        expect.objectContaining({
+          package_slug: 'pack_250',
+          idempotency_key: expect.stringMatching(/^mktf:owner-1:pack_250:\d+$/),
+        })
+      );
+      expect(window.location.href).toBe('https://sandbox.mercadopago.com/checkout');
+    });
+  });
+});

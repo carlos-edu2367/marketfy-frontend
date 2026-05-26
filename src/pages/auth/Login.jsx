@@ -34,8 +34,6 @@ export default function Login() {
 
   const onSubmit = async (data) => {
     try {
-      console.log("Tentando login...", data.email);
-      
       // Sanitiza a senha antes de enviar
       const safePassword = truncateTo72Bytes(data.password);
       
@@ -51,13 +49,8 @@ export default function Login() {
       }
 
     } catch (error) {
-      console.error(error);
       toast.error("Email ou senha incorretos.");
     }
-  };
-
-  const onError = (errors) => {
-    console.log(errors);
   };
 
   return (
@@ -71,7 +64,7 @@ export default function Login() {
           <p className="text-gray-500 mt-2">Sistema de Gestão para Mercados</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input 
             label="Email" 
             icon={User} 

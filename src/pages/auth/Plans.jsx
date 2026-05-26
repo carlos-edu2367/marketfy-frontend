@@ -50,19 +50,41 @@ export default function Plans() {
     setShowModal(true);
   };
 
+  const getDurationKey = (days) => {
+    if (days === 30) return 'monthly';
+    if (days === 180) return 'semiannual';
+    if (days === 365) return 'annual';
+    return 'monthly';
+  };
+
   const onSubmitInterest = async (data) => {
     try {
-        await api.post('/identity/plans/interest', {
-            plan_id: selectedPlan.id,
-            duration: selectedDuration,
-            whatsapp1: data.whatsapp1,
-            whatsapp2: data.whatsapp2
-        });
-        toast.success("Recebemos seu interesse! Entraremos em contato.");
-        setShowModal(false);
-        reset();
+      // Chama o backend do Marketfy — nunca o Billing Core diretamente
+      await api.post('/billing/subscriptions', {
+        plan_id: selectedPlan.id,
+        subscription_type: getDurationKey(selectedDuration),
+        // customer_provider_id: preenchido pelo backend se já cadastrado
+      });
+
+      // Backup local para contato comercial (compatibilidade)
+      const interest = {
+        plan_id: selectedPlan.id,
+        plan_name: selectedPlan.name,
+        duration: selectedDuration,
+        whatsapp: data.whatsapp1,
+        created_at: new Date().toISOString(),
+      };
+      localStorage.setItem('marketfy_plan_interest', JSON.stringify(interest));
+
+      toast.success("Solicitação enviada! Aguarde a confirmação da sua assinatura.");
+      setShowModal(false);
+      reset();
+
+      // Atualiza dados de usuário e assinatura
+      await refreshUser();
     } catch (error) {
-        toast.error("Erro ao enviar interesse.");
+      const msg = error.response?.data?.detail || "Erro ao processar solicitação. Tente novamente.";
+      toast.error(msg);
     }
   };
 

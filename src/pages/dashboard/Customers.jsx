@@ -107,7 +107,8 @@ export default function Customers() {
           const payload = {
               amount: parseFloat(data.amount),
               payment_method: data.payment_method, // Obrigatório: dinheiro, pix, cartao_debito
-              description: data.description || "Pagamento Avulso"
+              description: data.description || "Pagamento Avulso",
+              paid_at: new Date().toISOString()
           };
 
           await api.post(`/finance/${selectedMarketId}/customers/${paymentModal.customer.id}/payment`, payload);
@@ -137,7 +138,7 @@ export default function Customers() {
           const { data } = await api.get(`/finance/${selectedMarketId}/customers/${customer.id}/ledger`);
           
           // Garante ordenação cronológica (Antiga -> Recente) para cálculo correto
-          const sortedData = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+          const sortedData = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
           // Cálculo do Saldo Progressivo
           let saldo = 0;
@@ -166,7 +167,7 @@ export default function Customers() {
   // Navegar para detalhes da venda
   const goToSale = (saleId) => {
       if (!saleId) return;
-      navigate(`/sales/${selectedMarketId}/${saleId}`);
+      navigate(`/dashboard/history?saleId=${saleId}&marketId=${selectedMarketId}`);
   };
 
   return (
@@ -438,7 +439,7 @@ export default function Customers() {
                                                         </button>
                                                     )}
                                                 </p>
-                                                <p className="text-xs text-gray-400">{formatDate(entry.date)}</p>
+                                                <p className="text-xs text-gray-400">{formatDate(entry.created_at)}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">

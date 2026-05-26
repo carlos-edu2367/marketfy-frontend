@@ -1,18 +1,19 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../lib/db';
-import api from '../../lib/api';
+import api, { getFiscalCreditsBalance } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { useSync } from '../../hooks/useSync';
+import { useFiscalStatus } from '../../hooks/useFiscalStatus';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import PaymentModal from '../../components/pdv/PaymentModal';
 import TerminalSelector from '../../components/pdv/TerminalSelector';
-// Importação ajustada para pegar a função geradora
 import { generateReceipt } from '../../components/pdv/Receipt';
-import { 
-  Search, ShoppingCart, LogOut, Wifi, WifiOff, Lock, 
-  Store, Loader2, CreditCard, Monitor, Keyboard, Box, CheckCircle, Printer, Plus
+import {
+  Search, ShoppingCart, LogOut, Wifi, WifiOff, Lock,
+  Store, Loader2, CreditCard, Monitor, Keyboard, Box, CheckCircle, Printer, Plus,
+  FileCheck, FileX, AlertCircle, Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,12 +25,29 @@ const cleanUUID = (id) => {
     return id.toString().replace(/[^a-zA-Z0-9-]/g, '').trim();
 };
 
-const playBeep = () => { /* Placeholder */ };
+const playBeep = () => {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const audioContext = new AudioContext();
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = 'sine';
+        oscillator.frequency.value = 880;
+        gain.gain.value = 0.03;
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.05);
+    } catch {
+        // O beep e apenas feedback local; falhas de audio nao devem interromper o PDV.
+    }
+};
 
 export default function PDV() {
   const { marketId } = useParams();
   const navigate = useNavigate();
-  const { syncSales, isOnline } = useSync();
+  const { syncSales, isOnline, pendingSalesCount } = useSync();
   const { user } = useAuth();
   
   const searchInputRef = useRef(null);
@@ -50,10 +68,42 @@ export default function PDV() {
   const [showOpenBoxModal, setShowOpenBoxModal] = useState(false);
   
   const [saleSuccess, setSaleSuccess] = useState({ open: false, change: 0, saleId: null });
+  const [pendingFiscalSaleId, setPendingFiscalSaleId] = useState(null);
+  const [fiscalEmissionRequested, setFiscalEmissionRequested] = useState(false);
+  const [fiscalQuotaBalance, setFiscalQuotaBalance] = useState(null);
+  const [fiscalQuotaExceeded, setFiscalQuotaExceeded] = useState(false);
 
   const [lastSale, setLastSale] = useState(null);
   const [marketInfo, setMarketInfo] = useState(null);
   const [printIsOffline, setPrintIsOffline] = useState(false);
+
+  // Polling de status fiscal — ativo apenas após sync e emissão solicitada
+  const {
+    status: fiscalStatus,
+    fiscalData,
+    isPolling: fiscalPolling,
+    hasTimedOut: fiscalTimedOut,
+    statusLabel: fiscalStatusLabel,
+    isAuthorized: fiscalAuthorized,
+    isRejected: fiscalRejected,
+    isPending: fiscalPending,
+    stopPolling: stopFiscalPolling,
+  } = useFiscalStatus({
+    marketId: cleanUUID(marketId),
+    saleId: pendingFiscalSaleId,
+    enabled: fiscalEmissionRequested && !!pendingFiscalSaleId,
+    maxDurationMs: 30000,
+    onAuthorized: useCallback((data) => {
+      setLastSale(prev => prev ? { ...prev, invoice: data } : prev);
+      setPrintIsOffline(false);
+      toast.success('NFC-e Autorizada!', { icon: '✅', duration: 4000 });
+    }, []),
+    onTerminal: useCallback((terminalStatus) => {
+      if (terminalStatus === 'rejected') {
+        toast.error('NFC-e rejeitada pela SEFAZ. Verifique pendências fiscais.', { duration: 6000 });
+      }
+    }, []),
+  });
 
   const [closingBalance, setClosingBalance] = useState('');
   const [closingObservation, setClosingObservation] = useState('');
@@ -75,6 +125,20 @@ export default function PDV() {
         if (m) setMarketInfo(m);
     }).catch(console.error);
   }, [marketId, navigate]);
+
+  useEffect(() => {
+    const safeMarketId = cleanUUID(marketId);
+    if (!safeMarketId) return;
+    let cancelled = false;
+    getFiscalCreditsBalance(safeMarketId)
+      .then(({ data }) => {
+        if (!cancelled) setFiscalQuotaBalance(data);
+      })
+      .catch(() => {
+        if (!cancelled) setFiscalQuotaBalance(null);
+      });
+    return () => { cancelled = true; };
+  }, [marketId]);
 
   const checkBoxStatus = useCallback(async (isBackground = false) => {
       const safeMarketId = cleanUUID(marketId);
@@ -190,53 +254,68 @@ export default function PDV() {
 
   const handleFinishSale = async (payments) => {
     if (!box) return toast.error("Caixa fechado!");
+    const saleId = uuidv4();
     const salePayload = {
-      id: uuidv4(),
+      id: saleId,
       market_id: cleanUUID(marketId),
       box_id: box.id,
       terminal_id: cleanUUID(terminalId),
       total_amount: total,
       items: cart.map(item => ({ product_id: item.id, name: item.name, quantity: item.quantity, unit_price: item.price, total: item.total })),
       payments: payments,
-      customer_cpf: payments.find(p => p.method === 'fiado')?.customer_cpf || customerCpf, 
+      customer_cpf: payments.find(p => p.method === 'fiado')?.customer_cpf || customerCpf,
       created_at: new Date().toISOString(),
       status: 'pending'
     };
 
     try {
       await db.sales_queue.add(salePayload);
-      let finalSale = salePayload;
-      let fiscalSuccess = false;
       updatePendingCash();
 
-      if (isOnline) {
-          syncSales().then(async () => {
-             checkBoxStatus(true);
-             try {
-                const { data: fiscalData } = await api.post(`/fiscal/${salePayload.market_id}/sales/${salePayload.id}/emit`);
-                finalSale = { ...salePayload, invoice: fiscalData };
-                setLastSale(finalSale);
-                fiscalSuccess = true;
-                toast.success("NFC-e Autorizada");
-             } catch (err) { /* Silent fail */ }
-          });
-      }
-
+      // Venda registrada localmente — operador nunca trava
       setLastSale(salePayload);
-      setPrintIsOffline(!fiscalSuccess);
+      setPrintIsOffline(true); // fallback inicial; muda se NFC-e autorizar
       const totalPaid = payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
       const change = Math.max(0, totalPaid - total);
-
       setShowPayment(false);
-      setSaleSuccess({ open: true, change, saleId: salePayload.id });
+      setSaleSuccess({ open: true, change, saleId });
       setCart([]); setCustomerCpf('');
+
+      // Limpa polling anterior
+      stopFiscalPolling();
+      setPendingFiscalSaleId(null);
+      setFiscalEmissionRequested(false);
+
+      if (isOnline) {
+        // Sync e emissão em background — não bloqueia o operador
+        syncSales().then(async () => {
+          checkBoxStatus(true);
+          try {
+            await api.post(`/fiscal/${cleanUUID(marketId)}/sales/${saleId}/emit`);
+            setFiscalQuotaExceeded(false);
+            // Ativa polling para acompanhar autorização
+            setPendingFiscalSaleId(saleId);
+            setFiscalEmissionRequested(true);
+          } catch (err) {
+            if (err.response?.status === 402) {
+              setFiscalQuotaExceeded(true);
+              toast.error('Limite mensal de NFC-e atingido. Adquira creditos extras.');
+            }
+            // Fiscal indisponível — cupom não fiscal já está pronto
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('[PDV] Emissão fiscal falhou:', err?.message);
+            }
+          }
+        }).catch(() => {
+          // Sync falhou — permanece com cupom não fiscal
+        });
+      }
     } catch (error) {
       console.error(error); toast.error("Erro ao salvar venda.");
     }
   };
 
   const handlePrintAndClose = () => {
-      // MODIFICAÇÃO: Chamada direta ao gerador de PDF
       if (lastSale) {
           generateReceipt(lastSale, marketInfo);
       }
@@ -244,6 +323,10 @@ export default function PDV() {
   };
 
   const handleNewSale = () => {
+      stopFiscalPolling();
+      setPendingFiscalSaleId(null);
+      setFiscalEmissionRequested(false);
+      setFiscalQuotaExceeded(false);
       setSaleSuccess({ open: false, change: 0, saleId: null });
       setTimeout(() => searchInputRef.current?.focus(), 100);
   };
@@ -258,6 +341,10 @@ export default function PDV() {
   };
   const handleCloseBox = async () => {
       try {
+          if (pendingSalesCount > 0) {
+              toast.error("Sincronize as vendas pendentes antes de fechar o caixa.");
+              return;
+          }
           await api.post(`/sales/${cleanUUID(marketId)}/terminals/${cleanUUID(terminalId)}/box/close`, {
               final_balance_reported: parseFloat(closingBalance.replace(',', '.')) || 0,
               closing_observation: closingObservation || ""
@@ -307,6 +394,11 @@ export default function PDV() {
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden font-sans select-none">
       <div className="flex-1 flex flex-col p-4 gap-4 max-w-[65%] h-full">
+        <FiscalQuotaAlert
+          marketId={cleanUUID(marketId)}
+          balance={fiscalQuotaBalance}
+          quotaExceeded={fiscalQuotaExceeded}
+        />
         <div className="bg-white p-3 rounded-2xl shadow-sm flex items-center gap-3 border border-gray-200">
             <button onClick={() => navigate('/dashboard')} className="p-3 hover:bg-red-50 hover:text-red-600 rounded-xl text-gray-400 transition-colors group"><LogOut size={22} className="group-hover:-translate-x-1 transition-transform" /></button>
             <div className="relative flex-1 group">
@@ -378,11 +470,21 @@ export default function PDV() {
                 <div className="absolute top-0 left-0 w-full h-4 bg-green-500"></div>
                 <div className="mx-auto w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-200"><CheckCircle size={64} className="animate-pulse" /></div>
                 <h2 className="text-4xl font-black text-gray-800 mb-2">Venda Realizada!</h2>
-                <p className="text-gray-500 font-medium mb-8">Transação registrada com sucesso.</p>
+                <p className="text-gray-500 font-medium mb-4">Transação registrada com sucesso.</p>
+
+                {/* Status fiscal em tempo real */}
+                <FiscalStatusBadge
+                    status={fiscalStatus}
+                    isPolling={fiscalPolling}
+                    hasTimedOut={fiscalTimedOut}
+                    isOnline={isOnline}
+                    fiscalEmissionRequested={fiscalEmissionRequested}
+                />
+
                 {saleSuccess.change > 0 && (
-                    <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-6 mb-8"><p className="text-blue-600 font-bold uppercase tracking-wider text-sm mb-1">Troco</p><p className="text-5xl font-black text-blue-800">{formatCurrency(saleSuccess.change)}</p></div>
+                    <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-6 mt-4 mb-4"><p className="text-blue-600 font-bold uppercase tracking-wider text-sm mb-1">Troco</p><p className="text-5xl font-black text-blue-800">{formatCurrency(saleSuccess.change)}</p></div>
                 )}
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-4 mt-4">
                     <Button onClick={handlePrintAndClose} className="h-16 text-xl font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-xl flex items-center justify-center gap-3"><Printer size={28} /> IMPRIMIR CUPOM (Enter)</Button>
                     <Button onClick={handleNewSale} variant="secondary" className="h-14 text-lg font-bold border-2 rounded-xl text-gray-500 hover:text-gray-800 hover:border-gray-400">Nova Venda (Esc)</Button>
                 </div>
@@ -419,6 +521,124 @@ function ModalOverlay({ children, title, icon: Icon, color }) {
                 <div className={`${color} p-6 text-white text-center`}><Icon className="mx-auto mb-2 opacity-90" size={32} /><h2 className="text-2xl font-bold tracking-tight">{title}</h2></div>
                 <div className="p-6">{children}</div>
             </div>
+        </div>
+    );
+}
+
+export function FiscalQuotaAlert({ marketId, balance, quotaExceeded = false }) {
+    if (!marketId) return null;
+    const totalAvailable = Number(balance?.included_limit || 0) + Number(balance?.addon_limit || 0);
+    const used = Number(balance?.used_count || 0);
+    const percentage = Number.isFinite(Number(balance?.percentage_used))
+        ? Number(balance?.percentage_used)
+        : (totalAvailable > 0 ? (used / totalAvailable) * 100 : 0);
+    const creditsUrl = `/fiscal/credits?marketId=${marketId}`;
+
+    if (quotaExceeded) {
+        return (
+            <div role="alert" aria-live="polite" className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <span className="font-bold">
+                    Nao foi possivel emitir a NFC-e: limite mensal atingido.
+                </span>
+                <Link to={creditsUrl} className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-xs font-black text-white hover:bg-red-700">
+                    Adquira creditos extras
+                </Link>
+            </div>
+        );
+    }
+
+    if (percentage >= 100) {
+        return (
+            <div role="alert" aria-live="polite" className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <span className="font-bold">Limite de emissoes NFC-e atingido este mes.</span>
+                <Link to={creditsUrl} className="shrink-0 rounded-lg bg-red-600 px-3 py-2 text-xs font-black text-white hover:bg-red-700">
+                    Adquira creditos extras
+                </Link>
+            </div>
+        );
+    }
+
+    if (percentage >= 80) {
+        return (
+            <div role="alert" aria-live="polite" className="flex items-center justify-between gap-3 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
+                <span className="font-bold">
+                    Voce usou {percentage.toFixed(0)}% das suas emissoes do mes.
+                </span>
+                <Link to={creditsUrl} className="shrink-0 rounded-lg bg-yellow-400 px-3 py-2 text-xs font-black text-yellow-950 hover:bg-yellow-300">
+                    Comprar creditos
+                </Link>
+            </div>
+        );
+    }
+
+    return null;
+}
+
+/**
+ * Badge de status fiscal exibido na tela de venda concluída.
+ * Indica ao operador o estado atual da NFC-e de forma clara e não bloqueante.
+ */
+function FiscalStatusBadge({ status, isPolling, hasTimedOut, isOnline, fiscalEmissionRequested }) {
+    if (!isOnline && !fiscalEmissionRequested) {
+        return (
+            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 rounded-xl text-gray-500 text-sm font-medium">
+                <WifiOff size={16} />
+                <span>Cupom não fiscal — fiscal será emitido ao voltar online</span>
+            </div>
+        );
+    }
+
+    if (!fiscalEmissionRequested) return null;
+
+    if (status === 'authorized') {
+        return (
+            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-green-100 rounded-xl text-green-700 text-sm font-bold">
+                <FileCheck size={18} />
+                <span>NFC-e Autorizada</span>
+            </div>
+        );
+    }
+
+    if (status === 'rejected') {
+        return (
+            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-red-100 rounded-xl text-red-700 text-sm font-bold">
+                <FileX size={18} />
+                <span>Rejeitada pela SEFAZ — verifique pendências</span>
+            </div>
+        );
+    }
+
+    if (status === 'manual_action_required') {
+        return (
+            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-100 rounded-xl text-orange-700 text-sm font-bold">
+                <AlertCircle size={18} />
+                <span>Ação manual necessária — contate o suporte</span>
+            </div>
+        );
+    }
+
+    if (isPolling || status === 'queued' || status === 'processing') {
+        return (
+            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 rounded-xl text-blue-600 text-sm font-medium">
+                <Loader2 size={16} className="animate-spin" />
+                <span>Emitindo NFC-e...</span>
+            </div>
+        );
+    }
+
+    if (hasTimedOut) {
+        return (
+            <div className="flex items-center justify-center gap-2 px-4 py-2 bg-yellow-50 rounded-xl text-yellow-700 text-sm font-medium">
+                <Clock size={16} />
+                <span>Fiscal em processamento — verifique depois</span>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 rounded-xl text-gray-500 text-sm font-medium">
+            <Clock size={16} />
+            <span>Cupom não fiscal — processamento fiscal pendente</span>
         </div>
     );
 }

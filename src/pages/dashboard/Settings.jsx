@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { User, FileText, Settings as Store, LogOut, Crown, Calendar, AlertTriangle } from 'lucide-react';
+import { User, FileText, Settings as Store, LogOut, Crown, Calendar, AlertTriangle, CreditCard, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { formatDate } from '../../lib/utils';
 import FiscalSettings from '../../components/settings/FiscalSettings';
 import api from '../../lib/api';
 import { differenceInDays, parseISO } from 'date-fns';
 
 export default function Settings() {
-  const { user, logout } = useAuth();
+  const { user, subscription, logout, refreshSubscription } = useAuth();
   const navigate = useNavigate();
+  const [refreshingSubscription, setRefreshingSubscription] = useState(false);
   
   // Estado das Abas
   const [activeTab, setActiveTab] = useState('profile');
@@ -57,6 +58,31 @@ export default function Settings() {
   };
 
   const planStatus = getPlanStatus();
+
+  const handleRefreshSubscription = async () => {
+    setRefreshingSubscription(true);
+    try {
+      await refreshSubscription();
+    } finally {
+      setRefreshingSubscription(false);
+    }
+  };
+
+  const getSubscriptionStatusLabel = () => {
+    const statusMap = {
+      trialing:  { label: 'Trial ativo',       color: 'text-blue-600',   icon: CheckCircle },
+      active:    { label: 'Ativo',              color: 'text-green-600',  icon: CheckCircle },
+      pending:   { label: 'Pendente',           color: 'text-yellow-600', icon: Clock },
+      past_due:  { label: 'Pagamento atrasado', color: 'text-orange-600', icon: AlertTriangle },
+      canceled:  { label: 'Cancelado',          color: 'text-red-600',    icon: XCircle },
+      expired:   { label: 'Expirado',           color: 'text-red-600',    icon: XCircle },
+      failed:    { label: 'Falha no pagamento', color: 'text-red-600',    icon: XCircle },
+    };
+    return statusMap[subscription?.status] || { label: subscription?.status || 'Desconhecido', color: 'text-gray-500', icon: Clock };
+  };
+
+  const subStatusInfo = getSubscriptionStatusLabel();
+  const SubIcon = subStatusInfo.icon;
 
   return (
     <div className="flex flex-col h-full bg-gray-50 p-6 md:p-10 overflow-hidden">
@@ -137,6 +163,43 @@ export default function Settings() {
                         </div>
                     </div>
                 </div>
+
+                {/* ASSINATURA (dados do Billing Core) */}
+                {subscription && (
+                    <div className="mt-6 bg-white rounded-2xl p-6 border border-gray-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                                <CreditCard size={16} /> Assinatura
+                            </h3>
+                            <button
+                                onClick={handleRefreshSubscription}
+                                disabled={refreshingSubscription}
+                                className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                                title="Atualizar status"
+                            >
+                                <RefreshCw size={16} className={refreshingSubscription ? 'animate-spin' : ''} />
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-2 mb-3">
+                            <SubIcon size={16} className={subStatusInfo.color} />
+                            <span className={`text-sm font-bold ${subStatusInfo.color}`}>{subStatusInfo.label}</span>
+                        </div>
+
+                        {subscription.expires_at && (
+                            <p className="text-xs text-gray-500 mb-2">
+                                Vencimento: <span className="font-medium text-gray-700">{formatDate(subscription.expires_at).split(' ')[0]}</span>
+                            </p>
+                        )}
+
+                        {subscription.billing_pending && (
+                            <div className="flex items-center gap-2 mt-3 p-3 bg-yellow-50 rounded-xl border border-yellow-100 text-yellow-800 text-xs font-medium">
+                                <Clock size={14} className="shrink-0" />
+                                Aguardando confirmação de pagamento pelo sistema de cobrança.
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
           )}
 
