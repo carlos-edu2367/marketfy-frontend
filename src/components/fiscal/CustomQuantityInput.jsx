@@ -13,6 +13,7 @@ export default function CustomQuantityInput({ onPurchase, loading = false }) {
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [error, setError] = useState('');
+  const [unitPrice, setUnitPrice] = useState(null);
   const debounceRef = useRef(null);
 
   useEffect(() => {
@@ -37,6 +38,7 @@ export default function CustomQuantityInput({ onPurchase, loading = false }) {
       try {
         const { data } = await api.get('/fiscal/credits/price', { params: { qty: parsed } });
         setPreview(data);
+        if (data.unit_price) setUnitPrice(data.unit_price);
       } catch {
         setError('Nao foi possivel calcular o preco.');
       } finally {
@@ -102,7 +104,10 @@ export default function CustomQuantityInput({ onPurchase, loading = false }) {
         </Button>
       </div>
       <p className="mt-3 text-xs text-gray-400">
-        Minimo {MIN_QTY} creditos · R$ 0,42 por credito
+        Minimo {MIN_QTY} creditos
+        {unitPrice && (
+          <span> · R$ {Number(unitPrice).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} por credito</span>
+        )}
       </p>
     </div>
   );

@@ -133,7 +133,7 @@ describe('CustomQuantityInput', () => {
   it('shows price after debounce', async () => {
     const user = userEvent.setup({ delay: null });
     api.get.mockResolvedValue({
-      data: { quantity: 250, price_gross: '105.00', unit_price: '0.42' },
+      data: { quantity: 250, price_gross: '180.00', unit_price: '0.72' },
     });
 
     render(<CustomQuantityInput onPurchase={vi.fn()} />);
@@ -144,7 +144,7 @@ describe('CustomQuantityInput', () => {
       expect(api.get).toHaveBeenCalledWith('/fiscal/credits/price', { params: { qty: 250 } });
     }, { timeout: 1000 });
 
-    expect(await screen.findByText(/R\$ 105,00/i)).toBeInTheDocument();
+    expect(await screen.findByText(/R\$ 180,00/i)).toBeInTheDocument();
   });
 
   it('shows error when quantity is below minimum', async () => {
