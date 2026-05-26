@@ -71,8 +71,10 @@ export default function FiscalCredits() {
     const included = Number(balance?.included_limit || 0);
     const addon = Number(balance?.addon_limit || 0);
     const used = Number(balance?.used_count || 0);
+    const remaining = Number(balance?.remaining || 0);
     return {
-      available: included + addon,
+      available: remaining,
+      total: included + addon,
       included,
       addon,
       used,
@@ -150,7 +152,7 @@ export default function FiscalCredits() {
             <div>
               <h2 className="text-lg font-black text-gray-900">Resumo do mes</h2>
               <p className="text-sm text-gray-500">
-                {totals.used} emissoes usadas de {totals.available} disponiveis
+                {totals.used} emissoes usadas &mdash; {totals.available} restantes de {totals.total} no total
                 {' '}({totals.included} incluidas + {totals.addon} extras)
               </p>
             </div>

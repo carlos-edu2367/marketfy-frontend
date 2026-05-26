@@ -59,20 +59,20 @@ export default function CreditUsageBar({ used = 0, includedLimit = 0, addonLimit
         </div>
       </div>
 
-      <div>
-        <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-          <span className="flex items-center gap-2 font-bold text-gray-700">
-            <CircleDollarSign size={16} className="text-green-600" />
-            Creditos extras disponiveis
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+        <span className="flex items-center gap-2 text-sm font-bold text-gray-700">
+          <CircleDollarSign size={16} className="text-green-600" />
+          Creditos extras disponiveis
+        </span>
+        {addon > 0 ? (
+          <span className="rounded-lg bg-green-100 px-3 py-1 font-mono text-sm font-black text-green-700">
+            +{addon}
           </span>
-          <span className="font-mono text-xs font-black text-green-700">{addon} disponiveis</span>
-        </div>
-        <div className="h-3 overflow-hidden rounded-full bg-gray-100">
-          <div
-            className="h-full rounded-full bg-green-500 transition-all"
-            style={{ width: `${addon > 0 ? Math.max(8, Math.min(100, addon / 5)) : 0}%` }}
-          />
-        </div>
+        ) : (
+          <span className="rounded-lg bg-gray-100 px-3 py-1 text-xs font-black text-gray-400">
+            Nenhum
+          </span>
+        )}
       </div>
     </div>
   );
