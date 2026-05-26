@@ -30,8 +30,13 @@ export default function PurchaseConfirmModal({ packageItem, loading = false, onC
           <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="font-bold text-gray-500">Pacote</dt>
             <dd className="font-black text-gray-900">{packageItem.emission_count} emissoes extras</dd>
-            <dt className="font-bold text-gray-500">Valor</dt>
-            <dd className="font-black text-gray-900">{formatCurrency(Number(packageItem.price_gross))}</dd>
+            <dt className="font-bold text-gray-500">Valor total</dt>
+            <dd className="font-black text-gray-900">
+              {formatCurrency(Number(packageItem.price_net_target))}
+              <span className="block text-xs font-normal text-gray-500 mt-0.5">
+                Com taxas: {formatCurrency(Number(packageItem.price_gross))}
+              </span>
+            </dd>
           </dl>
 
           <div className="flex gap-3 rounded-xl border border-yellow-100 bg-yellow-50 p-4 text-sm text-yellow-900">

@@ -83,7 +83,7 @@ export default function CustomQuantityInput({ onPurchase, loading = false, minQt
           )}
           {preview && !previewLoading && (
             <p id="custom-price-preview" className="mt-1 text-xs font-bold text-gray-600">
-              {formatCurrency(Number(preview.price_gross))}
+              Valor total: {formatCurrency(Number(preview.price_gross))}
               <span className="ml-1 font-normal text-gray-400">
                 (R$ {preview.unit_price}/credito)
               </span>

@@ -16,7 +16,7 @@ function statusContent(status, marketId) {
       message: 'Nao foi possivel processar o pagamento. Tente novamente ou escolha outro metodo.',
       actions: (
         <>
-          <Link to={`/fiscal/credits?marketId=${marketId}`}>
+          <Link to={`/dashboard/fiscal/credits?marketId=${marketId}`}>
             <Button>Tentar novamente</Button>
           </Link>
           <Link to="/dashboard">
@@ -34,7 +34,7 @@ function statusContent(status, marketId) {
       title: 'Pagamento em processamento',
       message: 'Seu pagamento esta sendo analisado pelo Mercado Pago. Os creditos serao adicionados automaticamente quando confirmado.',
       actions: (
-        <Link to={`/fiscal/credits?marketId=${marketId}`}>
+        <Link to={`/dashboard/fiscal/credits?marketId=${marketId}`}>
           <Button variant="secondary">Voltar para o painel</Button>
         </Link>
       ),
@@ -47,7 +47,7 @@ function statusContent(status, marketId) {
     title: 'Pagamento realizado com sucesso',
     message: 'Seus creditos estao sendo ativados e estarao disponiveis em instantes.',
     actions: (
-      <Link to={`/fiscal/credits?marketId=${marketId}`}>
+      <Link to={`/dashboard/fiscal/credits?marketId=${marketId}`}>
         <Button>Ver saldo de creditos</Button>
       </Link>
     ),

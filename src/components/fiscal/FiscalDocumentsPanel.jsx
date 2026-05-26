@@ -336,7 +336,7 @@ export default function FiscalDocumentsPanel({ marketId }) {
               </p>
             </div>
             <Link
-              to={`/fiscal/credits?marketId=${marketId}`}
+              to={`/dashboard/fiscal/credits?marketId=${marketId}`}
               className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-black text-white hover:bg-slate-800"
             >
               Comprar creditos

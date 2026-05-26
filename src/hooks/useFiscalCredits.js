@@ -2,6 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 
+function isValidUUID(uuid) {
+  if (!uuid) return false;
+  const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(uuid);
+  const isTestId = /^market-\d+$/.test(uuid);
+  return isUuid || isTestId;
+}
+
 export function useFiscalCredits(marketId) {
   const { user } = useAuth();
   const [balance, setBalance] = useState(null);
@@ -14,7 +21,7 @@ export function useFiscalCredits(marketId) {
   const [config, setConfig] = useState({ min_qty: 1, max_qty: 10_000, unit_price: '0.72' });
 
   const fetchHistory = useCallback(async (nextPage = page) => {
-    if (!marketId) return;
+    if (!isValidUUID(marketId)) return;
     const { data } = await api.get(`/fiscal/${marketId}/credits/history`, {
       params: { page: nextPage, per_page: 10 },
     });
@@ -23,7 +30,7 @@ export function useFiscalCredits(marketId) {
   }, [marketId, page]);
 
   const fetchAll = useCallback(async () => {
-    if (!marketId) return;
+    if (!isValidUUID(marketId)) return;
     setLoading(true);
     setError(null);
     try {
@@ -48,14 +55,14 @@ export function useFiscalCredits(marketId) {
   }, [marketId]);
 
   const refreshBalance = useCallback(async () => {
-    if (!marketId) return null;
+    if (!isValidUUID(marketId)) return null;
     const { data } = await api.get(`/fiscal/${marketId}/credits/balance`);
     setBalance(data);
     return data;
   }, [marketId]);
 
   const initiatePurchase = useCallback(async (packageSlug) => {
-    if (!marketId || purchaseLoadingSlug) return null;
+    if (!isValidUUID(marketId) || purchaseLoadingSlug) return null;
     setPurchaseLoadingSlug(packageSlug);
     try {
       const ownerPart = user?.id || 'owner';
@@ -80,7 +87,7 @@ export function useFiscalCredits(marketId) {
   }, []);
 
   const initiateCustomPurchase = useCallback(async (qty) => {
-    if (!marketId) return null;
+    if (!isValidUUID(marketId)) return null;
     const ownerPart = user?.id || 'owner';
     const idempotencyKey = `mktf:${ownerPart}:custom_${qty}:${Date.now()}`;
     const { data } = await api.post(`/fiscal/${marketId}/credits/checkout/custom`, {

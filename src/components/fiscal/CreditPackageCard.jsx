@@ -29,12 +29,15 @@ export default function CreditPackageCard({ packageItem, onPurchase, loading = f
       </div>
 
       <h3 className="pr-24 text-xl font-black text-gray-900">{title}</h3>
-      <div className="mt-4">
-        <p className="text-3xl font-black text-gray-950">
-          {formatCurrency(Number(packageItem.price_gross))}
-        </p>
-        <p className="text-xs font-medium text-gray-400">
-          alvo liquido {formatCurrency(Number(packageItem.price_net_target))}
+      <div className="mt-4 space-y-1">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-black uppercase text-gray-400">Valor total</span>
+          <p className="text-3xl font-black text-gray-950">
+            {formatCurrency(Number(packageItem.price_net_target))}
+          </p>
+        </div>
+        <p className="text-xs font-medium text-gray-500">
+          Com taxas: <span className="font-bold text-gray-700">{formatCurrency(Number(packageItem.price_gross))}</span>
         </p>
       </div>
 

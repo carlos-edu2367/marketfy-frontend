@@ -106,7 +106,7 @@ describe('CreditPaymentReturn', () => {
     expect(screen.getByText('Pagamento nao aprovado')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /tentar novamente/i })).toHaveAttribute(
       'href',
-      '/fiscal/credits?marketId=market-1'
+      '/dashboard/fiscal/credits?marketId=market-1'
     );
   });
 

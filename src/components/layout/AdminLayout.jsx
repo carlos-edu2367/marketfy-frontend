@@ -98,7 +98,7 @@ export default function AdminLayout() {
     },
     { icon: Package, label: 'Estoque', path: '/dashboard/inventory' },
     { icon: Users, label: 'Clientes & Fiado', path: '/dashboard/customers' },
-    { icon: ShieldCheck, label: 'Créditos Fiscais', path: '/fiscal/credits' },
+    { icon: ShieldCheck, label: 'Créditos Fiscais', path: '/dashboard/fiscal/credits' },
     { icon: Settings, label: 'Configurações', path: '/dashboard/settings' },
     { icon: LifeBuoy, label: 'Suporte', path: '/dashboard/support' },
   ];
@@ -303,7 +303,7 @@ export default function AdminLayout() {
           </div>
 
           {fiscalBalance !== null && (
-            <Link to="/fiscal/credits" className="block">
+            <Link to="/dashboard/fiscal/credits" className="block">
               <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 space-y-1 text-left hover:bg-gray-100 transition-colors">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase text-gray-400">Créditos NFC-e</span>

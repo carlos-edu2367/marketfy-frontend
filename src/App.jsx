@@ -107,6 +107,8 @@ function App() {
               <Route path="customers" element={<Customers />} />
               <Route path="settings" element={<Settings />} />
               <Route path="support" element={<Support />} />
+              <Route path="fiscal/credits" element={<FiscalCredits />} />
+              <Route path="fiscal/credits/return" element={<CreditPaymentReturn />} />
             </Route>
 
             <Route
@@ -127,24 +129,6 @@ function App() {
               element={
                 <ProtectedRoute>
                   <PDV />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/fiscal/credits"
-              element={
-                <ProtectedRoute>
-                  <FiscalCredits />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/fiscal/credits/return"
-              element={
-                <ProtectedRoute>
-                  <CreditPaymentReturn />
                 </ProtectedRoute>
               }
             />

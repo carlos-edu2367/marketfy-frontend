@@ -21,7 +21,7 @@ describe('FiscalQuotaAlert', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Voce usou 80%');
     expect(screen.getByRole('link', { name: /comprar creditos/i })).toHaveAttribute(
       'href',
-      '/fiscal/credits?marketId=market-1'
+      '/dashboard/fiscal/credits?marketId=market-1'
     );
   });
 

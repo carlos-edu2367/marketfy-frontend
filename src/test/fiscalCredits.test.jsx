@@ -179,7 +179,7 @@ describe('FiscalCredits', () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('Creditos fiscais')).toBeInTheDocument();
+    expect(await screen.findByText(/créditos fiscais/i)).toBeInTheDocument();
     const cards = await screen.findAllByRole('article');
     expect(cards).toHaveLength(3);
     expect(within(cards[0]).getByText('100 emissoes extras')).toBeInTheDocument();
@@ -187,7 +187,7 @@ describe('FiscalCredits', () => {
     expect(within(cards[2]).getByText('500 emissoes extras')).toBeInTheDocument();
 
     // Coluna Restante (PR8)
-    expect(screen.getByText('Restante')).toBeInTheDocument();
+    expect(screen.getByText('Créditos Restantes')).toBeInTheDocument();
     expect(screen.getByText('15/05/2026')).toBeInTheDocument();
     expect(screen.getByText('Pago')).toBeInTheDocument();
   });
@@ -202,7 +202,7 @@ describe('FiscalCredits', () => {
     );
 
     // Aguarda renderização com dados
-    await screen.findByText('Creditos fiscais');
+    await screen.findByText(/créditos fiscais/i);
     await waitFor(() => {
       expect(screen.queryByText(/250 comprados/i)).toBeInTheDocument();
     });

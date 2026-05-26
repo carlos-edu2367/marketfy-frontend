@@ -532,7 +532,7 @@ export function FiscalQuotaAlert({ marketId, balance, quotaExceeded = false }) {
     const percentage = Number.isFinite(Number(balance?.percentage_used))
         ? Number(balance?.percentage_used)
         : (totalAvailable > 0 ? (used / totalAvailable) * 100 : 0);
-    const creditsUrl = `/fiscal/credits?marketId=${marketId}`;
+    const creditsUrl = `/dashboard/fiscal/credits?marketId=${marketId}`;
 
     if (quotaExceeded) {
         return (
