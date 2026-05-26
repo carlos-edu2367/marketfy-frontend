@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Loader2, RefreshCw, Store } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, Loader2, RefreshCw, Store } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import CreditPackageCard from '../components/fiscal/CreditPackageCard';

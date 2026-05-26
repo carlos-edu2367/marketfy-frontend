@@ -254,4 +254,26 @@ describe('FiscalCredits', () => {
 
     expect(await screen.findByText(/quantidade personalizada/i)).toBeInTheDocument();
   });
+
+  it('renders the load error alert without crashing', async () => {
+    api.get.mockImplementation((url) => {
+      if (url === '/identity/markets') {
+        return Promise.resolve({ data: [{ id: 'market-1', name: 'Loja Centro' }] });
+      }
+      if (url === '/fiscal/market-1/credits/balance') {
+        return Promise.reject(new Error('config route failed'));
+      }
+      return Promise.resolve({ data: { items: [] } });
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/fiscal/credits?marketId=market-1']}>
+        <FiscalCredits />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /não foi possível carregar as informações/i
+    );
+  });
 });
