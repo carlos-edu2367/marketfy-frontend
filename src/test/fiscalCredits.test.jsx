@@ -7,6 +7,7 @@ import api from '../lib/api';
 import CreditUsageBar from '../components/fiscal/CreditUsageBar';
 import CreditPackageCard from '../components/fiscal/CreditPackageCard';
 import CustomQuantityInput from '../components/fiscal/CustomQuantityInput';
+import PurchaseConfirmModal from '../components/fiscal/PurchaseConfirmModal';
 import FiscalCredits from '../pages/FiscalCredits';
 
 vi.mock('../lib/api', () => ({
@@ -128,6 +129,52 @@ describe('CreditPackageCard', () => {
     expect(screen.getByRole('article', { name: /250 emissoes extras/i })).toBeInTheDocument();
     expect(screen.getByText('R$ 73,57')).toBeInTheDocument();
     expect(screen.getByText('Mais popular')).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// PurchaseConfirmModal
+// ---------------------------------------------------------------------------
+
+describe('PurchaseConfirmModal', () => {
+  it('explains the Asaas checkout data collection clearly', () => {
+    render(
+      <PurchaseConfirmModal
+        packageItem={packagesPayload.items[0]}
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/checkout seguro do Asaas/i)).toBeInTheDocument();
+    expect(screen.getByText(/CPF\/CNPJ, nome e e-mail/i)).toBeInTheDocument();
+    expect(screen.queryByText(/gateway de pagamento seguro/i)).not.toBeInTheDocument();
+  });
+
+  it('uses payment-link specific loading labels', () => {
+    const { rerender } = render(
+      <PurchaseConfirmModal
+        packageItem={packagesPayload.items[0]}
+        loading
+        checkoutPhase="processing"
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /criando checkout/i })).toBeDisabled();
+
+    rerender(
+      <PurchaseConfirmModal
+        packageItem={packagesPayload.items[0]}
+        loading
+        checkoutPhase="waiting_gateway"
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /preparando checkout seguro/i })).toBeDisabled();
   });
 });
 

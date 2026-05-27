@@ -49,8 +49,9 @@ export default function PurchaseConfirmModal({ packageItem, loading = false, che
           <div className="flex gap-3 rounded-xl border border-yellow-100 bg-yellow-50 p-4 text-sm text-yellow-900">
             <AlertTriangle size={20} className="mt-0.5 shrink-0" />
             <p>
-              Voce sera redirecionado para o gateway de pagamento seguro para finalizar a transacao.
-              Os creditos serao ativados automaticamente apos a confirmacao.
+              Voce sera redirecionado para o checkout seguro do Asaas. La, o comprador informa
+              CPF/CNPJ, nome e e-mail para concluir o pagamento. Os creditos serao ativados
+              automaticamente apos a confirmacao.
             </p>
           </div>
         </div>
@@ -61,8 +62,8 @@ export default function PurchaseConfirmModal({ packageItem, loading = false, che
           </Button>
           <Button className="flex-1 font-black animate-transition" onClick={onConfirm} disabled={loading}>
             {loading ? <Loader2 size={18} className="animate-spin mr-1.5" /> : null}
-            {checkoutPhase === 'processing' ? 'Processando...' :
-             checkoutPhase === 'waiting_gateway' ? 'Aguardando gateway...' :
+            {checkoutPhase === 'processing' ? 'Criando checkout...' :
+             checkoutPhase === 'waiting_gateway' ? 'Preparando checkout seguro...' :
              'Ir para pagamento'}
           </Button>
         </div>
@@ -70,4 +71,3 @@ export default function PurchaseConfirmModal({ packageItem, loading = false, che
     </div>
   );
 }
-
