@@ -2,7 +2,7 @@ import { AlertTriangle, Loader2, X } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
 import { Button } from '../ui/Button';
 
-export default function PurchaseConfirmModal({ packageItem, loading = false, onCancel, onConfirm }) {
+export default function PurchaseConfirmModal({ packageItem, loading = false, checkoutPhase = null, error = null, onCancel, onConfirm }) {
   if (!packageItem) return null;
 
   return (
@@ -39,11 +39,18 @@ export default function PurchaseConfirmModal({ packageItem, loading = false, onC
             </dd>
           </dl>
 
+          {error && (
+            <div role="alert" className="flex gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-900">
+              <AlertTriangle size={20} className="mt-0.5 shrink-0 text-red-600" />
+              <p>{error.message || error}</p>
+            </div>
+          )}
+
           <div className="flex gap-3 rounded-xl border border-yellow-100 bg-yellow-50 p-4 text-sm text-yellow-900">
             <AlertTriangle size={20} className="mt-0.5 shrink-0" />
             <p>
-              Voce sera redirecionado para o Mercado Pago para finalizar o pagamento.
-              Os creditos serao adicionados automaticamente apos a confirmacao.
+              Voce sera redirecionado para o gateway de pagamento seguro para finalizar a transacao.
+              Os creditos serao ativados automaticamente apos a confirmacao.
             </p>
           </div>
         </div>
@@ -52,9 +59,11 @@ export default function PurchaseConfirmModal({ packageItem, loading = false, onC
           <Button variant="secondary" className="flex-1" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
-          <Button className="flex-1 font-black" onClick={onConfirm} disabled={loading}>
-            {loading ? <Loader2 size={18} className="animate-spin" /> : null}
-            Continuar no Mercado Pago
+          <Button className="flex-1 font-black animate-transition" onClick={onConfirm} disabled={loading}>
+            {loading ? <Loader2 size={18} className="animate-spin mr-1.5" /> : null}
+            {checkoutPhase === 'processing' ? 'Processando...' :
+             checkoutPhase === 'waiting_gateway' ? 'Aguardando gateway...' :
+             'Ir para pagamento'}
           </Button>
         </div>
       </div>

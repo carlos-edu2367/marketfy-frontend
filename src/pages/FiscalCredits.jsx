@@ -47,6 +47,7 @@ export default function FiscalCredits() {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [confirming, setConfirming] = useState(false);
   const [customPurchaseLoading, setCustomPurchaseLoading] = useState(false);
+  const [checkoutPhase, setCheckoutPhase] = useState(null); // null | 'processing' | 'waiting_gateway'
 
   const {
     balance,
@@ -105,19 +106,21 @@ export default function FiscalCredits() {
     if (!selectedPackage) return;
     setConfirming(true);
     try {
-      await initiatePurchase(selectedPackage.slug);
+      await initiatePurchase(selectedPackage.slug, setCheckoutPhase);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Nao foi possivel iniciar o checkout.'));
       setConfirming(false);
+      setCheckoutPhase(null);
     }
   };
 
   const handleCustomPurchase = async (qty) => {
     setCustomPurchaseLoading(true);
     try {
-      await initiateCustomPurchase(qty);
+      await initiateCustomPurchase(qty, setCheckoutPhase);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Nao foi possivel iniciar o checkout.'));
+      setCheckoutPhase(null);
     } finally {
       setCustomPurchaseLoading(false);
     }
@@ -227,7 +230,7 @@ export default function FiscalCredits() {
           <div>
             <h2 className="text-xl font-black text-gray-900">Comprar Créditos Adicionais</h2>
             <p className="text-sm font-medium text-gray-500 mt-1">
-              Escolha um pacote de emissões adicionais. Pagamento instantâneo via Mercado Pago e ativação imediata.
+              Escolha um pacote de emissões adicionais. Pagamento seguro e liberação rápida.
             </p>
           </div>
           
@@ -236,7 +239,7 @@ export default function FiscalCredits() {
               <CreditPackageCard
                 key={packageItem.slug}
                 packageItem={packageItem}
-                loading={purchaseLoadingSlug === packageItem.slug}
+                loading={purchaseLoadingSlug === packageItem.slug || !!checkoutPhase}
                 onPurchase={setSelectedPackage}
               />
             ))}
@@ -244,7 +247,7 @@ export default function FiscalCredits() {
           
           <div className="max-w-2xl bg-white rounded-3xl border border-gray-200 shadow-sm p-1.5">
             <CustomQuantityInput
-              loading={customPurchaseLoading}
+              loading={customPurchaseLoading || !!checkoutPhase}
               onPurchase={handleCustomPurchase}
               minQty={config?.min_qty ?? 1}
               maxQty={config?.max_qty ?? 10_000}
@@ -334,8 +337,14 @@ export default function FiscalCredits() {
 
       <PurchaseConfirmModal
         packageItem={selectedPackage}
-        loading={confirming || purchaseLoadingSlug === selectedPackage?.slug}
-        onCancel={() => setSelectedPackage(null)}
+        loading={confirming || purchaseLoadingSlug === selectedPackage?.slug || !!checkoutPhase}
+        checkoutPhase={checkoutPhase}
+        error={error}
+        onCancel={() => {
+          setSelectedPackage(null);
+          setConfirming(false);
+          setCheckoutPhase(null);
+        }}
         onConfirm={handleConfirmPurchase}
       />
     </div>

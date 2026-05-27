@@ -61,9 +61,27 @@ export function useFiscalCredits(marketId) {
     return data;
   }, [marketId]);
 
-  const initiatePurchase = useCallback(async (packageSlug) => {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, typeof process !== 'undefined' && process.env?.NODE_ENV === 'test' ? 0 : ms));
+
+  const pollCheckoutUrl = useCallback(async (jobId, maxAttempts = 30, intervalMs = 2000) => {
+    for (let i = 0; i < maxAttempts; i++) {
+      const status = await api.get(`/fiscal/${marketId}/credits/checkout/status/${jobId}`);
+      if (status.data.status === 'completed' && status.data.checkout_url) {
+        return status.data.checkout_url;
+      }
+      if (status.data.status === 'failed') {
+        throw new Error(status.data.error_message || 'Pagamento não pôde ser iniciado.');
+      }
+      await sleep(intervalMs);
+    }
+    throw new Error('Tempo esgotado aguardando checkout. Tente novamente.');
+  }, [marketId]);
+
+  const initiatePurchase = useCallback(async (packageSlug, onPhaseChange) => {
     if (!isValidUUID(marketId) || purchaseLoadingSlug) return null;
     setPurchaseLoadingSlug(packageSlug);
+    setError(null);
+    if (onPhaseChange) onPhaseChange('processing');
     try {
       const ownerPart = user?.id || 'owner';
       const idempotencyKey = `mktf:${ownerPart}:${packageSlug}:${Date.now()}`;
@@ -71,14 +89,22 @@ export function useFiscalCredits(marketId) {
         package_slug: packageSlug,
         idempotency_key: idempotencyKey,
       });
-      if (data?.init_point) {
-        window.location.href = data.init_point;
+      const jobId = data?.job_id;
+      if (!jobId) {
+        throw new Error('Não foi possível obter o ID do processamento.');
       }
+      if (onPhaseChange) onPhaseChange('waiting_gateway');
+      const checkoutUrl = await pollCheckoutUrl(jobId);
+      window.location.href = checkoutUrl;
       return data;
+    } catch (err) {
+      setError(err);
+      throw err;
     } finally {
       setPurchaseLoadingSlug(null);
+      if (onPhaseChange) onPhaseChange(null);
     }
-  }, [marketId, purchaseLoadingSlug, user?.id]);
+  }, [marketId, purchaseLoadingSlug, user?.id, pollCheckoutUrl]);
 
   const previewPrice = useCallback(async (qty) => {
     if (!qty || qty < 1) return null;
@@ -86,19 +112,32 @@ export function useFiscalCredits(marketId) {
     return data;
   }, []);
 
-  const initiateCustomPurchase = useCallback(async (qty) => {
+  const initiateCustomPurchase = useCallback(async (qty, onPhaseChange) => {
     if (!isValidUUID(marketId)) return null;
-    const ownerPart = user?.id || 'owner';
-    const idempotencyKey = `mktf:${ownerPart}:custom_${qty}:${Date.now()}`;
-    const { data } = await api.post(`/fiscal/${marketId}/credits/checkout/custom`, {
-      quantity: qty,
-      idempotency_key: idempotencyKey,
-    });
-    if (data?.init_point) {
-      window.location.href = data.init_point;
+    setError(null);
+    if (onPhaseChange) onPhaseChange('processing');
+    try {
+      const ownerPart = user?.id || 'owner';
+      const idempotencyKey = `mktf:${ownerPart}:custom_${qty}:${Date.now()}`;
+      const { data } = await api.post(`/fiscal/${marketId}/credits/checkout/custom`, {
+        quantity: qty,
+        idempotency_key: idempotencyKey,
+      });
+      const jobId = data?.job_id;
+      if (!jobId) {
+        throw new Error('Não foi possível obter o ID do processamento.');
+      }
+      if (onPhaseChange) onPhaseChange('waiting_gateway');
+      const checkoutUrl = await pollCheckoutUrl(jobId);
+      window.location.href = checkoutUrl;
+      return data;
+    } catch (err) {
+      setError(err);
+      throw err;
+    } finally {
+      if (onPhaseChange) onPhaseChange(null);
     }
-    return data;
-  }, [marketId, user?.id]);
+  }, [marketId, user?.id, pollCheckoutUrl]);
 
   useEffect(() => {
     fetchAll();

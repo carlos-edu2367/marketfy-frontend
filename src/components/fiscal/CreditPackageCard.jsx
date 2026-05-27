@@ -53,7 +53,7 @@ export default function CreditPackageCard({ packageItem, onPurchase, loading = f
         onClick={() => onPurchase(packageItem)}
       >
         {loading ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
-        Comprar com Mercado Pago
+        Comprar pacote
       </Button>
     </article>
   );

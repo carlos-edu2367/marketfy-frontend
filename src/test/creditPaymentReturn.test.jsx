@@ -25,7 +25,7 @@ describe('CreditPaymentReturn', () => {
     vi.clearAllMocks();
   });
 
-  it('success page shows optimistic message and polls balance', async () => {
+  it('renders processing state and polls balance in background', async () => {
     api.get.mockImplementation((url) => {
       if (url === '/identity/markets') {
         return Promise.resolve({ data: [{ id: 'market-1', name: 'Loja Centro' }] });
@@ -35,10 +35,10 @@ describe('CreditPaymentReturn', () => {
           data: {
             period: '202605',
             included_limit: 200,
-            addon_limit: 310,
+            addon_limit: 60,
             addon_total: 400,
             used_count: 147,
-            remaining: 363,
+            remaining: 113,
             percentage_used: 73.5,
           },
         });
@@ -47,19 +47,20 @@ describe('CreditPaymentReturn', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/fiscal/credits/return?status=success&marketId=market-1']}>
+      <MemoryRouter initialEntries={['/fiscal/credits/return?marketId=market-1']}>
         <CreditPaymentReturn />
       </MemoryRouter>
     );
 
-    expect(await screen.findByText('Pagamento realizado com sucesso')).toBeInTheDocument();
+    expect(await screen.findByText('Processamento de pagamento')).toBeInTheDocument();
+    expect(screen.getByText(/Seu pagamento está sendo processado/i)).toBeInTheDocument();
+
     await waitFor(() => {
       expect(api.get).toHaveBeenCalledWith('/fiscal/market-1/credits/balance');
     });
-    expect(await screen.findByText(/363 creditos disponiveis/i)).toBeInTheDocument();
   });
 
-  it('detects activation when addon_limit increases and shows toast', async () => {
+  it('detects activation when addon_limit increases and shows success state', async () => {
     let callCount = 0;
     api.get.mockImplementation((url) => {
       if (url === '/identity/markets') {
@@ -84,39 +85,19 @@ describe('CreditPaymentReturn', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/fiscal/credits/return?status=success&marketId=market-1']}>
+      <MemoryRouter initialEntries={['/fiscal/credits/return?marketId=market-1']}>
         <CreditPaymentReturn />
       </MemoryRouter>
     );
 
     await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/250 creditos adicionados/i));
+      expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/250 créditos adicionados/i));
     }, { timeout: 8000 });
 
-    expect(await screen.findByText(/creditos ativados com sucesso/i)).toBeInTheDocument();
-  });
-
-  it('failure page shows retry button', () => {
-    render(
-      <MemoryRouter initialEntries={['/fiscal/credits/return?status=failure&marketId=market-1']}>
-        <CreditPaymentReturn />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText('Pagamento nao aprovado')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /tentar novamente/i })).toHaveAttribute(
+    expect(await screen.findByText(/Créditos ativados com sucesso!/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /voltar para créditos/i })).toHaveAttribute(
       'href',
       '/dashboard/fiscal/credits?marketId=market-1'
     );
-  });
-
-  it('pending page shows waiting message', () => {
-    render(
-      <MemoryRouter initialEntries={['/fiscal/credits/return?status=pending&marketId=market-1']}>
-        <CreditPaymentReturn />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText('Pagamento em processamento')).toBeInTheDocument();
   });
 });

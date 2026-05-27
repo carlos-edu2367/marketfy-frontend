@@ -14,6 +14,7 @@ vi.mock('../lib/api', () => ({
     get: vi.fn(),
     post: vi.fn(),
   },
+  getApiErrorMessage: vi.fn((err, fallback) => err?.message || fallback),
 }));
 
 vi.mock('../context/AuthContext', () => ({
@@ -208,15 +209,38 @@ describe('FiscalCredits', () => {
     });
   });
 
-  it('clicking buy opens confirmation modal and redirects to init_point', async () => {
+  it('clicking buy opens confirmation modal and redirects to checkout_url after polling', async () => {
     const user = userEvent.setup();
     mockFiscalResponses();
     api.post.mockResolvedValue({
       data: {
         package_id: 'pkg-250',
-        init_point: 'https://sandbox.mercadopago.com/checkout',
+        job_id: 'job-123',
         package: packagesPayload.items[1],
       },
+    });
+    api.get.mockImplementation((url) => {
+      if (url === '/identity/markets') {
+        return Promise.resolve({ data: [{ id: 'market-1', name: 'Loja Centro' }] });
+      }
+      if (url === '/fiscal/credits/packages') {
+        return Promise.resolve({ data: packagesPayload });
+      }
+      if (url === '/fiscal/market-1/credits/balance') {
+        return Promise.resolve({ data: balancePayload });
+      }
+      if (url === '/fiscal/market-1/credits/history') {
+        return Promise.resolve({ data: historyPayload });
+      }
+      if (url === '/fiscal/credits/config') {
+        return Promise.resolve({ data: configPayload });
+      }
+      if (url.includes('/checkout/status/job-123')) {
+        return Promise.resolve({
+          data: { status: 'completed', checkout_url: 'https://checkout.billingcore.com/payment/xyz' },
+        });
+      }
+      return Promise.reject(new Error(`unexpected GET ${url}`));
     });
 
     render(
@@ -229,7 +253,7 @@ describe('FiscalCredits', () => {
     await user.click(within(pack250).getByRole('button', { name: /comprar/i }));
     expect(screen.getByRole('dialog', { name: /confirmar compra/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /continuar no mercado pago/i }));
+    await user.click(screen.getByRole('button', { name: /ir para pagamento/i }));
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith(
@@ -239,8 +263,122 @@ describe('FiscalCredits', () => {
           idempotency_key: expect.stringMatching(/^mktf:owner-1:pack_250:\d+$/),
         })
       );
-      expect(window.location.href).toBe('https://sandbox.mercadopago.com/checkout');
+      expect(window.location.href).toBe('https://checkout.billingcore.com/payment/xyz');
     });
+  });
+
+  it('shows loading phases and disables button during checkout polling', async () => {
+    const user = userEvent.setup();
+    mockFiscalResponses();
+    api.post.mockResolvedValue({
+      data: {
+        package_id: 'pkg-250',
+        job_id: 'job-123',
+        package: packagesPayload.items[1],
+      },
+    });
+
+    let pollCount = 0;
+    api.get.mockImplementation((url) => {
+      if (url === '/identity/markets') {
+        return Promise.resolve({ data: [{ id: 'market-1', name: 'Loja Centro' }] });
+      }
+      if (url === '/fiscal/credits/packages') {
+        return Promise.resolve({ data: packagesPayload });
+      }
+      if (url === '/fiscal/market-1/credits/balance') {
+        return Promise.resolve({ data: balancePayload });
+      }
+      if (url === '/fiscal/market-1/credits/history') {
+        return Promise.resolve({ data: historyPayload });
+      }
+      if (url === '/fiscal/credits/config') {
+        return Promise.resolve({ data: configPayload });
+      }
+      if (url.includes('/checkout/status/job-123')) {
+        pollCount += 1;
+        if (pollCount === 1) {
+          return Promise.resolve({ data: { status: 'processing' } });
+        }
+        return Promise.resolve({
+          data: { status: 'completed', checkout_url: 'https://checkout.billingcore.com/payment/xyz' },
+        });
+      }
+      return Promise.reject(new Error(`unexpected GET ${url}`));
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/fiscal/credits?marketId=market-1']}>
+        <FiscalCredits />
+      </MemoryRouter>
+    );
+
+    const pack250 = await screen.findByRole('article', { name: /250 emissoes extras/i });
+    await user.click(within(pack250).getByRole('button', { name: /comprar/i }));
+    
+    const confirmButton = screen.getByRole('button', { name: /ir para pagamento/i });
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(confirmButton).toBeDisabled();
+    });
+    
+    await waitFor(() => {
+      expect(window.location.href).toBe('https://checkout.billingcore.com/payment/xyz');
+    });
+  });
+
+  it('shows inline error inside confirm modal when checkout job failed', async () => {
+    const user = userEvent.setup();
+    mockFiscalResponses();
+    api.post.mockResolvedValue({
+      data: {
+        package_id: 'pkg-250',
+        job_id: 'job-123',
+        package: packagesPayload.items[1],
+      },
+    });
+    api.get.mockImplementation((url) => {
+      if (url === '/identity/markets') {
+        return Promise.resolve({ data: [{ id: 'market-1', name: 'Loja Centro' }] });
+      }
+      if (url === '/fiscal/credits/packages') {
+        return Promise.resolve({ data: packagesPayload });
+      }
+      if (url === '/fiscal/market-1/credits/balance') {
+        return Promise.resolve({ data: balancePayload });
+      }
+      if (url === '/fiscal/market-1/credits/history') {
+        return Promise.resolve({ data: historyPayload });
+      }
+      if (url === '/fiscal/credits/config') {
+        return Promise.resolve({ data: configPayload });
+      }
+      if (url.includes('/checkout/status/job-123')) {
+        return Promise.resolve({
+          data: { status: 'failed', error_message: 'Gateway recusou processamento' },
+        });
+      }
+      return Promise.reject(new Error(`unexpected GET ${url}`));
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/fiscal/credits?marketId=market-1']}>
+        <FiscalCredits />
+      </MemoryRouter>
+    );
+
+    const pack250 = await screen.findByRole('article', { name: /250 emissoes extras/i });
+    await user.click(within(pack250).getByRole('button', { name: /comprar/i }));
+    
+    const confirmButton = screen.getByRole('button', { name: /ir para pagamento/i });
+    await user.click(confirmButton);
+
+    const dialog = screen.getByRole('dialog', { name: /confirmar compra/i });
+    const errorAlert = await within(dialog).findByRole('alert');
+    expect(errorAlert).toBeInTheDocument();
+    expect(errorAlert).toHaveTextContent(/gateway recusou processamento/i);
+    expect(screen.getByRole('dialog', { name: /confirmar compra/i })).toBeInTheDocument();
   });
 
   it('custom quantity section is rendered', async () => {
