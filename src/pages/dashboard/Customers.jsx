@@ -233,7 +233,7 @@ export default function Customers() {
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-1">
                                         <p className="font-bold text-gray-900 text-lg">{c.name}</p>
-                                        {!c.status && <span className="text-[10px] bg-red-100 text-red-600 px-2 rounded-full font-bold">INATIVO</span>}
+                                        {c.status === 'bloqueado' && <span className="text-[10px] bg-red-100 text-red-600 px-2 rounded-full font-bold">BLOQUEADO</span>}
                                     </div>
                                     <div className="flex gap-4 text-sm text-gray-500">
                                         <span>{c.cpf || 'Sem CPF'}</span>
