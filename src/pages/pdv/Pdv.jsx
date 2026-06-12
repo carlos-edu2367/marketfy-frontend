@@ -10,9 +10,10 @@ import { Input } from '../../components/ui/Input';
 import PaymentModal from '../../components/pdv/PaymentModal';
 import TerminalSelector from '../../components/pdv/TerminalSelector';
 import { generateReceipt } from '../../components/pdv/Receipt';
+import { isAuthorizedNfceInvoice, printAuthorizedNfce } from '../../lib/fiscalPrint';
 import {
   Search, ShoppingCart, LogOut, Wifi, WifiOff, Lock,
-  Store, Loader2, CreditCard, Monitor, Keyboard, Box, CheckCircle, Printer, Plus,
+  Store, Loader2, CreditCard, Box, CheckCircle, Printer,
   FileCheck, FileX, AlertCircle, Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -75,18 +76,13 @@ export default function PDV() {
 
   const [lastSale, setLastSale] = useState(null);
   const [marketInfo, setMarketInfo] = useState(null);
-  const [printIsOffline, setPrintIsOffline] = useState(false);
 
   // Polling de status fiscal — ativo apenas após sync e emissão solicitada
   const {
     status: fiscalStatus,
-    fiscalData,
     isPolling: fiscalPolling,
     hasTimedOut: fiscalTimedOut,
-    statusLabel: fiscalStatusLabel,
     isAuthorized: fiscalAuthorized,
-    isRejected: fiscalRejected,
-    isPending: fiscalPending,
     stopPolling: stopFiscalPolling,
   } = useFiscalStatus({
     marketId: cleanUUID(marketId),
@@ -95,7 +91,6 @@ export default function PDV() {
     maxDurationMs: 30000,
     onAuthorized: useCallback((data) => {
       setLastSale(prev => prev ? { ...prev, invoice: data } : prev);
-      setPrintIsOffline(false);
       toast.success('NFC-e Autorizada!', { icon: '✅', duration: 4000 });
     }, []),
     onTerminal: useCallback((terminalStatus) => {
@@ -250,6 +245,7 @@ export default function PDV() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, box, showPayment, showCloseBoxModal, showOpenBoxModal, searchResults, selectedIndex, searchTerm, saleSuccess]);
 
   const handleFinishSale = async (payments) => {
@@ -274,7 +270,6 @@ export default function PDV() {
 
       // Venda registrada localmente — operador nunca trava
       setLastSale(salePayload);
-      setPrintIsOffline(true); // fallback inicial; muda se NFC-e autorizar
       const totalPaid = payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
       const change = Math.max(0, totalPaid - total);
       setShowPayment(false);
@@ -302,7 +297,7 @@ export default function PDV() {
               toast.error('Limite mensal de NFC-e atingido. Adquira creditos extras.');
             }
             // Fiscal indisponível — cupom não fiscal já está pronto
-            if (process.env.NODE_ENV === 'development') {
+            if (import.meta.env.DEV) {
               console.warn('[PDV] Emissão fiscal falhou:', err?.message);
             }
           }
@@ -315,21 +310,38 @@ export default function PDV() {
     }
   };
 
-  const handlePrintAndClose = () => {
-      if (lastSale) {
-          generateReceipt(lastSale, marketInfo);
+  async function handlePrintAndClose() {
+      if (!lastSale) {
+          handleNewSale();
+          return;
       }
-      handleNewSale();
-  };
+      const shouldPrintFiscal = fiscalAuthorized || isAuthorizedNfceInvoice(lastSale.invoice);
+      if (shouldPrintFiscal) {
+          try {
+              await printAuthorizedNfce({
+                  marketId: cleanUUID(marketId),
+                  saleId: saleSuccess.saleId || lastSale.id,
+              });
+              handleNewSale();
+          } catch (error) {
+              const message = error.response?.data?.detail || "Nao foi possivel preparar a NFC-e para impressao.";
+              toast.error(message);
+          }
+          return;
+      }
 
-  const handleNewSale = () => {
+      generateReceipt(lastSale, marketInfo);
+      handleNewSale();
+  }
+
+  function handleNewSale() {
       stopFiscalPolling();
       setPendingFiscalSaleId(null);
       setFiscalEmissionRequested(false);
       setFiscalQuotaExceeded(false);
       setSaleSuccess({ open: false, change: 0, saleId: null });
       setTimeout(() => searchInputRef.current?.focus(), 100);
-  };
+  }
 
   const handleOpenBoxClick = () => { setOpeningBalance(''); setShowOpenBoxModal(true); };
   const confirmOpenBox = async () => {
@@ -485,7 +497,9 @@ export default function PDV() {
                     <div className="bg-blue-50 border-2 border-blue-100 rounded-2xl p-6 mt-4 mb-4"><p className="text-blue-600 font-bold uppercase tracking-wider text-sm mb-1">Troco</p><p className="text-5xl font-black text-blue-800">{formatCurrency(saleSuccess.change)}</p></div>
                 )}
                 <div className="grid grid-cols-1 gap-4 mt-4">
-                    <Button onClick={handlePrintAndClose} className="h-16 text-xl font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-xl flex items-center justify-center gap-3"><Printer size={28} /> IMPRIMIR CUPOM (Enter)</Button>
+                    <Button onClick={handlePrintAndClose} className="h-16 text-xl font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-xl flex items-center justify-center gap-3">
+                        <Printer size={28} /> {fiscalAuthorized || isAuthorizedNfceInvoice(lastSale?.invoice) ? 'IMPRIMIR NFC-e (Enter)' : 'IMPRIMIR CUPOM (Enter)'}
+                    </Button>
                     <Button onClick={handleNewSale} variant="secondary" className="h-14 text-lg font-bold border-2 rounded-xl text-gray-500 hover:text-gray-800 hover:border-gray-400">Nova Venda (Esc)</Button>
                 </div>
             </div>

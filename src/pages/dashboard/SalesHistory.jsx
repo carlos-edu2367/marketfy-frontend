@@ -4,6 +4,7 @@ import { formatCurrency, formatDate } from '../../lib/utils';
 import { Printer, Loader2, ShoppingBag, Store, Search, CheckCircle, XCircle, Eye, X, User, Package } from 'lucide-react';
 import { Receipt } from '../../components/pdv/Receipt';
 import { Button } from '../../components/ui/Button';
+import { isAuthorizedNfceInvoice, printAuthorizedNfce } from '../../lib/fiscalPrint';
 import toast from 'react-hot-toast';
 
 export default function SalesHistory() {
@@ -98,6 +99,21 @@ export default function SalesHistory() {
       setTimeout(() => {
           window.print();
       }, 300);
+  };
+
+  const handlePrintNfce = async (sale) => {
+      if (!sale || !isAuthorizedNfceInvoice(sale.invoice)) {
+          toast.error("NFC-e ainda nao autorizada para impressao fiscal.");
+          return;
+      }
+      const toastId = toast.loading("Preparando DANFE NFC-e...");
+      try {
+          await printAuthorizedNfce({ marketId: selectedMarketId, saleId: sale.id });
+          toast.success("DANFE NFC-e pronta para impressao.", { id: toastId });
+      } catch (error) {
+          const errorMsg = error.response?.data?.detail || "Nao foi possivel preparar a NFC-e para impressao.";
+          toast.error(errorMsg, { id: toastId });
+      }
   };
 
   // Helper para Status da Nota Fiscal e Emissão
@@ -288,6 +304,15 @@ export default function SalesHistory() {
                                             >
                                                 <Printer size={18} className="group-hover:scale-110 transition-transform" />
                                             </button>
+                                            {isAuthorizedNfceInvoice(sale.invoice) && (
+                                                <button
+                                                    onClick={() => handlePrintNfce(sale)}
+                                                    className="text-green-600 hover:text-green-700 transition-colors p-2 hover:bg-green-50 rounded-full group"
+                                                    title="Imprimir NFC-e autorizada"
+                                                >
+                                                    <CheckCircle size={18} className="group-hover:scale-110 transition-transform" />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -381,6 +406,11 @@ export default function SalesHistory() {
                         <Button onClick={() => handlePrint(detailsModal.sale)} disabled={!detailsModal.sale}>
                             <Printer size={18} /> Imprimir Cupom
                         </Button>
+                        {isAuthorizedNfceInvoice(detailsModal.sale?.invoice) && (
+                            <Button onClick={() => handlePrintNfce(detailsModal.sale)} disabled={!detailsModal.sale}>
+                                <CheckCircle size={18} /> Imprimir NFC-e
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>

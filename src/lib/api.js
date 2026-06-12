@@ -49,6 +49,9 @@ export const getFiscalCreditsHistory = (marketId, page = 1, perPage = 10) =>
     params: { page, per_page: perPage },
   });
 
+export const getNfcePrintPayload = (marketId, saleId) =>
+  api.get(`/fiscal/${marketId}/sales/${saleId}/nfce/print`);
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
