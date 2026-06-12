@@ -13,6 +13,7 @@ export default function FiscalSettings({ marketId }) {
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [enabling, setEnabling] = useState(false);
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm();
   
@@ -182,18 +183,59 @@ export default function FiscalSettings({ marketId }) {
     }
   };
 
+  const handleEnableFiscal = async () => {
+    const toastId = 'fiscal-enable-toast';
+    try {
+      setEnabling(true);
+      toast.loading("Ativando emissão fiscal...", { id: toastId });
+      await api.post(`/fiscal/${marketId}/config/enable`);
+      toast.success("Emissão fiscal ativada com sucesso!", { id: toastId });
+      loadConfig();
+    } catch (error) {
+      console.error(error);
+      const errMsg = error.response?.data?.detail || "Erro ao ativar emissão fiscal.";
+      toast.error(errMsg, { id: toastId, duration: 6000 });
+    } finally {
+      setEnabling(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-center flex flex-col items-center justify-center min-h-[400px]"><Loader2 className="animate-spin text-brand-yellow mb-2" size={32} /><span className="text-gray-400 font-bold">Buscando configurações fiscais...</span></div>;
 
   return (
     <div className="p-6">
-      <div className="flex items-start gap-4 mb-8 bg-blue-50 p-5 rounded-2xl border border-blue-100">
-        <ShieldCheck className="text-blue-600 shrink-0 animate-bounce" size={24} />
-        <div>
-          <h3 className="font-bold text-blue-900">Configuração de NFC-e (Provedor: {config?.provider === 'neectify_fiscal' ? 'Neectify Fiscal' : config?.provider})</h3>
-          <p className="text-xs text-blue-700 mt-1 leading-relaxed">
-            Para emitir Notas Fiscais de Consumidor (NFC-e), preencha os dados cadastrais da loja, carregue um Certificado Digital A1 (.pfx) válido e configure o Token CSC fornecido pela SEFAZ de seu estado.
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 bg-blue-50 p-5 rounded-2xl border border-blue-100">
+        <div className="flex items-start gap-4">
+          <ShieldCheck className="text-blue-600 shrink-0 mt-1" size={24} />
+          <div>
+            <h3 className="font-bold text-blue-900 flex items-center gap-2 flex-wrap">
+              Configuração de NFC-e (Provedor: {config?.provider === 'neectify_fiscal' ? 'Neectify Fiscal' : config?.provider})
+              {config?.enabled ? (
+                <span className="bg-green-100 text-green-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Ativo
+                </span>
+              ) : (
+                <span className="bg-gray-200 text-gray-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Inativo
+                </span>
+              )}
+            </h3>
+            <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+              Para emitir Notas Fiscais de Consumidor (NFC-e), preencha os dados cadastrais da loja, carregue um Certificado Digital A1 (.pfx) válido e configure o Token CSC fornecido pela SEFAZ de seu estado.
+            </p>
+          </div>
         </div>
+        {!config?.enabled && (
+          <Button 
+            type="button" 
+            variant="primary" 
+            onClick={handleEnableFiscal} 
+            isLoading={enabling}
+            className="shrink-0 font-black shadow-md bg-green-600 hover:bg-green-700 text-white border-none"
+          >
+            Ativar Emissão Fiscal
+          </Button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl">
