@@ -100,12 +100,38 @@ export default function SalesHistory() {
       }, 300);
   };
 
-  // Helper para Status da Nota Fiscal
+  // Helper para Status da Nota Fiscal e Emissão
   const renderInvoiceStatus = (sale) => {
       const inv = sale.invoice;
-      if (!inv) return <span className="text-gray-400 text-xs">—</span>;
+
+      const handleEmit = async (e) => {
+          e.stopPropagation();
+          const toastId = toast.loading("Solicitando emissão da nota...");
+          try {
+              await api.post(`/fiscal/${selectedMarketId}/sales/${sale.id}/emit`);
+              toast.success("Emissão solicitada com sucesso!", { id: toastId });
+              loadSales();
+          } catch (error) {
+              console.error("Erro ao emitir nota:", error);
+              const errorMsg = error.response?.data?.detail?.message || error.response?.data?.detail || "Erro ao solicitar emissão.";
+              toast.error(errorMsg, { id: toastId });
+          }
+      };
+
+      if (!inv || !inv.status || inv.status === 'not_requested' || inv.status === 'pendente') {
+          return (
+              <Button 
+                  size="sm" 
+                  variant="primary" 
+                  onClick={handleEmit}
+                  className="px-3 py-1 text-xs bg-brand-yellow hover:bg-yellow-500 text-brand-dark font-bold rounded-lg transition-all shadow-sm border-0"
+              >
+                  Emitir Nota
+              </Button>
+          );
+      }
       
-      if (inv.status === 'autorizada') {
+      if (inv.status === 'autorizada' || inv.status === 'authorized') {
           return (
               <div className="flex flex-col items-center">
                   <span className="flex items-center gap-1 text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded-full">
@@ -115,11 +141,19 @@ export default function SalesHistory() {
               </div>
           );
       }
-      if (inv.status === 'erro' || inv.status === 'rejeitada') {
+      if (inv.status === 'erro' || inv.status === 'rejeitada' || inv.status === 'rejected' || inv.status === 'provider_error') {
           return (
-              <span className="flex items-center gap-1 text-red-600 text-xs font-bold bg-red-50 px-2 py-1 rounded-full" title={inv.error_message}>
-                  <XCircle size={12} /> Erro Emissão
-              </span>
+              <div className="flex flex-col items-center gap-1">
+                  <span className="flex items-center gap-1 text-red-600 text-xs font-bold bg-red-50 px-2 py-1 rounded-full cursor-help" title={inv.error_message || "Erro desconhecido na emissão"}>
+                      <XCircle size={12} /> Erro Emissão
+                  </span>
+                  <button 
+                      onClick={handleEmit} 
+                      className="text-[10px] text-brand-dark hover:underline font-bold"
+                  >
+                      Tentar Novamente
+                  </button>
+              </div>
           );
       }
       return (
