@@ -71,6 +71,8 @@ export default function PDV() {
   const [saleSuccess, setSaleSuccess] = useState({ open: false, change: 0, saleId: null });
   const [pendingFiscalSaleId, setPendingFiscalSaleId] = useState(null);
   const [fiscalEmissionRequested, setFiscalEmissionRequested] = useState(false);
+  // Controla a auto-impressão da NFC-e ao autorizar (evita imprimir duas vezes).
+  const [nfcePrinted, setNfcePrinted] = useState(false);
   const [fiscalQuotaBalance, setFiscalQuotaBalance] = useState(null);
   const [fiscalQuotaExceeded, setFiscalQuotaExceeded] = useState(false);
 
@@ -99,6 +101,29 @@ export default function PDV() {
       }
     }, []),
   });
+
+  // Auto-impressão: assim que a NFC-e é autorizada (badge verde), dispara o DANFE
+  // automaticamente — o operador não precisa cronometrar o Enter. Roda uma única
+  // vez por venda; se a impressão falhar, mantém nfcePrinted=false para que o
+  // operador possa imprimir manualmente pelo botão.
+  useEffect(() => {
+    if (!fiscalAuthorized || !saleSuccess.open || nfcePrinted) return;
+    const sid = saleSuccess.saleId || lastSale?.id;
+    if (!sid) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await printAuthorizedNfce({ marketId: cleanUUID(marketId), saleId: sid });
+        if (!cancelled) setNfcePrinted(true);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('[PDV] auto-impressão da NFC-e falhou:', error?.message);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fiscalAuthorized, saleSuccess.open, saleSuccess.saleId, nfcePrinted]);
 
   const [closingBalance, setClosingBalance] = useState('');
   const [closingObservation, setClosingObservation] = useState('');
@@ -273,6 +298,7 @@ export default function PDV() {
       const totalPaid = payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
       const change = Math.max(0, totalPaid - total);
       setShowPayment(false);
+      setNfcePrinted(false);
       setSaleSuccess({ open: true, change, saleId });
       setCart([]); setCustomerCpf('');
 
@@ -315,6 +341,12 @@ export default function PDV() {
           handleNewSale();
           return;
       }
+      // Já impressa automaticamente ao autorizar — Enter apenas avança para a
+      // próxima venda (reimpressão fica disponível no Histórico de Vendas).
+      if (nfcePrinted) {
+          handleNewSale();
+          return;
+      }
       const shouldPrintFiscal = fiscalAuthorized || isAuthorizedNfceInvoice(lastSale.invoice);
       if (shouldPrintFiscal) {
           try {
@@ -339,6 +371,7 @@ export default function PDV() {
       setPendingFiscalSaleId(null);
       setFiscalEmissionRequested(false);
       setFiscalQuotaExceeded(false);
+      setNfcePrinted(false);
       setSaleSuccess({ open: false, change: 0, saleId: null });
       setTimeout(() => searchInputRef.current?.focus(), 100);
   }
@@ -498,7 +531,9 @@ export default function PDV() {
                 )}
                 <div className="grid grid-cols-1 gap-4 mt-4">
                     <Button onClick={handlePrintAndClose} className="h-16 text-xl font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-xl flex items-center justify-center gap-3">
-                        <Printer size={28} /> {fiscalAuthorized || isAuthorizedNfceInvoice(lastSale?.invoice) ? 'IMPRIMIR NFC-e (Enter)' : 'IMPRIMIR CUPOM (Enter)'}
+                        <Printer size={28} /> {nfcePrinted
+                            ? 'NFC-e IMPRESSA ✓ — Nova Venda (Enter)'
+                            : (fiscalAuthorized || isAuthorizedNfceInvoice(lastSale?.invoice) ? 'IMPRIMIR NFC-e (Enter)' : 'IMPRIMIR CUPOM (Enter)')}
                     </Button>
                     <Button onClick={handleNewSale} variant="secondary" className="h-14 text-lg font-bold border-2 rounded-xl text-gray-500 hover:text-gray-800 hover:border-gray-400">Nova Venda (Esc)</Button>
                 </div>
