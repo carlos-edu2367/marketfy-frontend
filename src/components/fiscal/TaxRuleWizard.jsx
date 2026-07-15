@@ -12,6 +12,46 @@ const EMPTY_VALUES = {
   cofins_rate: '', cofins_amount: '', approval_reference: '', approval_checksum: '', homologation_xml_storage_key: '',
 };
 
+const REQUIRED_PUBLICATION_FIELDS = [
+  ['name', 'nome da regra'],
+  ['effective_from', 'início de vigência'],
+  ['issuer_regime', 'regime do emitente'],
+  ['destination_uf', 'UF de destino'],
+  ['document_model', 'modelo do documento'],
+  ['ncm', 'NCM'],
+  ['origin', 'origem'],
+  ['cfop', 'CFOP'],
+  ['icms_group', 'grupo ICMS'],
+  ['icms_mode', 'modo ICMS'],
+  ['pis_cst', 'CST PIS'], ['pis_base', 'base PIS'], ['pis_rate', 'alíquota PIS'], ['pis_amount', 'valor PIS'],
+  ['cofins_cst', 'CST COFINS'], ['cofins_base', 'base COFINS'], ['cofins_rate', 'alíquota COFINS'], ['cofins_amount', 'valor COFINS'],
+];
+
+function publicationValidationError(values) {
+  const missing = REQUIRED_PUBLICATION_FIELDS
+    .filter(([name]) => !values[name]?.trim())
+    .map(([, label]) => label);
+  const hasCst = Boolean(values.icms_cst.trim());
+  const hasCsosn = Boolean(values.icms_csosn.trim());
+  if (hasCst === hasCsosn) missing.push('exatamente um entre CST ICMS e CSOSN');
+  if (values.icms_mode === 'retained_st' && !values.cest.trim()) missing.push('CEST para ICMS retido anteriormente');
+  if (values.effective_to && values.effective_from && values.effective_to < values.effective_from) missing.push('fim de vigência posterior ao início');
+  if (!values.approval_reference.trim() || !/^[0-9a-fA-F]{64}$/.test(values.approval_checksum) || !values.homologation_xml_storage_key.trim()) {
+    missing.push('referência oficial, checksum SHA-256 e chave do XML de homologação');
+  }
+  return missing;
+}
+
+function errorMessage(error) {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === 'string') return detail;
+  if (detail && typeof detail === 'object') {
+    const items = Array.isArray(detail.items) ? detail.items.map((item) => item.field).filter(Boolean) : [];
+    return [detail.code, detail.message, items.length ? `Campos: ${items.join(', ')}` : ''].filter(Boolean).join(' — ');
+  }
+  return error?.message || 'Não foi possível publicar a regra fiscal.';
+}
+
 function Field({ label, name, values, onChange, type = 'text', required = false }) {
   return (
     <label className="block text-sm font-medium text-slate-700">
@@ -31,29 +71,34 @@ export default function TaxRuleWizard({ onSubmit, isSubmitting = false, onCancel
 
   const submit = async (event) => {
     event.preventDefault();
-    if (!values.approval_reference.trim() || !/^[0-9a-fA-F]{64}$/.test(values.approval_checksum) || !values.homologation_xml_storage_key.trim()) {
-      setError('Informe a referência oficial, o checksum SHA-256 e a chave do XML de homologação antes de publicar.');
+    const invalidFields = publicationValidationError(values);
+    if (invalidFields.length) {
+      setError(`Preencha os campos obrigatórios e coerentes para publicação: ${invalidFields.join(', ')}.`);
       return;
     }
     setError('');
-    await onSubmit({
-      name: values.name,
-      effective_from: values.effective_from || null,
-      effective_to: values.effective_to || null,
-      issuer_regime: values.issuer_regime || null,
-      destination_uf: values.destination_uf || null,
-      document_model: values.document_model || null,
-      ncm: values.ncm || null,
-      cest: values.cest || null,
-      origin: values.origin || null,
-      cfop: values.cfop || null,
-      cbenef: values.cbenef || null,
-      icms: values.icms_group ? { group: values.icms_group, cst: values.icms_cst || null, csosn: values.icms_csosn || null, mode: values.icms_mode } : null,
-      pis: values.pis_cst ? { group: 'PIS', cst: values.pis_cst, base: values.pis_base, rate: values.pis_rate, amount: values.pis_amount } : null,
-      cofins: values.cofins_cst ? { group: 'COFINS', cst: values.cofins_cst, base: values.cofins_base, rate: values.cofins_rate, amount: values.cofins_amount } : null,
-      approval: { reference: values.approval_reference, checksum: values.approval_checksum },
-      homologation_xml_storage_key: values.homologation_xml_storage_key,
-    });
+    try {
+      await onSubmit({
+        name: values.name,
+        effective_from: values.effective_from || null,
+        effective_to: values.effective_to || null,
+        issuer_regime: values.issuer_regime || null,
+        destination_uf: values.destination_uf || null,
+        document_model: values.document_model || null,
+        ncm: values.ncm || null,
+        cest: values.cest || null,
+        origin: values.origin || null,
+        cfop: values.cfop || null,
+        cbenef: values.cbenef || null,
+        icms: values.icms_group ? { group: values.icms_group, cst: values.icms_cst || null, csosn: values.icms_csosn || null, mode: values.icms_mode } : null,
+        pis: values.pis_cst ? { group: `PIS${values.pis_cst}`, cst: values.pis_cst, base: values.pis_base, rate: values.pis_rate, amount: values.pis_amount } : null,
+        cofins: values.cofins_cst ? { group: `COFINS${values.cofins_cst}`, cst: values.cofins_cst, base: values.cofins_base, rate: values.cofins_rate, amount: values.cofins_amount } : null,
+        approval: { reference: values.approval_reference, checksum: values.approval_checksum },
+        homologation_xml_storage_key: values.homologation_xml_storage_key,
+      });
+    } catch (submissionError) {
+      setError(errorMessage(submissionError));
+    }
   };
 
   return (

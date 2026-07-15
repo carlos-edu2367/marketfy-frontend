@@ -30,4 +30,42 @@ describe('FiscalCenter', () => {
 
     expect(await screen.findByText(/todos os produtos ativos estão configurados/i)).toBeInTheDocument();
   });
+
+  it('shows a specific access denial instead of hiding a 403 response', async () => {
+    api.get.mockRejectedValueOnce({
+      response: {
+        status: 403,
+        data: { detail: { code: 'fiscal.rule_enforcement_forbidden', message: 'Apenas gerente pode publicar.' } },
+      },
+    });
+
+    render(<FiscalCenter marketId="market-1" />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/acesso negado/i);
+    expect(alert).toHaveTextContent('fiscal.rule_enforcement_forbidden');
+    expect(alert).toHaveTextContent('Apenas gerente pode publicar.');
+  });
+
+  it('keeps contribution_invalid code, message and invalid fields visible for a 422 response', async () => {
+    api.get.mockRejectedValueOnce({
+      response: {
+        status: 422,
+        data: {
+          detail: {
+            code: 'tax_rule.contribution_invalid',
+            message: 'Parâmetros de PIS/COFINS estão incompletos.',
+            items: [{ field: 'tax_parameters.pis.group', reason: 'rule_group_mismatch' }],
+          },
+        },
+      },
+    });
+
+    render(<FiscalCenter marketId="market-1" />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('tax_rule.contribution_invalid');
+    expect(alert).toHaveTextContent('Parâmetros de PIS/COFINS estão incompletos.');
+    expect(alert).toHaveTextContent('tax_parameters.pis.group');
+  });
 });

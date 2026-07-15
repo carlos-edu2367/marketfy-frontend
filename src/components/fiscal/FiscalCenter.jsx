@@ -5,6 +5,18 @@ import { Button } from '../ui/Button';
 import FiscalStatusBadge from './FiscalStatusBadge';
 import TaxRuleWizard from './TaxRuleWizard';
 
+function fiscalError(error, fallback) {
+  const status = error?.response?.status;
+  const detail = error?.response?.data?.detail;
+  const structured = detail && typeof detail === 'object' && !Array.isArray(detail) ? detail : {};
+  return {
+    status,
+    code: structured.code || null,
+    message: structured.message || (typeof detail === 'string' ? detail : fallback),
+    items: Array.isArray(structured.items) ? structured.items : [],
+  };
+}
+
 export default function FiscalCenter({ marketId }) {
   const [items, setItems] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -27,7 +39,7 @@ export default function FiscalCenter({ marketId }) {
     } catch (requestError) {
       setItems([]);
       setSummary(null);
-      setError('Não foi possível carregar as pendências fiscais. Tente novamente.');
+      setError(fiscalError(requestError, 'Não foi possível carregar as pendências fiscais. Tente novamente.'));
     } finally {
       setLoading(false);
     }
@@ -49,7 +61,9 @@ export default function FiscalCenter({ marketId }) {
       setShowWizard(false);
       await load();
     } catch (requestError) {
-      setError('Não foi possível publicar a regra fiscal. Revise as evidências e tente novamente.');
+      const displayError = fiscalError(requestError, 'Não foi possível publicar a regra fiscal. Revise as evidências e tente novamente.');
+      setError(displayError);
+      throw requestError;
     } finally {
       setSaving(false);
     }
@@ -70,7 +84,13 @@ export default function FiscalCenter({ marketId }) {
         </div>
       </div>
       {showWizard && <div className="mt-5 rounded-xl border border-slate-200 bg-white p-5"><TaxRuleWizard onSubmit={publishRule} onCancel={() => setShowWizard(false)} isSubmitting={saving} /></div>}
-      {error ? <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert"><p>{error}</p><Button type="button" variant="secondary" className="mt-3" onClick={load}>Tentar novamente</Button></div> : (
+      {error ? <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
+        {error.status === 403 && <p className="font-bold">Acesso negado para esta ação fiscal.</p>}
+        {error.code && <p className="font-mono text-xs">{error.code}</p>}
+        <p>{error.message}</p>
+        {error.items.length > 0 && <ul className="mt-2 list-disc pl-5">{error.items.map((item, index) => <li key={`${item.field}-${index}`}>{item.field}{item.reason ? ` (${item.reason})` : ''}</li>)}</ul>}
+        <Button type="button" variant="secondary" className="mt-3" onClick={load}>Tentar novamente</Button>
+      </div> : (
         <>
           {loading ? <p className="mt-4 text-sm font-medium text-slate-600">Carregando pendências fiscais…</p> : <div className="mt-4 flex items-center gap-2 text-sm font-bold text-slate-700">
             {pending.length ? <AlertTriangle className="text-amber-500" size={18} /> : <CheckCircle2 className="text-green-600" size={18} />}
