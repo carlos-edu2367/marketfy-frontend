@@ -174,18 +174,18 @@ export default function Inventory() {
     setLoadingEan(true);
     try {
         let found = false;
-        let productData = { name: "", ncm: "" };
+        let productData = { name: "" };
 
-        // 1. Base Demo Expandida (Com NCMs reais aproximados)
+        // 1. Base comercial: EAN pode sugerir nome, nunca classificação fiscal.
         const demoProducts = {
-            '7891000088791': { name: 'Chocolate KitKat Nestlé 41,5g', ncm: '18063210' },
-            '7891000100103': { name: 'Chocolate KitKat White 41,5g', ncm: '18063210' },
-            '7894900011517': { name: 'Refrigerante Coca-Cola Lata 350ml', ncm: '22021000' },
-            '7894900011555': { name: 'Refrigerante Coca-Cola 600ml', ncm: '22021000' },
-            '7894900010015': { name: 'Refrigerante Coca-Cola 2L', ncm: '22021000' },
-            '7891000053508': { name: 'Caixa de Bombom Garoto 250g', ncm: '18069000' },
-            '7891991010856': { name: 'Cerveja Budweiser Long Neck 330ml', ncm: '22030000' },
-            '7896004006482': { name: 'Cerveja Skol Lata 350ml', ncm: '22030000' }
+            '7891000088791': { name: 'Chocolate KitKat Nestlé 41,5g' },
+            '7891000100103': { name: 'Chocolate KitKat White 41,5g' },
+            '7894900011517': { name: 'Refrigerante Coca-Cola Lata 350ml' },
+            '7894900011555': { name: 'Refrigerante Coca-Cola 600ml' },
+            '7894900010015': { name: 'Refrigerante Coca-Cola 2L' },
+            '7891000053508': { name: 'Caixa de Bombom Garoto 250g' },
+            '7891991010856': { name: 'Cerveja Budweiser Long Neck 330ml' },
+            '7896004006482': { name: 'Cerveja Skol Lata 350ml' }
         };
 
         if (demoProducts[ean]) {
@@ -201,10 +201,8 @@ export default function Inventory() {
                     const product = res.data.product;
                     const name = product.product_name_pt || product.product_name || "";
                     // Tenta adivinhar NCM pela categoria (muito básico) ou deixa vazio
-                    const ncm = ""; 
-                    
                     if (name) {
-                        productData = { name, ncm };
+                        productData = { name };
                         found = true;
                     }
                 }
@@ -215,10 +213,7 @@ export default function Inventory() {
 
         if (found) {
             setValueCreate('name', productData.name);
-            // Só preenche NCM se a API/Demo retornou algo, senão mantém o que o user digitou ou vazio
-            if (productData.ncm) setValueCreate('ncm', productData.ncm);
-            
-            toast.success("Dados encontrados!");
+            toast.success("Nome comercial encontrado. Revise a classificação fiscal com o contador.");
         } else {
             toast.error("Produto não encontrado na base. Preencha manualmente.");
         }
