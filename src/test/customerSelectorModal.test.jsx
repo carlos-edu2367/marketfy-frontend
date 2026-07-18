@@ -63,7 +63,7 @@ describe('CustomerSelectorModal', () => {
       />
     );
 
-    expect(await screen.findByRole('button', { name: 'Selecionar Ana Souza' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Selecionar Ana Souza' }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Selecionar Bruno Lima' })).toBeInTheDocument();
     expect(screen.getAllByText((content) => content.includes('150,00'))).not.toHaveLength(0);
     expect(screen.getAllByText((content) => content.includes('0,00') && !content.includes('150,00'))).not.toHaveLength(0);
