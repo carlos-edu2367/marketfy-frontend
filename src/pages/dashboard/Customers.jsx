@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom'; // Importado para navegação
 import api from '../../lib/api';
@@ -32,8 +32,10 @@ export default function Customers() {
   // Estado de loading do pagamento
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [creditLimitSaving, setCreditLimitSaving] = useState(false);
+  const [creditLimitFocusRestoreCustomerId, setCreditLimitFocusRestoreCustomerId] = useState(null);
   const creditLimitDialogRef = useRef(null);
   const creditLimitTriggerRef = useRef(null);
+  const creditLimitTriggerCustomerIdRef = useRef(null);
 
   const { register, handleSubmit, reset } = useForm();
   
@@ -56,6 +58,18 @@ export default function Customers() {
   useEffect(() => {
     if (creditLimitModal.open) setCreditLimitFocus('credit_limit');
   }, [creditLimitModal.open, setCreditLimitFocus]);
+
+  useLayoutEffect(() => {
+    if (!creditLimitFocusRestoreCustomerId || creditLimitModal.open || loading) return;
+
+    const trigger = Array.from(document.querySelectorAll('[data-credit-limit-trigger]')).find(
+      (element) => element.dataset.creditLimitTrigger === creditLimitFocusRestoreCustomerId
+    );
+    if (trigger) {
+      trigger.focus();
+      setCreditLimitFocusRestoreCustomerId(null);
+    }
+  }, [creditLimitFocusRestoreCustomerId, creditLimitModal.open, loading]);
 
   // 1. Carrega Lojas
   useEffect(() => {
@@ -121,17 +135,23 @@ export default function Customers() {
 
   const openCreditLimitModal = (customer, trigger) => {
     creditLimitTriggerRef.current = trigger;
+    creditLimitTriggerCustomerIdRef.current = customer.id;
     resetCreditLimit({ credit_limit: customer.credit_limit ?? 0 });
     setCreditLimitModal({ open: true, customer });
   };
 
-  const closeCreditLimitModal = () => {
+  const closeCreditLimitModal = ({ restoreAfterRefresh = false } = {}) => {
     setCreditLimitModal({ open: false, customer: null });
-    creditLimitTriggerRef.current?.focus();
+    if (restoreAfterRefresh) {
+      setCreditLimitFocusRestoreCustomerId(creditLimitTriggerCustomerIdRef.current);
+    } else {
+      creditLimitTriggerRef.current?.focus();
+    }
   };
 
   const handleCreditLimitKeyDown = (event) => {
     if (event.key === 'Escape') {
+      if (creditLimitSaving) return;
       event.preventDefault();
       closeCreditLimitModal();
       return;
@@ -173,7 +193,7 @@ export default function Customers() {
 
       await db.customers.update(updated.id, { credit_limit: updated.credit_limit });
       toast.success('Limite de crédito atualizado com sucesso!');
-      setCreditLimitModal({ open: false, customer: null });
+      closeCreditLimitModal({ restoreAfterRefresh: true });
       loadCustomers();
     } catch (error) {
       console.error(error);
@@ -353,6 +373,7 @@ export default function Customers() {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={(event) => openCreditLimitModal(c, event.currentTarget)}
+                                            data-credit-limit-trigger={c.id}
                                             className="p-2 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-100 transition-colors"
                                             aria-label={`Editar limite de ${c.name}`}
                                             title="Editar limite de crédito"

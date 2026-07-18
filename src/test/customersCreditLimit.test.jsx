@@ -171,4 +171,46 @@ describe('Customers credit limit editing', () => {
     expect(screen.queryByRole('dialog', { name: 'Editar limite de crédito' })).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
   });
+
+  it('keeps the edit modal open when Escape is pressed while saving', async () => {
+    const user = userEvent.setup();
+    api.patch.mockImplementation(() => new Promise(() => {}));
+    renderCustomers();
+
+    await user.click(await screen.findByRole(
+      'button',
+      { name: 'Editar limite de Ana Souza' },
+      { timeout: 3000 }
+    ));
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await screen.findByRole('button', { name: /Salvando/i });
+    await user.click(screen.getByRole('spinbutton', { name: 'Limite de crédito (R$)' }));
+    await user.keyboard('{Escape}');
+
+    expect(screen.getByRole('dialog', { name: 'Editar limite de crédito' })).toBeInTheDocument();
+  });
+
+  it('restores focus to the triggering action after a successful save', async () => {
+    const user = userEvent.setup();
+    api.patch.mockResolvedValue({ data: { id: customer.id, credit_limit: 80 } });
+    renderCustomers();
+
+    const trigger = await screen.findByRole(
+      'button',
+      { name: 'Editar limite de Ana Souza' },
+      { timeout: 3000 }
+    );
+    await user.click(trigger);
+    const creditLimit = screen.getByRole('spinbutton', { name: 'Limite de crédito (R$)' });
+    await user.clear(creditLimit);
+    await user.type(creditLimit, '80');
+    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Editar limite de crédito' })).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Editar limite de Ana Souza' })).toHaveFocus();
+    });
+  });
 });

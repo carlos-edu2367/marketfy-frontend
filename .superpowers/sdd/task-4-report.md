@@ -57,3 +57,25 @@ Result: passed — 1 file, 5 tests.
 Command: `npm.cmd test`
 
 Result: passed — 8 files, 38 tests.
+
+## Re-review follow-up
+
+Escape is ignored while the limit update is saving, so a failed request leaves the modal available for its error toast and correction. On successful updates, the close helper now defers focus restoration until the refreshed customer list has rendered its current edit action.
+
+### RED
+
+Command: `npm.cmd test -- src/test/customersCreditLimit.test.jsx`
+
+Result: failed with 2 new tests: Escape closed the in-flight save modal and a successful save did not restore focus after list refresh.
+
+### GREEN
+
+Command: `npm.cmd test -- src/test/customersCreditLimit.test.jsx`
+
+Result: passed — 1 file, 7 tests.
+
+### Full verification
+
+Command: `npm.cmd test`
+
+Result: passed — 8 files, 40 tests.
