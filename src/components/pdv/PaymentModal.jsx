@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../lib/utils';
-import { CreditCard, Banknote, Check, DollarSign, Users, Search, Loader2, QrCode, Trash2, AlertCircle } from 'lucide-react';
-import { db } from '../../lib/db'; 
+import { CreditCard, Banknote, Check, DollarSign, Users, QrCode, Trash2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import CustomerSelectorModal from './CustomerSelectorModal';
 
 export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
   const [payments, setPayments] = useState([]);
@@ -11,13 +11,8 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
   const [selectedMethod, setSelectedMethod] = useState('dinheiro');
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // --- GESTÃO DE CLIENTES (FIADO) ---
-  const [customers, setCustomers] = useState([]);
-  const [filteredCustomers, setFilteredCustomers] = useState([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [showCustomerList, setShowCustomerList] = useState(false);
+  const [showCustomerSelector, setShowCustomerSelector] = useState(false);
 
   const amountInputRef = useRef(null);
 
@@ -42,47 +37,22 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
     }
   }, [selectedMethod]);
 
-  // Carrega clientes (Dexie/Offline)
-  useEffect(() => {
-    if (selectedMethod === 'fiado' && customers.length === 0) {
-        async function loadCustomersLocal() {
-            setLoadingCustomers(true);
-            try {
-                const localCustomers = await db.customers
-                    .where('market_id')
-                    .equals(marketId)
-                    .toArray();
-                
-                if (localCustomers?.length > 0) {
-                    setCustomers(localCustomers);
-                    setFilteredCustomers(localCustomers);
-                }
-            } catch (error) {
-                console.error("Erro ao carregar clientes", error);
-                toast.error("Erro ao buscar clientes locais.");
-            } finally {
-                setLoadingCustomers(false);
-            }
-        }
-        loadCustomersLocal();
-    }
-  }, [selectedMethod, marketId, customers.length]);
+  const getAvailableCredit = (customer) => Math.max(
+      0,
+      Number(customer?.credit_limit || 0) - Number(customer?.current_debt || 0)
+  );
 
-  // Filtro de Clientes
-  useEffect(() => {
-      if (!searchTerm) {
-          setFilteredCustomers(customers.slice(0, 5)); 
-          return;
+  const selectPaymentMethod = (method) => {
+      setSelectedMethod(method);
+      if (method === 'fiado' && !selectedCustomer) {
+          setShowCustomerSelector(true);
       }
-      const lower = searchTerm.toLowerCase();
-      const filtered = customers.filter(c => 
-          c.name.toLowerCase().includes(lower) || 
-          (c.cpf && c.cpf.includes(lower)) ||
-          (c.phone && c.phone.includes(lower))
-      ).slice(0, 5); 
-      setFilteredCustomers(filtered);
-      setShowCustomerList(true);
-  }, [searchTerm, customers]);
+  };
+
+  const handleCustomerSelect = (customer) => {
+      setSelectedCustomer(customer);
+      setShowCustomerSelector(false);
+  };
 
   const handleAddPayment = () => {
       const amount = parseFloat(currentAmount);
@@ -94,9 +64,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
       if (selectedMethod === 'fiado') {
           if (!selectedCustomer) return toast.error("Selecione um cliente para o Fiado.");
           
-          const limit = parseFloat(selectedCustomer.credit_limit || 0);
-          const debt = parseFloat(selectedCustomer.current_debt || 0);
-          const available = limit - debt;
+          const available = getAvailableCredit(selectedCustomer);
 
           if (amount > available) return toast.error(`Limite insuficiente! Disponível: ${formatCurrency(available)}`);
           finalCustomer = selectedCustomer;
@@ -112,7 +80,6 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
 
       if (remaining - amount > 0) {
           setSelectedCustomer(null);
-          setSearchTerm('');
       }
   };
 
@@ -139,7 +106,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
       if (!selectedCustomer) return null;
       const limit = parseFloat(selectedCustomer.credit_limit || 0);
       const debt = parseFloat(selectedCustomer.current_debt || 0);
-      const available = limit - debt;
+      const available = getAvailableCredit(selectedCustomer);
       const amount = parseFloat(currentAmount || 0);
       const willExceed = amount > available;
       const percentUsed = limit > 0 ? (debt / limit) * 100 : 0;
@@ -148,7 +115,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
           <div className={`mt-2 p-3 rounded-lg border ${willExceed ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-100'}`}>
               <div className="flex justify-between items-center mb-2">
                   <span className="font-bold text-gray-700">{selectedCustomer.name}</span>
-                  <button onClick={() => { setSelectedCustomer(null); setSearchTerm(''); }} className="text-xs text-red-500 hover:underline">Alterar</button>
+                  <button onClick={() => { setSelectedCustomer(null); setShowCustomerSelector(true); }} className="text-xs text-red-500 hover:underline">Alterar</button>
               </div>
               <div className="grid grid-cols-3 gap-2 text-xs text-center mb-2">
                   <div className="bg-white p-1 rounded border border-gray-100">
@@ -199,7 +166,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
                 {methods.map(m => (
                     <button
                         key={m.id}
-                        onClick={() => setSelectedMethod(m.id)}
+                        onClick={() => selectPaymentMethod(m.id)}
                         disabled={isProcessing}
                         className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${
                             selectedMethod === m.id 
@@ -234,38 +201,15 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
             {selectedMethod === 'fiado' && (
                 <div className="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm relative animate-fade-in">
                     {!selectedCustomer ? (
-                        <>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Search size={16} className="text-orange-500" />
-                                <label className="text-xs font-bold text-orange-600 uppercase">Buscar Cliente</label>
-                            </div>
-                            <div className="relative">
-                                <input 
-                                    className="w-full border border-gray-200 bg-gray-50 rounded-lg p-3 outline-none focus:ring-2 focus:ring-orange-400"
-                                    placeholder="Nome, CPF ou Telefone..."
-                                    value={searchTerm}
-                                    onChange={e => { setSearchTerm(e.target.value); setShowCustomerList(true); }}
-                                    onFocus={() => setShowCustomerList(true)}
-                                    disabled={isProcessing}
-                                />
-                                {loadingCustomers && <div className="absolute right-3 top-3"><Loader2 size={20} className="animate-spin text-orange-400" /></div>}
-                                
-                                {showCustomerList && filteredCustomers.length > 0 && (
-                                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
-                                        {filteredCustomers.map(c => (
-                                            <button
-                                                key={c.id}
-                                                onClick={() => { setSelectedCustomer(c); setSearchTerm(c.name); setShowCustomerList(false); }}
-                                                className="w-full text-left p-3 hover:bg-orange-50 flex justify-between items-center border-b border-gray-50 last:border-0"
-                                            >
-                                                <div><p className="font-bold text-gray-800 text-sm">{c.name}</p><p className="text-xs text-gray-400">{c.cpf || 'Sem CPF'}</p></div>
-                                                {c.credit_limit && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Disp: {formatCurrency(parseFloat(c.credit_limit) - parseFloat(c.current_debt || 0))}</span>}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            className="w-full border-orange-200 text-orange-700 hover:bg-orange-50"
+                            onClick={() => setShowCustomerSelector(true)}
+                            disabled={isProcessing}
+                        >
+                            Selecionar cliente
+                        </Button>
                     ) : ( renderCreditInfo() )}
                 </div>
             )}
@@ -330,6 +274,13 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
             </div>
         </div>
       </div>
+      {showCustomerSelector && (
+        <CustomerSelectorModal
+          marketId={marketId}
+          onSelect={handleCustomerSelect}
+          onClose={() => setShowCustomerSelector(false)}
+        />
+      )}
     </div>
   );
 }
