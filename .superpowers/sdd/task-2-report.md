@@ -20,6 +20,14 @@ Os testes cobrem a consulta Dexie encadeada, visualização inicial sem limite, 
 - `npx.cmd eslint src/components/pdv/CustomerSelectorModal.jsx src/test/customerSelectorModal.test.jsx --max-warnings 0` — aprovado.
 - `git diff --check` — aprovado.
 
+## Correção pós-revisão — acessibilidade de foco e descrição
+
+- **RED:** foram adicionados testes que falharam com o foco permanecendo no acionador externo e sem descrição acessível nos botões dos clientes.
+- **GREEN:** o modal agora foca o campo de busca ao abrir, contém `Tab`/`Shift+Tab` dentro do diálogo e restaura o foco do acionador ao desmontar. Cada botão mantém o nome acessível `Selecionar {nome}` e recebe `aria-describedby` para CPF e crédito disponível.
+- `npm.cmd test -- src/test/customerSelectorModal.test.jsx` — 1 arquivo, 7 testes aprovados após a correção.
+- `npm.cmd test` — 6 arquivos, 31 testes aprovados após a correção.
+- `npx.cmd eslint src/components/pdv/CustomerSelectorModal.jsx src/test/customerSelectorModal.test.jsx --max-warnings 0` — aprovado após a correção.
+
 ## Self-review
 
 - Consulta local usa exatamente `db.customers.where('market_id').equals(marketId).toArray()`.

@@ -65,8 +65,8 @@ describe('CustomerSelectorModal', () => {
 
     expect(await screen.findByRole('button', { name: 'Selecionar Ana Souza' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Selecionar Bruno Lima' })).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes('150,00'))).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes('0,00') && !content.includes('150,00'))).toBeInTheDocument();
+    expect(screen.getAllByText((content) => content.includes('150,00'))).not.toHaveLength(0);
+    expect(screen.getAllByText((content) => content.includes('0,00') && !content.includes('150,00'))).not.toHaveLength(0);
     expect(db.customers.where).toHaveBeenCalledWith('market_id');
     expect(equals).toHaveBeenCalledWith('market-1');
     expect(toArray).toHaveBeenCalledOnce();
@@ -96,6 +96,51 @@ describe('CustomerSelectorModal', () => {
       id: 'customer-1',
       name: 'Ana Souza',
     }));
+  });
+
+  it('moves focus into the dialog, traps keyboard focus, and restores the opener', async () => {
+    const user = userEvent.setup();
+    const opener = document.createElement('button');
+    opener.textContent = 'Abrir seletor';
+    document.body.appendChild(opener);
+    opener.focus();
+    mockLocalCustomers();
+
+    const { unmount } = render(
+      <CustomerSelectorModal
+        marketId="market-1"
+        onSelect={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+
+    await screen.findByRole('button', { name: 'Selecionar Ana Souza' });
+    const search = screen.getByLabelText('Buscar por nome ou CPF');
+    expect(search).toHaveFocus();
+
+    await user.tab({ shift: true });
+    expect(screen.getByRole('button', { name: 'Fechar' })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('button', { name: 'Selecionar Bruno Lima' })).toHaveFocus();
+
+    unmount();
+    expect(opener).toHaveFocus();
+    opener.remove();
+  });
+
+  it('keeps the customer action name concise and describes CPF and available credit', async () => {
+    mockLocalCustomers();
+
+    render(
+      <CustomerSelectorModal
+        marketId="market-1"
+        onSelect={vi.fn()}
+        onClose={vi.fn()}
+      />
+    );
+
+    const customerButton = await screen.findByRole('button', { name: 'Selecionar Ana Souza' });
+    expect(customerButton).toHaveAccessibleDescription(/CPF: 123\.456\.789-00 Disponível R\$\s?150,00/);
   });
 
   it('shows the empty state and calls onClose from the close control', async () => {

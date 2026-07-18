@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -9,6 +9,18 @@ export default function CustomerSelectorModal({ marketId, onSelect, onClose }) {
   const [customers, setCustomers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    const previouslyFocusedElement = document.activeElement;
+    searchInputRef.current?.focus();
+
+    return () => {
+      if (previouslyFocusedElement instanceof HTMLElement && document.contains(previouslyFocusedElement)) {
+        previouslyFocusedElement.focus();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -57,12 +69,37 @@ export default function CustomerSelectorModal({ marketId, onSelect, onClose }) {
 
   const hasSearch = Boolean(search.trim());
 
+  const handleDialogKeyDown = (event) => {
+    if (event.key !== 'Tab') return;
+
+    const focusableElements = [...event.currentTarget.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    )].filter((element) => element.getAttribute('aria-hidden') !== 'true');
+
+    const firstFocusableElement = focusableElements[0];
+    const lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+    if (!firstFocusableElement || !lastFocusableElement) {
+      event.preventDefault();
+      return;
+    }
+
+    if (event.shiftKey && document.activeElement === firstFocusableElement) {
+      event.preventDefault();
+      lastFocusableElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastFocusableElement) {
+      event.preventDefault();
+      firstFocusableElement.focus();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="customer-selector-title"
+        onKeyDown={handleDialogKeyDown}
         className="flex max-h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
       >
         <header className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
@@ -90,6 +127,7 @@ export default function CustomerSelectorModal({ marketId, onSelect, onClose }) {
             <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               id="customer-selector-search"
+              ref={searchInputRef}
               type="search"
               aria-label="Buscar por nome ou CPF"
               value={search}
@@ -113,6 +151,7 @@ export default function CustomerSelectorModal({ marketId, onSelect, onClose }) {
                   0,
                   Number(customer.credit_limit || 0) - Number(customer.current_debt || 0)
                 );
+                const customerDescriptionId = `customer-description-${customer.id}`;
 
                 return (
                   <li key={customer.id}>
@@ -120,8 +159,12 @@ export default function CustomerSelectorModal({ marketId, onSelect, onClose }) {
                       type="button"
                       className="flex w-full items-center justify-between rounded-xl border border-gray-100 p-4 text-left transition hover:border-orange-200 hover:bg-orange-50"
                       aria-label={`Selecionar ${customer.name}`}
+                      aria-describedby={customerDescriptionId}
                       onClick={() => onSelect(customer)}
                     >
+                      <span id={customerDescriptionId} className="sr-only">
+                        CPF: {customer.cpf || 'Não informado'} Disponível {formatCurrency(availableCredit)}
+                      </span>
                       <span>
                         <span className="block font-bold text-gray-900">{customer.name}</span>
                         <span className="mt-1 block text-sm text-gray-500">CPF: {customer.cpf || 'Não informado'}</span>
