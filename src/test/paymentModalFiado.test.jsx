@@ -84,4 +84,14 @@ describe('PaymentModal fiado', () => {
       expect(toast.error).toHaveBeenCalledWith('Limite insuficiente! Disponível: R$ 0,00');
     });
   });
+
+  it('keeps the add-payment action fixed below the selected fiado customer', async () => {
+    const user = userEvent.setup();
+    renderPaymentModal();
+
+    await user.click(screen.getByRole('button', { name: 'Fiado (Crédito)' }));
+    await user.click(await screen.findByRole('button', { name: 'Selecionar Bruno Lima' }));
+
+    expect(screen.getByRole('button', { name: /Adicionar Pagamento/i })).toHaveClass('shrink-0');
+  });
 });

@@ -156,7 +156,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
       <div className="bg-white w-full max-w-5xl h-[85vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
         
         {/* LADO ESQUERDO */}
-        <div className="flex-1 p-6 flex flex-col border-r border-gray-100 bg-gray-50/50">
+        <div className="relative flex-1 overflow-y-auto p-6 flex flex-col border-r border-gray-100 bg-gray-50/50">
             <div className="mb-6">
                 <h2 className="text-2xl font-black text-gray-900 mb-1">Pagamento</h2>
                 <p className="text-gray-500 text-sm">Selecione a forma de pagamento.</p>
@@ -214,7 +214,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
                 </div>
             )}
 
-            <Button size="lg" className="mt-auto w-full font-bold h-14 text-lg" onClick={handleAddPayment} disabled={isProcessing}>
+            <Button size="lg" className="sticky bottom-0 mt-auto w-full shrink-0 bg-gray-50/95 pt-4 font-bold h-14 text-lg" onClick={handleAddPayment} disabled={isProcessing}>
                 Adicionar Pagamento <Check size={20} />
             </Button>
         </div>
