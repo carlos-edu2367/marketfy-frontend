@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom'; // Importado para navegação
 import api from '../../lib/api';
@@ -32,6 +32,8 @@ export default function Customers() {
   // Estado de loading do pagamento
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [creditLimitSaving, setCreditLimitSaving] = useState(false);
+  const creditLimitDialogRef = useRef(null);
+  const creditLimitTriggerRef = useRef(null);
 
   const { register, handleSubmit, reset } = useForm();
   
@@ -43,12 +45,17 @@ export default function Customers() {
     register: registerCreditLimit,
     handleSubmit: handleSubmitCreditLimit,
     reset: resetCreditLimit,
+    setFocus: setCreditLimitFocus,
     watch: watchCreditLimit,
   } = useForm();
   const enteredCreditLimit = watchCreditLimit('credit_limit');
   const creditLimitBelowDebt = enteredCreditLimit !== undefined
     && enteredCreditLimit !== ''
     && parseFloat(enteredCreditLimit) < parseFloat(creditLimitModal.customer?.current_debt || 0);
+
+  useEffect(() => {
+    if (creditLimitModal.open) setCreditLimitFocus('credit_limit');
+  }, [creditLimitModal.open, setCreditLimitFocus]);
 
   // 1. Carrega Lojas
   useEffect(() => {
@@ -112,9 +119,40 @@ export default function Customers() {
     }
   };
 
-  const openCreditLimitModal = (customer) => {
+  const openCreditLimitModal = (customer, trigger) => {
+    creditLimitTriggerRef.current = trigger;
     resetCreditLimit({ credit_limit: customer.credit_limit ?? 0 });
     setCreditLimitModal({ open: true, customer });
+  };
+
+  const closeCreditLimitModal = () => {
+    setCreditLimitModal({ open: false, customer: null });
+    creditLimitTriggerRef.current?.focus();
+  };
+
+  const handleCreditLimitKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeCreditLimitModal();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusableElements = creditLimitDialogRef.current?.querySelectorAll(
+      'button:not([disabled]), input:not([disabled])'
+    );
+    if (!focusableElements?.length) return;
+
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   };
 
   const handleCreditLimitUpdate = async (data) => {
@@ -314,7 +352,7 @@ export default function Customers() {
                                     
                                     <div className="flex gap-2">
                                         <button
-                                            onClick={() => openCreditLimitModal(c)}
+                                            onClick={(event) => openCreditLimitModal(c, event.currentTarget)}
                                             className="p-2 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-100 transition-colors"
                                             aria-label={`Editar limite de ${c.name}`}
                                             title="Editar limite de crédito"
@@ -392,12 +430,14 @@ export default function Customers() {
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="edit-credit-limit-title"
+                    ref={creditLimitDialogRef}
+                    onKeyDown={handleCreditLimitKeyDown}
                     className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl"
                 >
                     <div className="flex justify-between items-center mb-1">
                         <h2 id="edit-credit-limit-title" className="text-xl font-bold">Editar limite de crédito</h2>
                         <button
-                            onClick={() => setCreditLimitModal({ open: false, customer: null })}
+                            onClick={closeCreditLimitModal}
                             disabled={creditLimitSaving}
                             aria-label="Fechar edição de limite"
                         >
@@ -412,6 +452,7 @@ export default function Customers() {
                             type="number"
                             min="0"
                             step="0.01"
+                            aria-label="Limite de crédito (R$)"
                             autoFocus
                             className="text-2xl font-black"
                             {...registerCreditLimit('credit_limit', { required: true, min: 0 })}
@@ -427,7 +468,7 @@ export default function Customers() {
                                 type="button"
                                 variant="secondary"
                                 className="flex-1"
-                                onClick={() => setCreditLimitModal({ open: false, customer: null })}
+                                onClick={closeCreditLimitModal}
                                 disabled={creditLimitSaving}
                             >
                                 Cancelar

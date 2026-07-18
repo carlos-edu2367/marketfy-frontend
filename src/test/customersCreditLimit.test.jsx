@@ -118,4 +118,57 @@ describe('Customers credit limit editing', () => {
     expect(screen.getByText(/Novas vendas fiadas ficarão bloqueadas até a dívida ficar abaixo do limite\./i)).toBeInTheDocument();
     expect(screen.getByText(/Disp:/)).toHaveTextContent(/Disp:\s*R\$\s*0,00/);
   });
+
+  it('gives the credit-limit field a programmatic name', async () => {
+    const user = userEvent.setup();
+    renderCustomers();
+
+    await user.click(await screen.findByRole(
+      'button',
+      { name: 'Editar limite de Ana Souza' },
+      { timeout: 3000 }
+    ));
+
+    expect(screen.getByRole('spinbutton', { name: 'Limite de crédito (R$)' })).toBeInTheDocument();
+  });
+
+  it('focuses the limit field and keeps Tab navigation inside the edit modal', async () => {
+    const user = userEvent.setup();
+    renderCustomers();
+
+    await user.click(await screen.findByRole(
+      'button',
+      { name: 'Editar limite de Ana Souza' },
+      { timeout: 3000 }
+    ));
+    const creditLimit = screen.getByRole('spinbutton');
+    const close = screen.getByRole('button', { name: 'Fechar edição de limite' });
+
+    expect(creditLimit).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveFocus();
+    await user.tab();
+    expect(close).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('button', { name: 'Salvar' })).toHaveFocus();
+  });
+
+  it('closes with Escape and restores focus to the triggering action', async () => {
+    const user = userEvent.setup();
+    renderCustomers();
+
+    const trigger = await screen.findByRole(
+      'button',
+      { name: 'Editar limite de Ana Souza' },
+      { timeout: 3000 }
+    );
+    await user.click(trigger);
+    await screen.findByRole('dialog', { name: 'Editar limite de crédito' });
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog', { name: 'Editar limite de crédito' })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
 });

@@ -35,3 +35,25 @@ Command: `npm.cmd test`
 Result: passed — 8 files, 35 tests.
 
 `git diff --check` completed without whitespace errors. The test runner still reports pre-existing Vite/esbuild deprecation warnings; they are unrelated to this task.
+
+## Accessibility review follow-up
+
+The credit-limit modal now gives its numeric field the explicit accessible name `Limite de crédito (R$)` without changing the shared `Input` component. It sets focus on that field after opening, contains Tab and Shift+Tab navigation, closes on Escape, and restores focus to the action that opened it.
+
+### RED
+
+Command: `npm.cmd test -- src/test/customersCreditLimit.test.jsx`
+
+Result: failed with 3 new tests: the field had no programmatic name, Tab moved focus out of the dialog, and Escape left the dialog open.
+
+### GREEN
+
+Command: `npm.cmd test -- src/test/customersCreditLimit.test.jsx`
+
+Result: passed — 1 file, 5 tests.
+
+### Full verification
+
+Command: `npm.cmd test`
+
+Result: passed — 8 files, 38 tests.
