@@ -8,6 +8,7 @@ import {
   Loader2, Building, MapPin, Settings as SettingsIcon, HelpCircle 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import FiscalCenter from '../fiscal/FiscalCenter';
 
 export default function FiscalSettings({ marketId }) {
   const [loading, setLoading] = useState(true);
@@ -503,6 +504,7 @@ export default function FiscalSettings({ marketId }) {
         </div>
 
       </form>
+      <FiscalCenter marketId={marketId} />
     </div>
   );
 }

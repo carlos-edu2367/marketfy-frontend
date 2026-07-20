@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useSync } from '../../hooks/useSync';
 import { 
-  LogOut, Wifi, WifiOff, LayoutDashboard, Package, Users, 
+  LogOut, WifiOff, LayoutDashboard, Package, Users,
   Settings, LifeBuoy, ShoppingBag, PieChart, RefreshCw, CloudOff, 
   CheckCircle, AlertTriangle, Crown, Calendar, Lock, AlertCircle, XCircle, ShieldCheck
 } from 'lucide-react';

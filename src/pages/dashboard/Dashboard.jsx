@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '../../lib/api';
-import { useAuth } from '../../context/AuthContext'; // Import user
+import { useAuth } from '../../hooks/useAuth'; // Import user
 import { useProductSync } from '../../hooks/useProductSync'; // Import Sync
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -31,7 +31,7 @@ export default function Dashboard() {
     resolver: zodResolver(marketSchema)
   });
 
-  const fetchMarkets = async () => {
+  const fetchMarkets = useCallback(async () => {
     try {
       setIsLoading(true);
       const { data } = await api.get('/identity/markets');
@@ -48,11 +48,11 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [syncAllProducts]);
 
   useEffect(() => {
     fetchMarkets();
-  }, []);
+  }, [fetchMarkets]);
 
   const handleCreateMarket = async (data) => {
     try {

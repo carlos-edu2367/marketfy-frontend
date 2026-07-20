@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProductHistoryModal from '../../components/inventory/ProductHistoryModal';
+import FiscalStatusBadge from '../../components/fiscal/FiscalStatusBadge';
+import TaxRuleBulkAssignDialog from '../../components/fiscal/TaxRuleBulkAssignDialog';
 import { formatCurrency } from '../../lib/utils';
 import axios from 'axios';
 
@@ -29,6 +31,10 @@ export default function Inventory() {
   
   const [loading, setLoading] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
+  const [selectedFiscalProductIds, setSelectedFiscalProductIds] = useState([]);
+  const [taxRules, setTaxRules] = useState([]);
+  const [showTaxRuleAssignment, setShowTaxRuleAssignment] = useState(false);
+  const [assigningTaxRule, setAssigningTaxRule] = useState(false);
   const { 
     register: registerEdit, 
     handleSubmit: handleSubmitEdit, 
@@ -60,6 +66,7 @@ export default function Inventory() {
           setLoading(true);
           const { data } = await api.get(`/inventory/${selectedMarketId}/products`);
           setProducts(data);
+          setSelectedFiscalProductIds((selected) => selected.filter((id) => data.some((product) => product.id === id)));
       } catch (error) {
           toast.error("Erro ao carregar estoque.");
       } finally {
@@ -106,6 +113,42 @@ export default function Inventory() {
           (p.barcode && p.barcode.includes(lower))
       );
   });
+
+  const toggleFiscalProduct = (productId) => {
+      setSelectedFiscalProductIds((selected) => selected.includes(productId)
+          ? selected.filter((id) => id !== productId)
+          : [...selected, productId]);
+  };
+
+  const openTaxRuleAssignment = async () => {
+      const selectedProducts = products.filter((product) => selectedFiscalProductIds.includes(product.id));
+      if (!selectedProducts.length) {
+          toast.error('Selecione os produtos que receberão a regra fiscal.');
+          return;
+      }
+      try {
+          const { data } = await api.get(`/fiscal/${selectedMarketId}/tax-rules`);
+          setTaxRules(data.items || []);
+          setShowTaxRuleAssignment(true);
+      } catch (error) {
+          toast.error('Não foi possível carregar as regras fiscais publicadas.');
+      }
+  };
+
+  const assignTaxRule = async (payload) => {
+      try {
+          setAssigningTaxRule(true);
+          await api.post(`/inventory/${selectedMarketId}/products/tax-rule-assignment`, payload);
+          toast.success('Regra fiscal atribuída aos produtos selecionados.');
+          setShowTaxRuleAssignment(false);
+          setSelectedFiscalProductIds([]);
+          loadProducts();
+      } catch (error) {
+          toast.error(error.response?.data?.detail?.message || 'Não foi possível atribuir a regra fiscal.');
+      } finally {
+          setAssigningTaxRule(false);
+      }
+  };
 
   // CORREÇÃO: Tratamento de Tipos para evitar 422
   const handleCreateProduct = async (data) => {
@@ -174,18 +217,18 @@ export default function Inventory() {
     setLoadingEan(true);
     try {
         let found = false;
-        let productData = { name: "", ncm: "" };
+        let productData = { name: "" };
 
-        // 1. Base Demo Expandida (Com NCMs reais aproximados)
+        // 1. Base comercial: EAN pode sugerir nome, nunca classificação fiscal.
         const demoProducts = {
-            '7891000088791': { name: 'Chocolate KitKat Nestlé 41,5g', ncm: '18063210' },
-            '7891000100103': { name: 'Chocolate KitKat White 41,5g', ncm: '18063210' },
-            '7894900011517': { name: 'Refrigerante Coca-Cola Lata 350ml', ncm: '22021000' },
-            '7894900011555': { name: 'Refrigerante Coca-Cola 600ml', ncm: '22021000' },
-            '7894900010015': { name: 'Refrigerante Coca-Cola 2L', ncm: '22021000' },
-            '7891000053508': { name: 'Caixa de Bombom Garoto 250g', ncm: '18069000' },
-            '7891991010856': { name: 'Cerveja Budweiser Long Neck 330ml', ncm: '22030000' },
-            '7896004006482': { name: 'Cerveja Skol Lata 350ml', ncm: '22030000' }
+            '7891000088791': { name: 'Chocolate KitKat Nestlé 41,5g' },
+            '7891000100103': { name: 'Chocolate KitKat White 41,5g' },
+            '7894900011517': { name: 'Refrigerante Coca-Cola Lata 350ml' },
+            '7894900011555': { name: 'Refrigerante Coca-Cola 600ml' },
+            '7894900010015': { name: 'Refrigerante Coca-Cola 2L' },
+            '7891000053508': { name: 'Caixa de Bombom Garoto 250g' },
+            '7891991010856': { name: 'Cerveja Budweiser Long Neck 330ml' },
+            '7896004006482': { name: 'Cerveja Skol Lata 350ml' }
         };
 
         if (demoProducts[ean]) {
@@ -201,10 +244,8 @@ export default function Inventory() {
                     const product = res.data.product;
                     const name = product.product_name_pt || product.product_name || "";
                     // Tenta adivinhar NCM pela categoria (muito básico) ou deixa vazio
-                    const ncm = ""; 
-                    
                     if (name) {
-                        productData = { name, ncm };
+                        productData = { name };
                         found = true;
                     }
                 }
@@ -215,10 +256,7 @@ export default function Inventory() {
 
         if (found) {
             setValueCreate('name', productData.name);
-            // Só preenche NCM se a API/Demo retornou algo, senão mantém o que o user digitou ou vazio
-            if (productData.ncm) setValueCreate('ncm', productData.ncm);
-            
-            toast.success("Dados encontrados!");
+            toast.success("Nome comercial encontrado. Revise a classificação fiscal com o contador.");
         } else {
             toast.error("Produto não encontrado na base. Preencha manualmente.");
         }
@@ -317,6 +355,10 @@ export default function Inventory() {
                     <Download size={18} /> Exportar
                 </Button>
 
+                <Button variant="secondary" onClick={openTaxRuleAssignment} disabled={!selectedFiscalProductIds.length}>
+                    Atribuir regra fiscal ({selectedFiscalProductIds.length})
+                </Button>
+
                 {/* BOTÃO AGORA CHAMA openCreateModal PARA SUGERIR CÓDIGO */}
                 <Button onClick={openCreateModal}>
                     <Plus size={18} /> Novo Produto
@@ -406,11 +448,17 @@ export default function Inventory() {
                 </Button>
             </div>
         </div>
-    ) : (
+        ) : (
         /* --- MODO DE VISUALIZAÇÃO PADRÃO --- */
         <div key={p.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 transition-colors gap-4">
             <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
+                    <input
+                        type="checkbox"
+                        aria-label={`Selecionar ${p.name} para atribuição fiscal`}
+                        checked={selectedFiscalProductIds.includes(p.id)}
+                        onChange={() => toggleFiscalProduct(p.id)}
+                    />
                     <p className="font-bold text-gray-900 text-lg">{p.name}</p>
                     <span className="text-[10px] font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-500 border border-gray-200">
                         Cód: {p.code}
@@ -426,6 +474,7 @@ export default function Inventory() {
                         </span>
                     )}
                     <span className="font-medium text-green-600">Venda: {formatCurrency(p.price)}</span>
+                    <FiscalStatusBadge status={p.fiscal_status} />
                 </div>
             </div>
 
@@ -593,6 +642,15 @@ export default function Inventory() {
                 product={historyModalProduct} 
                 marketId={selectedMarketId} 
                 onClose={() => setHistoryModalProduct(null)} 
+            />
+        )}
+        {showTaxRuleAssignment && (
+            <TaxRuleBulkAssignDialog
+                products={products.filter((product) => selectedFiscalProductIds.includes(product.id))}
+                rules={taxRules}
+                isSubmitting={assigningTaxRule}
+                onClose={() => setShowTaxRuleAssignment(false)}
+                onConfirm={assignTaxRule}
             />
         )}
     </div>

@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api, { clearAccessToken, setAccessToken } from '../lib/api';
 import { db } from '../lib/db';
-
-const AuthContext = createContext({});
+import { AuthContext } from './AuthContextDefinition';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -95,5 +94,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-export const useAuth = () => useContext(AuthContext);

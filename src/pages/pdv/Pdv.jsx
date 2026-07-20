@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../lib/db';
 import api, { getFiscalCreditsBalance } from '../../lib/api';
-import { useAuth } from '../../context/AuthContext';
-import { useSync } from '../../hooks/useSync';
+import { useAuth } from '../../hooks/useAuth';
+import { buildSyncSalePayload, isFiscalRuleFailure, useSync } from '../../hooks/useSync';
 import { useFiscalStatus } from '../../hooks/useFiscalStatus';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -11,6 +11,8 @@ import PaymentModal from '../../components/pdv/PaymentModal';
 import TerminalSelector from '../../components/pdv/TerminalSelector';
 import { generateReceipt } from '../../components/pdv/Receipt';
 import { isAuthorizedNfceInvoice, printAuthorizedNfce } from '../../lib/fiscalPrint';
+import FiscalSaleBlockDialog from '../../components/fiscal/FiscalSaleBlockDialog';
+import { fiscalBlockError, fiscalPreflightPayload, shouldBlockOfflineCheckout } from '../../lib/fiscalEnforcement';
 import {
   Search, ShoppingCart, LogOut, Wifi, WifiOff, Lock,
   Store, Loader2, CreditCard, Box, CheckCircle, Printer,
@@ -73,6 +75,8 @@ export default function PDV() {
   const [fiscalEmissionRequested, setFiscalEmissionRequested] = useState(false);
   const [fiscalQuotaBalance, setFiscalQuotaBalance] = useState(null);
   const [fiscalQuotaExceeded, setFiscalQuotaExceeded] = useState(false);
+  const [fiscalState, setFiscalState] = useState(null);
+  const [fiscalBlock, setFiscalBlock] = useState(null);
 
   const [lastSale, setLastSale] = useState(null);
   const [marketInfo, setMarketInfo] = useState(null);
@@ -146,6 +150,12 @@ export default function PDV() {
         if (!cancelled) setFiscalQuotaBalance(null);
       });
     return () => { cancelled = true; };
+  }, [marketId]);
+
+  useEffect(() => {
+    const safeMarketId = cleanUUID(marketId);
+    if (!safeMarketId) return;
+    db.fiscal_state.get(safeMarketId).then(setFiscalState).catch(() => setFiscalState(null));
   }, [marketId]);
 
   const checkBoxStatus = useCallback(async (isBackground = false) => {
@@ -261,6 +271,43 @@ export default function PDV() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, box, showPayment, showCloseBoxModal, showOpenBoxModal, searchResults, selectedIndex, searchTerm, saleSuccess]);
 
+  const requestFiscalEmission = async (saleId) => {
+    try {
+      await api.post(`/fiscal/${cleanUUID(marketId)}/sales/${saleId}/emit`);
+      setFiscalQuotaExceeded(false);
+      setPendingFiscalSaleId(saleId);
+      setFiscalEmissionRequested(true);
+    } catch (err) {
+      if (err.response?.status === 402) {
+        setFiscalQuotaExceeded(true);
+        toast.error('Limite mensal de NFC-e atingido. Adquira creditos extras.');
+      }
+      if (import.meta.env.DEV) console.warn('[PDV] Emissão fiscal falhou:', err?.message);
+    }
+  };
+
+  const completeSale = (salePayload, change) => {
+    setLastSale(salePayload);
+    setShowPayment(false);
+    setSaleSuccess({ open: true, change, saleId: salePayload.id });
+    setCart([]);
+    setCustomerCpf('');
+    stopFiscalPolling();
+    setPendingFiscalSaleId(null);
+    setFiscalEmissionRequested(false);
+  };
+
+  const cacheFiscalState = async (market, preflight) => {
+    const state = {
+      market_id: market,
+      enforcement: preflight.enforcement,
+      fetched_at: new Date().toISOString(),
+      pendency_summary: { error_count: preflight.errors?.length || 0 },
+    };
+    await db.fiscal_state.put(state);
+    setFiscalState(state);
+  };
+
   const handleFinishSale = async (payments) => {
     if (!box) return toast.error("Caixa fechado!");
     const saleId = uuidv4();
@@ -276,50 +323,84 @@ export default function PDV() {
       created_at: new Date().toISOString(),
       status: 'pending'
     };
+    const totalPaid = payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
+    const change = Math.max(0, totalPaid - total);
 
     try {
+      if (!isOnline && shouldBlockOfflineCheckout(fiscalState)) {
+        setFiscalBlock({ code: 'sale.fiscal_connection_required', items: [] });
+        return false;
+      }
+
+      let preflight = null;
+      if (isOnline) {
+        try {
+          const { data } = await api.post(
+            `/fiscal/${cleanUUID(marketId)}/sales/preflight`,
+            fiscalPreflightPayload(salePayload)
+          );
+          preflight = data;
+          cacheFiscalState(salePayload.market_id, data).catch(() => {
+            // Cache local é uma otimização offline; nunca altera a resposta autoritativa.
+          });
+        } catch (error) {
+          // A instalação anterior não conhece preflight. Mantemos off/warn compatível,
+          // mas um block já cacheado nunca pode virar venda offline por falha de rede.
+          if (shouldBlockOfflineCheckout(fiscalState)) {
+            setFiscalBlock({ code: 'sale.fiscal_connection_required', items: [] });
+            return false;
+          }
+        }
+      }
+
+      if (preflight?.enforcement === 'block') {
+        if (!preflight.allowed) {
+          setFiscalBlock({
+            code: preflight.errors?.[0]?.code || 'sale.fiscal_rule_invalid',
+            items: preflight.errors || [],
+          });
+          return false;
+        }
+
+        try {
+          await api.post(`/sales/${salePayload.market_id}/sync`, {
+            sales: [buildSyncSalePayload(salePayload, user?.id, { offline: false })],
+          });
+        } catch (error) {
+          if (isFiscalRuleFailure(error)) {
+            setFiscalBlock(fiscalBlockError(error));
+          } else {
+            toast.error('Não foi possível validar a venda fiscal. Tente novamente.');
+          }
+          return false;
+        }
+
+        // Block só confirma e limpa o carrinho após o sync autoritativo de uma venda.
+        completeSale(salePayload, change);
+        checkBoxStatus(true);
+        requestFiscalEmission(saleId);
+        return true;
+      }
+
       await db.sales_queue.add(salePayload);
       updatePendingCash();
 
       // Venda registrada localmente — operador nunca trava
-      setLastSale(salePayload);
-      const totalPaid = payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
-      const change = Math.max(0, totalPaid - total);
-      setShowPayment(false);
-      setSaleSuccess({ open: true, change, saleId });
-      setCart([]); setCustomerCpf('');
-
-      // Limpa polling anterior
-      stopFiscalPolling();
-      setPendingFiscalSaleId(null);
-      setFiscalEmissionRequested(false);
+      completeSale(salePayload, change);
 
       if (isOnline) {
         // Sync e emissão em background — não bloqueia o operador
         syncSales().then(async () => {
           checkBoxStatus(true);
-          try {
-            await api.post(`/fiscal/${cleanUUID(marketId)}/sales/${saleId}/emit`);
-            setFiscalQuotaExceeded(false);
-            // Ativa polling para acompanhar autorização
-            setPendingFiscalSaleId(saleId);
-            setFiscalEmissionRequested(true);
-          } catch (err) {
-            if (err.response?.status === 402) {
-              setFiscalQuotaExceeded(true);
-              toast.error('Limite mensal de NFC-e atingido. Adquira creditos extras.');
-            }
-            // Fiscal indisponível — cupom não fiscal já está pronto
-            if (import.meta.env.DEV) {
-              console.warn('[PDV] Emissão fiscal falhou:', err?.message);
-            }
-          }
+          await requestFiscalEmission(saleId);
         }).catch(() => {
           // Sync falhou — permanece com cupom não fiscal
         });
       }
+      return true;
     } catch (error) {
       console.error(error); toast.error("Erro ao salvar venda.");
+      return false;
     }
   };
 
@@ -494,6 +575,14 @@ export default function PDV() {
       </div>
 
       {showPayment && <PaymentModal total={total} marketId={cleanUUID(marketId)} onCancel={() => setShowPayment(false)} onConfirm={handleFinishSale} />}
+
+      {fiscalBlock && (
+        <FiscalSaleBlockDialog
+          error={fiscalBlock}
+          marketId={cleanUUID(marketId)}
+          onClose={() => setFiscalBlock(null)}
+        />
+      )}
 
       {saleSuccess.open && (
         <div className="fixed inset-0 bg-brand-green/90 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">

@@ -94,7 +94,8 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
       try {
           // Apenas envia os dados para o Pdv.jsx e aguarda.
           // O Pdv.jsx será responsável por fechar este modal e mostrar a tela de sucesso.
-          await onConfirm(payments);
+          const completed = await onConfirm(payments);
+          if (completed === false) setIsProcessing(false);
       } catch (error) {
           console.error(error);
           toast.error("Erro ao processar pagamentos.");

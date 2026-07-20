@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../lib/db';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from './useAuth';
 
 // --- LOGGER ---
 const logger = {
@@ -26,6 +26,49 @@ const logger = {
     console.groupEnd();
   }
 };
+
+export function fiscalFailureCode(error) {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === 'string') return detail;
+  return detail?.code || error?.code || null;
+}
+
+export function isFiscalRuleFailure(error) {
+  return String(fiscalFailureCode(error) || '').startsWith('sale.fiscal_rule_');
+}
+
+export function buildSyncSalePayload(sale, currentUserId, { offline = true } = {}) {
+  let customer_cpf = sale.customer_cpf;
+  if (customer_cpf && typeof customer_cpf === 'string') {
+    customer_cpf = customer_cpf.replace(/\D/g, '') || null;
+  } else {
+    customer_cpf = null;
+  }
+  const payload = {
+    id: sale.id,
+    market_id: sale.market_id,
+    box_id: sale.box_id,
+    terminal_id: sale.terminal_id,
+    operator_id: sale.operator_id || currentUserId,
+    discount: parseFloat(sale.discount || 0),
+    acrescimo: parseFloat(sale.surcharge || 0),
+    created_at: sale.created_at,
+    customer_cpf,
+    total_amount: parseFloat(sale.total_amount),
+    items: (Array.isArray(sale.items) ? sale.items : []).map(item => ({
+      product_id: item.product_id,
+      product_name: item.name || item.product_name || 'Item Indefinido',
+      quantity: parseFloat(item.quantity),
+      unit_price: parseFloat(item.unit_price),
+      total: parseFloat(item.total),
+    })),
+    payments: (Array.isArray(sale.payments) ? sale.payments : []).map(pay => ({
+      method: pay.method,
+      amount: parseFloat(pay.amount),
+    })),
+  };
+  return offline ? { ...payload, offline_id: String(sale.id) } : payload;
+}
 
 export function useSync() {
   const { user } = useAuth();
@@ -97,48 +140,11 @@ export function useSync() {
     try {
         for (const sale of pendingSales) {
             try {
-              // === SANITIZAÇÃO DE DADOS ===
-              let customer_cpf = sale.customer_cpf;
-              if (customer_cpf && typeof customer_cpf === 'string') {
-                  customer_cpf = customer_cpf.replace(/\D/g, ''); 
-                  if (customer_cpf === '') customer_cpf = null;
-              } else {
-                  customer_cpf = null;
-              }
-
-              // Garante que items e payments sejam arrays válidos
-              // Se vier undefined, null ou não for array, usa array vazio
-              const itemsList = Array.isArray(sale.items) ? sale.items : [];
-              const paymentsList = Array.isArray(sale.payments) ? sale.payments : [];
-
-              const singleSalePayload = {
-                  id: sale.id,
-                  offline_id: String(sale.id),
-                  market_id: sale.market_id,
-                  box_id: sale.box_id,
-                  terminal_id: sale.terminal_id,
-                  operator_id: sale.operator_id || currentUserId,
-                  discount: parseFloat(sale.discount || 0),
-                  acrescimo: parseFloat(sale.surcharge || 0),
-                  created_at: sale.created_at,
-                  customer_cpf: customer_cpf, 
-                  total_amount: parseFloat(sale.total_amount), 
-                  items: itemsList.map(item => ({
-                      product_id: item.product_id,
-                      product_name: item.name || item.product_name || "Item Indefinido",
-                      quantity: parseFloat(item.quantity),
-                      unit_price: parseFloat(item.unit_price),
-                      total: parseFloat(item.total),
-                  })),
-                  payments: paymentsList.map(pay => ({
-                      method: pay.method,
-                      amount: parseFloat(pay.amount)
-                  }))
-              };
+              const singleSalePayload = buildSyncSalePayload(sale, currentUserId);
 
               const payload = { sales: [singleSalePayload] };
 
-              const response = await api.post(`/sales/${sale.market_id}/sync`, payload);
+              await api.post(`/sales/${sale.market_id}/sync`, payload);
               
               await db.sales_queue.update(sale.id, { status: 'synced', synced_at: new Date() });
               await db.sales_queue.delete(sale.id);
@@ -151,6 +157,17 @@ export function useSync() {
               const status = error.response?.status;
               const errorDetail = error.response?.data?.detail || error.message;
               
+              if (isFiscalRuleFailure(error)) {
+                  // Pendência fiscal exige ação humana; repetir a mesma venda não a corrige.
+                  await db.sales_queue.update(sale.id, {
+                      status: 'needs_fiscal_review',
+                      retry_count: sale.retry_count || 0,
+                      error_log: JSON.stringify({ status, message: errorDetail, code: fiscalFailureCode(error), date: new Date(), final: true })
+                  });
+                  toast.error(`Venda #${sale.id} requer revisão fiscal.`, { duration: 6000, icon: '⚠️' });
+                  continue;
+              }
+
               // LÓGICA DE RETRY (3 TENTATIVAS)
               const currentRetries = (sale.retry_count || 0) + 1;
               const MAX_RETRIES = 3;

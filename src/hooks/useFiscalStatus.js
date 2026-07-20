@@ -71,7 +71,7 @@ export function useFiscalStatus({
   const timeoutRef = useRef(null);
   const lastSaleIdRef = useRef(null);
 
-  const stopPolling = useCallback((reason = 'manual') => {
+  const stopPolling = useCallback(() => {
     cancelledRef.current = true;
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -100,7 +100,7 @@ export function useFiscalStatus({
       setFiscalData(data);
 
       if (TERMINAL_STATUSES.has(newStatus)) {
-        stopPolling('terminal');
+        stopPolling();
 
         if (newStatus === 'authorized' && onAuthorized) {
           onAuthorized(data);
@@ -112,17 +112,13 @@ export function useFiscalStatus({
     } catch (err) {
       // Erros de rede não param o polling — pode ser transiente
       if (cancelledRef.current) return;
-      // Só logamos em dev para não poluir o console do operador
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[useFiscalStatus] poll error:', err?.message);
-      }
     }
   }, [marketId, saleId, onAuthorized, onTerminal, stopPolling]);
 
   useEffect(() => {
     // Limpar polling anterior quando saleId muda
     if (lastSaleIdRef.current !== saleId) {
-      stopPolling('sale_changed');
+      stopPolling();
       cancelledRef.current = false;
       setStatus(null);
       setFiscalData(null);
@@ -148,11 +144,11 @@ export function useFiscalStatus({
     timeoutRef.current = setTimeout(() => {
       if (cancelledRef.current) return;
       setHasTimedOut(true);
-      stopPolling('timeout');
+      stopPolling();
     }, maxDurationMs);
 
     return () => {
-      stopPolling('unmount');
+      stopPolling();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, marketId, saleId]);

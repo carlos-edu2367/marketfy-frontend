@@ -18,7 +18,7 @@ vi.mock('../lib/api', () => ({
   getApiErrorMessage: vi.fn((err, fallback) => err?.message || fallback),
 }));
 
-vi.mock('../context/AuthContext', () => ({
+vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'owner-1', name: 'Carlos' } }),
 }));
 
@@ -210,6 +210,21 @@ describe('CustomQuantityInput', () => {
     // Usa within para distinguir o texto do alerta do texto de ajuda do rodapé
     expect(within(alert).getByText(/minimo 10 creditos/i)).toBeInTheDocument();
     expect(api.get).not.toHaveBeenCalledWith('/fiscal/credits/price', expect.anything());
+  });
+
+  it('revalidates an entered quantity when the maximum changes', async () => {
+    const user = userEvent.setup({ delay: null });
+    api.get.mockResolvedValue({
+      data: { quantity: 5, price_gross: '3.60', unit_price: '0.72' },
+    });
+    const { rerender } = render(<CustomQuantityInput onPurchase={vi.fn()} minQty={1} maxQty={10} />);
+    const input = screen.getByLabelText(/quantidade de creditos/i);
+
+    await user.type(input, '5');
+    rerender(<CustomQuantityInput onPurchase={vi.fn()} minQty={1} maxQty={3} />);
+
+    const alert = await screen.findByRole('alert');
+    expect(within(alert).getByText(/maximo 3 creditos por compra/i)).toBeInTheDocument();
   });
 });
 

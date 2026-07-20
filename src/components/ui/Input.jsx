@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
 import { twMerge } from 'tailwind-merge';
 
 export const Input = forwardRef(({ label, icon: Icon, error, className, ...props }, ref) => {

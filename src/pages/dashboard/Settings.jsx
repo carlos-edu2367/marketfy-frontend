@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { User, FileText, Settings as Store, LogOut, Crown, Calendar, AlertTriangle, CreditCard, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
@@ -13,6 +13,9 @@ import { differenceInDays, parseISO } from 'date-fns';
 export default function Settings() {
   const { user, subscription, logout, refreshSubscription } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const requestedMarketId = searchParams.get('marketId');
   const [refreshingSubscription, setRefreshingSubscription] = useState(false);
   
   // Estado das Abas
@@ -25,22 +28,28 @@ export default function Settings() {
 
   // Carrega as lojas ao montar o componente
   useEffect(() => {
+    let cancelled = false;
+    if (requestedTab !== 'fiscal') setActiveTab('profile');
     async function loadMarkets() {
       try {
         setLoadingMarkets(true);
         const { data } = await api.get('/identity/markets');
+        if (cancelled) return;
         setMarkets(data);
-        if (data.length > 0) {
-          setSelectedMarketId(data[0].id);
-        }
+        const requestedMarket = requestedTab === 'fiscal'
+          ? data.find((market) => market.id === requestedMarketId)
+          : null;
+        if (requestedTab === 'fiscal') setActiveTab('fiscal');
+        if (data.length > 0) setSelectedMarketId(requestedMarket?.id || data[0].id);
       } catch (error) {
-        console.error(error);
+        if (!cancelled) console.error(error);
       } finally {
-        setLoadingMarkets(false);
+        if (!cancelled) setLoadingMarkets(false);
       }
     }
     loadMarkets();
-  }, []);
+    return () => { cancelled = true; };
+  }, [requestedMarketId, requestedTab]);
 
   // --- CÁLCULO DE VENCIMENTO DO PLANO ---
   const getPlanStatus = () => {

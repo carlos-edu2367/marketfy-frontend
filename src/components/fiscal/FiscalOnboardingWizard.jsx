@@ -5,26 +5,16 @@
  * botão de validar configuração e ativar produção.
  * Reduz configurações incorretas e suporte manual.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../lib/api';
 import { Button } from '../ui/Button';
 import {
   CheckCircle2, Circle, AlertCircle, AlertTriangle,
-  RefreshCw, ChevronRight, Rocket, TestTube2, Loader2,
-  Lock, Settings
+  RefreshCw, ChevronRight, Rocket, Loader2,
+  Settings
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
-
-const STEP_ICONS = {
-  dados_fiscais: Settings,
-  certificado_a1: Lock,
-  csc: Lock,
-  serie_numeracao: Settings,
-  perfil_tributario: Settings,
-  emissao_teste: TestTube2,
-  ambiente_producao: Rocket,
-};
 
 const STATUS_STYLE = {
   ok:      { icon: CheckCircle2,  color: 'text-green-600',  bg: 'bg-green-50',   border: 'border-green-200' },
@@ -43,8 +33,6 @@ const OVERALL_MESSAGES = {
 function ChecklistStep({ item, index }) {
   const style = STATUS_STYLE[item.status] || STATUS_STYLE.pending;
   const StatusIcon = style.icon;
-  const StepIcon = STEP_ICONS[item.key] || Settings;
-
   return (
     <div className={clsx(
       'flex items-start gap-4 p-4 rounded-xl border transition-colors',
@@ -85,7 +73,7 @@ export default function FiscalOnboardingWizard({ marketId, onConfigureClick }) {
   const [validating, setValidating] = useState(false);
   const [activating, setActivating] = useState(false);
 
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     if (!marketId) return;
     setLoading(true);
     try {
@@ -96,9 +84,9 @@ export default function FiscalOnboardingWizard({ marketId, onConfigureClick }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [marketId]);
 
-  useEffect(() => { fetchStatus(); }, [marketId]);
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
 
   const handleValidate = async () => {
     setValidating(true);

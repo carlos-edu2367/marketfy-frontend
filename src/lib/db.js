@@ -20,6 +20,16 @@ db.version(2).stores({
   session: 'key, value'
 });
 
+// Versão 3: cache local apenas de rollout/pendências. A regra e o snapshot
+// fiscal são sempre escolhidos e validados pelo servidor.
+db.version(3).stores({
+  products: 'id, code, barcode, market_id, name',
+  customers: 'id, market_id, name, cpf, phone',
+  sales_queue: '++id, market_id, status, created_at',
+  session: 'key, value',
+  fiscal_state: 'market_id, fetched_at'
+});
+
 // --- HELPERS DE SINCRONIZAÇÃO ---
 
 // Helper legado (mantido por compatibilidade)
