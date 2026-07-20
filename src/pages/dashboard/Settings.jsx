@@ -27,6 +27,7 @@ export default function Settings() {
 
   // Carrega as lojas ao montar o componente
   useEffect(() => {
+    if (requestedTab !== 'fiscal') setActiveTab('profile');
     async function loadMarkets() {
       try {
         setLoadingMarkets(true);

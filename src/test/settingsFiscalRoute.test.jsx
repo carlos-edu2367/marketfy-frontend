@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { get } = vi.hoisted(() => ({ get: vi.fn() }));
@@ -15,7 +16,12 @@ vi.mock('../components/settings/FiscalSettings', () => ({
 import Settings from '../pages/dashboard/Settings';
 
 function renderSettings(entry) {
-  return render(<MemoryRouter initialEntries={[entry]}><Settings /></MemoryRouter>);
+  return render(<MemoryRouter initialEntries={[entry]}><Settings /><RouteChange /></MemoryRouter>);
+}
+
+function RouteChange() {
+  const navigate = useNavigate();
+  return <button onClick={() => navigate('/dashboard/settings?tab=unsafe&marketId=not-a-market')}>Navegar inválido</button>;
 }
 
 describe('Settings fiscal route state', () => {
@@ -42,5 +48,16 @@ describe('Settings fiscal route state', () => {
     renderSettings('/dashboard/settings?tab=fiscal&marketId=not-a-market');
 
     await waitFor(() => expect(screen.getByTestId('fiscal-market')).toHaveTextContent('market-a'));
+  });
+
+  it('returns to the profile when a mounted fiscal screen navigates to an invalid tab', async () => {
+    const user = userEvent.setup();
+    renderSettings('/dashboard/settings?tab=fiscal&marketId=market-b');
+
+    await waitFor(() => expect(screen.getByTestId('fiscal-market')).toHaveTextContent('market-b'));
+    await user.click(screen.getByRole('button', { name: 'Navegar inválido' }));
+
+    await waitFor(() => expect(screen.queryByTestId('fiscal-market')).not.toBeInTheDocument());
+    expect(screen.getByText(/dados do usuário/i)).toBeInTheDocument();
   });
 });
