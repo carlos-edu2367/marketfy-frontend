@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -58,6 +58,26 @@ describe('Settings fiscal route state', () => {
     await user.click(screen.getByRole('button', { name: 'Navegar inválido' }));
 
     await waitFor(() => expect(screen.queryByTestId('fiscal-market')).not.toBeInTheDocument());
+    expect(screen.getByText(/dados do usuário/i)).toBeInTheDocument();
+  });
+
+  it('ignores a stale market response after navigation changes the requested tab', async () => {
+    const user = userEvent.setup();
+    let resolveFirstRequest;
+    get.mockReset();
+    get
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFirstRequest = resolve; }))
+      .mockResolvedValueOnce({ data: [{ id: 'market-a', name: 'Mercado A' }] });
+
+    renderSettings('/dashboard/settings?tab=fiscal&marketId=market-a');
+    await user.click(screen.getByRole('button', { name: 'Navegar inválido' }));
+    await waitFor(() => expect(screen.getByText(/dados do usuário/i)).toBeInTheDocument());
+
+    await act(async () => {
+      resolveFirstRequest({ data: [{ id: 'market-a', name: 'Mercado A' }] });
+      await Promise.resolve();
+    });
+    expect(screen.queryByTestId('fiscal-market')).not.toBeInTheDocument();
     expect(screen.getByText(/dados do usuário/i)).toBeInTheDocument();
   });
 });

@@ -27,11 +27,13 @@ export default function Settings() {
 
   // Carrega as lojas ao montar o componente
   useEffect(() => {
+    let cancelled = false;
     if (requestedTab !== 'fiscal') setActiveTab('profile');
     async function loadMarkets() {
       try {
         setLoadingMarkets(true);
         const { data } = await api.get('/identity/markets');
+        if (cancelled) return;
         setMarkets(data);
         const requestedMarket = requestedTab === 'fiscal'
           ? data.find((market) => market.id === requestedMarketId)
@@ -39,12 +41,13 @@ export default function Settings() {
         if (requestedTab === 'fiscal') setActiveTab('fiscal');
         if (data.length > 0) setSelectedMarketId(requestedMarket?.id || data[0].id);
       } catch (error) {
-        console.error(error);
+        if (!cancelled) console.error(error);
       } finally {
-        setLoadingMarkets(false);
+        if (!cancelled) setLoadingMarkets(false);
       }
     }
     loadMarkets();
+    return () => { cancelled = true; };
   }, [requestedMarketId, requestedTab]);
 
   // --- CÁLCULO DE VENCIMENTO DO PLANO ---
