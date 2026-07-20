@@ -45,7 +45,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
   // Carrega clientes (Dexie/Offline)
   useEffect(() => {
     if (selectedMethod === 'fiado' && customers.length === 0) {
-        async function loadCustomersLocal() {
+        const loadCustomersLocal = async () => {
             setLoadingCustomers(true);
             try {
                 const localCustomers = await db.customers
@@ -63,7 +63,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
             } finally {
                 setLoadingCustomers(false);
             }
-        }
+        };
         loadCustomersLocal();
     }
   }, [selectedMethod, marketId, customers.length]);
@@ -127,7 +127,8 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
       try {
           // Apenas envia os dados para o Pdv.jsx e aguarda.
           // O Pdv.jsx será responsável por fechar este modal e mostrar a tela de sucesso.
-          await onConfirm(payments);
+          const completed = await onConfirm(payments);
+          if (completed === false) setIsProcessing(false);
       } catch (error) {
           console.error(error);
           toast.error("Erro ao processar pagamentos.");
