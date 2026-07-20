@@ -4,44 +4,85 @@ import api, { subscribePlan } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Check, ArrowRight, X, ShieldCheck, Gift, Loader2, Store } from 'lucide-react';
+import {
+  ArrowRight,
+  BadgeCheck,
+  Check,
+  CreditCard,
+  FileText,
+  Gift,
+  Loader2,
+  ReceiptText,
+  ShieldCheck,
+  Store,
+  X,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '../../lib/utils';
 
+const BILLING_PERIODS = [
+  { label: 'Mensal', value: 30, economy: null, suffix: '/mês' },
+  { label: 'Semestral', value: 180, economy: 'Economize 5%', suffix: '/semestre' },
+  { label: 'Anual', value: 365, economy: 'Economize 10%', suffix: '/ano' },
+];
+
+const formatLimit = (value, suffix) => {
+  const numericValue = Number(value);
+  return numericValue > 0 ? `Até ${numericValue} ${suffix}` : 'Limite não incluído';
+};
+
+const formatFiscalLimit = (value) => {
+  const numericValue = Number(value);
+  return numericValue > 0
+    ? `${numericValue.toLocaleString('pt-BR')} emissões fiscais por mês`
+    : 'Emissões fiscais não incluídas';
+};
+
+const getPeriod = (days) => BILLING_PERIODS.find((period) => period.value === days) || BILLING_PERIODS[0];
+
+const PlanLimit = ({ icon: Icon, children, tone = 'default' }) => (
+  <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-3">
+    <Icon size={18} className={tone === 'accent' ? 'mt-0.5 shrink-0 text-brand-yellow' : 'mt-0.5 shrink-0 text-gray-400'} />
+    <span className="text-sm leading-5 text-gray-700">{children}</span>
+  </div>
+);
+
 export default function Plans() {
   const [plans, setPlans] = useState([]);
+  const [trialPlan, setTrialPlan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activatingTrial, setActivatingTrial] = useState(false);
-  
-  const [selectedDuration, setSelectedDuration] = useState(30); 
+  const [selectedDuration, setSelectedDuration] = useState(30);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [billingMode, setBillingMode] = useState('invoice'); // 'invoice' | 'recurring'
+  const [billingMode, setBillingMode] = useState('invoice');
   const [document, setDocument] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const showTrial = !user?.plan_id;
+  const selectedPeriod = getPeriod(selectedDuration);
 
   useEffect(() => {
     async function fetchPlans() {
       try {
         const { data } = await api.get('/identity/plans');
-        // Filtra apenas ativos E remove planos cortesia/trial da vitrine pública de compra normal
-        // O Trial será exibido em um card dedicado fixo
-        const publicPlans = data.filter(p => p.is_active && p.type !== 'cortesia' && p.type !== 'trial');
-        
-        // Ordena por preço
-        publicPlans.sort((a, b) => a.price_monthly - b.price_monthly);
-        
+        const activePlans = data.filter((plan) => plan.is_active);
+        const publicPlans = activePlans
+          .filter((plan) => plan.type === 'pago')
+          .sort((a, b) => Number(a.price_monthly || 0) - Number(b.price_monthly || 0));
+
+        setTrialPlan(activePlans.find((plan) => plan.type === 'trial') || null);
         setPlans(publicPlans);
       } catch (error) {
-        console.error("Erro ao carregar planos", error);
-        toast.error("Erro ao carregar opções de planos.");
+        console.error('Erro ao carregar planos', error);
+        toast.error('Não foi possível carregar as opções de planos.');
       } finally {
         setLoading(false);
       }
     }
+
     fetchPlans();
   }, []);
 
@@ -57,12 +98,13 @@ export default function Plans() {
     return 'monthly';
   };
 
-  const handleContract = async (e) => {
-    e?.preventDefault?.();
+  const handleContract = async (event) => {
+    event?.preventDefault?.();
     if (billingMode === 'recurring' && document.replace(/\D/g, '').length < 11) {
       toast.error('Informe um CPF ou CNPJ válido para cobrança recorrente.');
       return;
     }
+
     try {
       setSubmitting(true);
       const { data } = await subscribePlan({
@@ -71,10 +113,12 @@ export default function Plans() {
         billing_mode: billingMode,
         document: billingMode === 'recurring' ? document : undefined,
       });
+
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
         return;
       }
+
       toast.success('Assinatura iniciada. Acompanhe suas faturas em Configurações.');
       setShowModal(false);
       await refreshUser();
@@ -87,204 +131,263 @@ export default function Plans() {
 
   const handleActivateTrial = async () => {
     try {
-        setActivatingTrial(true);
-        await api.post('/auth/trial', {});
-        await refreshUser();
-        toast.success("Período de testes ativado com sucesso!");
-        navigate('/dashboard');
+      setActivatingTrial(true);
+      await api.post('/auth/trial', {});
+      await refreshUser();
+      toast.success('Período de testes ativado com sucesso!');
+      navigate('/dashboard');
     } catch (error) {
-        const msg = error.response?.data?.detail || "Erro ao ativar trial.";
-        toast.error(msg);
+      toast.error(error.response?.data?.detail || 'Erro ao ativar trial.');
     } finally {
-        setActivatingTrial(false);
+      setActivatingTrial(false);
     }
   };
 
   const getPrice = (plan) => {
-      if (selectedDuration === 30) return plan.price_monthly;
-      if (selectedDuration === 180) return plan.price_180days;
-      if (selectedDuration === 365) return plan.price_annual;
-      return 0;
+    if (selectedDuration === 30) return plan.price_monthly;
+    if (selectedDuration === 180) return plan.price_180days;
+    if (selectedDuration === 365) return plan.price_annual;
+    return 0;
   };
 
+  const recommendedPlanId = plans.length >= 3 ? plans[Math.floor(plans.length / 2)].id : null;
+  const cardCount = plans.length + (showTrial ? 1 : 0);
+  const gridColumns = cardCount >= 4 ? 'xl:grid-cols-4' : 'xl:grid-cols-3';
+
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
-      
-      {/* HEADER SIMPLES */}
-      <header className="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-30">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-              <div className="font-black text-xl tracking-tight flex items-center gap-2">
-                  <div className="bg-brand-yellow w-8 h-8 rounded-lg flex items-center justify-center text-brand-dark">M</div>
-                  Marketfy
-              </div>
-              <div className="text-sm text-gray-500">
-                  Logado como <span className="font-bold text-gray-900">{user?.name}</span>
-              </div>
+    <div className="min-h-screen bg-[#f7f8fa] font-sans text-gray-800">
+      <header className="sticky top-0 z-30 border-b border-gray-200/80 bg-white/95 px-5 py-4 backdrop-blur sm:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5 font-black tracking-tight text-gray-900">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-yellow text-lg text-brand-dark shadow-sm">M</div>
+            <span className="text-xl">Marketfy</span>
           </div>
+          <div className="text-right text-xs text-gray-500 sm:text-sm">
+            <span className="hidden sm:inline">Você está logado como </span>
+            <span className="font-bold text-gray-900">{user?.name || 'usuário'}</span>
+          </div>
+        </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
+      <main className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
         {user?.plan_expiration && new Date(user.plan_expiration) < new Date() && (
-            <div className="max-w-2xl mx-auto mb-8 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-center font-bold">
-                Seu uso expirou. Contrate um plano para continuar usando o Marketfy.
-            </div>
+          <div className="mx-auto mb-8 flex max-w-3xl items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-700 sm:items-center sm:justify-center">
+            <ShieldCheck size={18} className="mt-0.5 shrink-0 sm:mt-0" />
+            <span>Seu plano expirou. Escolha uma opção para continuar vendendo pelo Marketfy.</span>
+          </div>
         )}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-            <h1 className="text-4xl font-black text-gray-900 mb-4">Escolha o plano ideal</h1>
-            <p className="text-gray-500 text-lg">
-                Desbloqueie todo o potencial do seu mercado. Sem fidelidade, cancele quando quiser.
-            </p>
-            
-            {/* SELETOR DE PERÍODO */}
-            <div className="flex justify-center mt-8 gap-4">
-                {[
-                    { label: 'Mensal', value: 30 },
-                    { label: 'Semestral (-5%)', value: 180 },
-                    { label: 'Anual (-10%)', value: 365 }
-                ].map(opt => (
-                    <button
-                        key={opt.value}
-                        onClick={() => setSelectedDuration(opt.value)}
-                        className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
-                            selectedDuration === opt.value 
-                            ? 'bg-slate-900 text-white shadow-lg scale-105' 
-                            : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-400'
-                        }`}
-                    >
-                        {opt.label}
-                    </button>
-                ))}
-            </div>
-        </div>
+
+        <section className="mx-auto max-w-3xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-yellow-200 bg-yellow-50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-yellow-800">
+            <BadgeCheck size={15} /> Planos simples e transparentes
+          </div>
+          <h1 className="text-4xl font-black leading-tight tracking-tight text-gray-950 sm:text-5xl">
+            Venda mais com a operação sob controle.
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-gray-500 sm:text-lg">
+            Tenha PDV, gestão e emissão fiscal em um só lugar. Compare os limites e escolha o plano que acompanha o crescimento do seu negócio.
+          </p>
+        </section>
+
+        <section className="mx-auto mt-9 flex max-w-xl flex-col items-center gap-3" aria-label="Período de cobrança">
+          <div className="flex w-full flex-wrap justify-center gap-1 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-sm sm:w-auto">
+            {BILLING_PERIODS.map((period) => (
+              <button
+                key={period.value}
+                type="button"
+                aria-pressed={selectedDuration === period.value}
+                onClick={() => setSelectedDuration(period.value)}
+                className={`min-w-[104px] rounded-xl px-3 py-2.5 text-sm font-bold transition-all sm:min-w-[130px] ${
+                  selectedDuration === period.value
+                    ? 'bg-gray-950 text-white shadow-md'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                {period.label}
+                {period.economy && (
+                  <span className={`mt-0.5 block text-[10px] font-semibold ${selectedDuration === period.value ? 'text-brand-yellow' : 'text-emerald-600'}`}>
+                    {period.economy}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500">Cancele quando quiser. Sem fidelidade.</p>
+        </section>
 
         {loading ? (
-            <div className="flex justify-center py-20">
-                <Loader2 className="animate-spin text-brand-yellow" size={48} />
-            </div>
+          <div className="flex justify-center py-24" role="status" aria-label="Carregando planos">
+            <Loader2 className="animate-spin text-brand-yellow" size={40} />
+          </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
-                
-                {/* CARD TRIAL - SEMPRE VISÍVEL SE ELEGÍVEL */}
-                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 p-6 rounded-3xl border-2 border-brand-yellow/50 relative overflow-hidden shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1">
-                    <div className="absolute top-0 right-0 bg-brand-yellow text-brand-dark text-[10px] font-black uppercase px-3 py-1 rounded-bl-xl">
-                        Recomendado
-                    </div>
-                    
-                    <div className="w-12 h-12 bg-brand-yellow rounded-2xl flex items-center justify-center text-brand-dark mb-4 shadow-sm">
-                        <Gift size={24} />
-                    </div>
-                    
-                    <h3 className="text-2xl font-black text-gray-900 mb-2">Teste Grátis</h3>
-                    <p className="text-sm text-gray-600 mb-6 min-h-[40px]">
-                        Experimente o plano PRO completo por 14 dias sem compromisso.
-                    </p>
-                    
-                    <div className="mb-6">
-                        <span className="text-4xl font-black text-gray-900">R$ 0</span>
-                        <span className="text-gray-500 font-medium">/14 dias</span>
-                    </div>
-
-                    <ul className="space-y-3 mb-8">
-                        <li className="flex gap-2 text-sm text-gray-700 font-medium"><Check size={18} className="text-green-600 shrink-0"/> Todas as funções PRO</li>
-                        <li className="flex gap-2 text-sm text-gray-700 font-medium"><Check size={18} className="text-green-600 shrink-0"/> Emissão Fiscal</li>
-                        <li className="flex gap-2 text-sm text-gray-700 font-medium"><Check size={18} className="text-green-600 shrink-0"/> Suporte Completo</li>
-                    </ul>
-
-                    <Button 
-                        onClick={handleActivateTrial} 
-                        isLoading={activatingTrial}
-                        className="w-full bg-slate-900 text-white hover:bg-slate-800 font-bold h-12 shadow-lg"
-                    >
-                        Ativar Agora
-                    </Button>
-                    <p className="text-xs text-center text-gray-400 mt-3">Não pede cartão de crédito.</p>
+          <section className={`mt-10 grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 ${gridColumns}`} aria-label="Planos disponíveis">
+            {showTrial && (
+              <article className="relative flex h-full flex-col overflow-hidden rounded-3xl border-2 border-brand-yellow bg-gradient-to-b from-yellow-50 to-white p-6 shadow-lg shadow-yellow-100/60">
+                <div className="absolute right-0 top-0 rounded-bl-2xl bg-brand-yellow px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-brand-dark">
+                  Comece sem risco
                 </div>
+                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-yellow text-brand-dark shadow-sm">
+                  <Gift size={22} />
+                </div>
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-yellow-800">Experimente antes de decidir</p>
+                <h2 className="text-2xl font-black tracking-tight text-gray-950">Teste grátis por 14 dias</h2>
+                <p className="mt-3 text-sm leading-6 text-gray-600">Conheça os recursos do Marketfy com tempo para configurar sua operação e testar o fluxo completo.</p>
+                <div className="mt-6 flex items-end gap-2">
+                  <span className="text-4xl font-black tracking-tight text-gray-950">R$ 0</span>
+                  <span className="pb-1 text-sm font-medium text-gray-500">por 14 dias</span>
+                </div>
+                <div className="mt-6 space-y-2.5">
+                  <PlanLimit icon={ReceiptText} tone="accent">{formatFiscalLimit(trialPlan?.fiscal_monthly_limit)}</PlanLimit>
+                  <PlanLimit icon={Check}>Acesso aos recursos PRO</PlanLimit>
+                  <PlanLimit icon={ShieldCheck}>Sem cartão de crédito</PlanLimit>
+                </div>
+                <div className="mt-auto pt-7">
+                  <Button
+                    onClick={handleActivateTrial}
+                    isLoading={activatingTrial}
+                    aria-label="Ativar teste grátis"
+                    className="h-12 w-full bg-gray-950 font-bold text-white shadow-lg hover:bg-gray-800"
+                  >
+                    Ativar teste grátis <ArrowRight size={18} />
+                  </Button>
+                  <p className="mt-3 text-center text-xs text-gray-500">Sem cobrança automática.</p>
+                </div>
+              </article>
+            )}
 
-                {/* PLANOS NORMAIS */}
-                {plans.map(plan => (
-                    <div key={plan.id} className="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm hover:shadow-xl transition-all hover:border-brand-yellow/30 hover:-translate-y-1">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                        <p className="text-xs text-gray-500 mb-6 min-h-[32px]">
-                            {plan.description || "Para negócios em crescimento."}
-                        </p>
-                        
-                        <div className="mb-6">
-                            <span className="text-4xl font-black text-gray-900">{formatCurrency(getPrice(plan))}</span>
-                            <span className="text-gray-400 font-medium text-xs block mt-1">
-                                {selectedDuration === 30 ? '/mês' : (selectedDuration === 180 ? '/semestre' : '/ano')}
-                            </span>
-                        </div>
-
-                        <div className="space-y-3 mb-8">
-                            <div className="flex gap-2 text-sm text-gray-600">
-                                <Store size={18} className="text-brand-yellow shrink-0" /> 
-                                <span>Até <strong>{plan.max_markets}</strong> lojas</span>
-                            </div>
-                            <div className="flex gap-2 text-sm text-gray-600">
-                                <ShieldCheck size={18} className="text-brand-yellow shrink-0" />
-                                <span>Até <strong>{plan.max_terminals}</strong> caixas</span>
-                            </div>
-                        </div>
-
-                        <Button 
-                            onClick={() => handleSelectPlan(plan)}
-                            variant="secondary"
-                            className="w-full border-2 border-gray-100 hover:border-brand-yellow hover:bg-yellow-50 text-gray-700 font-bold h-12"
-                        >
-                            Contratar
-                        </Button>
+            {plans.map((plan) => {
+              const isRecommended = plan.id === recommendedPlanId;
+              return (
+                <article
+                  key={plan.id}
+                  className={`relative flex h-full flex-col rounded-3xl border bg-white p-6 transition-all hover:-translate-y-1 hover:shadow-xl ${
+                    isRecommended ? 'border-gray-950 shadow-lg shadow-gray-200/70' : 'border-gray-200 shadow-sm'
+                  }`}
+                >
+                  {isRecommended && (
+                    <div className="absolute -top-3 left-6 rounded-full bg-gray-950 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
+                      Mais escolhido
                     </div>
-                ))}
-            </div>
+                  )}
+                  <div className="mb-5 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Plano Marketfy</p>
+                      <h2 className="text-2xl font-black tracking-tight text-gray-950">{plan.name}</h2>
+                    </div>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-gray-700">
+                      <CreditCard size={19} />
+                    </div>
+                  </div>
+                  <p className="min-h-[48px] text-sm leading-6 text-gray-500">{plan.description || 'Para negócios que querem vender com mais organização.'}</p>
+
+                  <div className="mt-5 border-y border-gray-100 py-5">
+                    <div className="flex items-end gap-2">
+                      <span className="text-4xl font-black tracking-tight text-gray-950">{formatCurrency(getPrice(plan))}</span>
+                      <span className="pb-1 text-sm font-medium text-gray-400">{selectedPeriod.suffix}</span>
+                    </div>
+                    {selectedDuration !== 30 && (
+                      <p className="mt-1 text-xs font-semibold text-emerald-600">Melhor valor para manter sua operação ativa.</p>
+                    )}
+                  </div>
+
+                  <div className="mt-5">
+                    <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Limites do plano</p>
+                    <div className="space-y-2">
+                      <PlanLimit icon={Store} tone="accent">{formatLimit(plan.max_markets, 'lojas')}</PlanLimit>
+                      <PlanLimit icon={ShieldCheck} tone="accent">{formatLimit(plan.max_terminals, 'caixas')}</PlanLimit>
+                      <PlanLimit icon={ReceiptText} tone="accent">{formatFiscalLimit(plan.fiscal_monthly_limit)}</PlanLimit>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 space-y-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2"><Check size={16} className="text-emerald-600" /> PDV e gestão em um só lugar</div>
+                    <div className="flex items-center gap-2"><Check size={16} className="text-emerald-600" /> Suporte incluído</div>
+                    <div className="flex items-center gap-2"><Check size={16} className="text-emerald-600" /> Sem fidelidade</div>
+                  </div>
+
+                  <div className="mt-auto pt-7">
+                    <Button
+                      onClick={() => handleSelectPlan(plan)}
+                      variant={isRecommended ? 'primary' : 'secondary'}
+                      className={`h-12 w-full font-bold ${isRecommended ? '' : 'border-2 border-gray-100 hover:border-brand-yellow hover:bg-yellow-50'}`}
+                    >
+                      Escolher plano <ArrowRight size={18} />
+                    </Button>
+                    <p className="mt-3 text-center text-xs text-gray-400">Pagamento seguro e ativação rápida.</p>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+        )}
+
+        {!loading && plans.length === 0 && (
+          <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
+            Nenhum plano está disponível no momento. Tente novamente em instantes.
+          </div>
         )}
       </main>
 
-      {/* MODAL DE INTERESSE */}
       {showModal && selectedPlan && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
-                <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                    <X />
-                </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="contract-title">
+          <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-7">
+            <button
+              type="button"
+              onClick={() => setShowModal(false)}
+              aria-label="Fechar contratação"
+              className="absolute right-4 top-4 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            >
+              <X size={20} />
+            </button>
 
-                <h2 className="text-2xl font-black text-gray-900 mb-2">Finalizar Contratação</h2>
-                <p className="text-gray-500 mb-6">Nossa equipe ativará seu plano em instantes.</p>
-
-                <form onSubmit={handleContract} className="space-y-4">
-                    <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 border border-blue-100">
-                        <p className="font-bold mb-1">Resumo do Pedido</p>
-                        <p>Plano: <strong>{selectedPlan.name}</strong></p>
-                        <p>Valor: <strong>{formatCurrency(getPrice(selectedPlan))}</strong> ({selectedDuration === 30 ? 'Mensal' : (selectedDuration === 180 ? 'Semestral' : 'Anual')})</p>
-                    </div>
-
-                    <div className="space-y-2">
-                        <p className="text-sm font-bold text-gray-700">Forma de cobrança</p>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button type="button" onClick={() => setBillingMode('invoice')}
-                                className={`p-3 rounded-xl border-2 text-left text-sm font-bold ${billingMode === 'invoice' ? 'border-brand-yellow bg-yellow-50' : 'border-gray-200'}`}>
-                                Por pagamento
-                                <span className="block text-xs font-normal text-gray-500">Fatura por período</span>
-                            </button>
-                            <button type="button" onClick={() => setBillingMode('recurring')}
-                                className={`p-3 rounded-xl border-2 text-left text-sm font-bold ${billingMode === 'recurring' ? 'border-brand-yellow bg-yellow-50' : 'border-gray-200'}`}>
-                                Cobrança recorrente
-                                <span className="block text-xs font-normal text-gray-500">Cartão automático</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {billingMode === 'recurring' && (
-                        <Input label="CPF ou CNPJ" placeholder="Somente números" value={document}
-                               onChange={(e) => setDocument(e.target.value)} autoFocus />
-                    )}
-
-                    <div className="pt-4">
-                        <Button type="submit" variant="primary" size="lg" className="w-full font-bold" isLoading={submitting}>
-                            Ir para o pagamento <ArrowRight size={20} />
-                        </Button>
-                    </div>
-                </form>
+            <div className="mb-6 pr-8">
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-yellow-700">Quase lá</p>
+              <h2 id="contract-title" className="text-2xl font-black tracking-tight text-gray-950">Ative seu plano em poucos passos</h2>
+              <p className="mt-2 text-sm leading-6 text-gray-500">Escolha a forma de cobrança e siga para o pagamento seguro.</p>
             </div>
+
+            <form onSubmit={handleContract} className="space-y-5">
+              <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-950">
+                <div className="mb-3 flex items-center gap-2 font-bold"><FileText size={17} /> Resumo do pedido</div>
+                <div className="flex items-center justify-between gap-4"><span className="text-yellow-800">Plano</span><strong>{selectedPlan.name}</strong></div>
+                <div className="mt-2 flex items-center justify-between gap-4"><span className="text-yellow-800">Período</span><strong>{selectedPeriod.label}</strong></div>
+                <div className="mt-2 flex items-center justify-between gap-4"><span className="text-yellow-800">Valor</span><strong>{formatCurrency(getPrice(selectedPlan))}</strong></div>
+              </div>
+
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-bold text-gray-700">Como você quer pagar?</legend>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    aria-pressed={billingMode === 'invoice'}
+                    onClick={() => setBillingMode('invoice')}
+                    className={`rounded-xl border-2 p-3 text-left text-sm transition-colors ${billingMode === 'invoice' ? 'border-brand-yellow bg-yellow-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <span className="flex items-center gap-2 font-bold"><FileText size={16} /> Fatura por período</span>
+                    <span className="mt-1 block text-xs text-gray-500">Você paga a cada ciclo.</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={billingMode === 'recurring'}
+                    onClick={() => setBillingMode('recurring')}
+                    className={`rounded-xl border-2 p-3 text-left text-sm transition-colors ${billingMode === 'recurring' ? 'border-brand-yellow bg-yellow-50' : 'border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <span className="flex items-center gap-2 font-bold"><CreditCard size={16} /> Cobrança recorrente</span>
+                    <span className="mt-1 block text-xs text-gray-500">Renovação automática.</span>
+                  </button>
+                </div>
+              </fieldset>
+
+              {billingMode === 'recurring' && (
+                <Input label="CPF ou CNPJ" placeholder="Somente números" value={document} onChange={(event) => setDocument(event.target.value)} autoFocus />
+              )}
+
+              <Button type="submit" variant="primary" size="lg" className="h-12 w-full font-bold" isLoading={submitting}>
+                Ir para o pagamento <ArrowRight size={19} />
+              </Button>
+              <p className="text-center text-xs leading-5 text-gray-400">Você será direcionado para concluir o pagamento com segurança.</p>
+            </form>
+          </div>
         </div>
       )}
     </div>
