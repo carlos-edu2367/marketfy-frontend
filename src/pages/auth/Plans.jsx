@@ -220,9 +220,9 @@ export default function Plans() {
             <Loader2 className="animate-spin text-brand-yellow" size={40} />
           </div>
         ) : (
-          <section className={`mt-10 grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 ${gridColumns}`} aria-label="Planos disponíveis">
+          <section className={`mt-10 grid grid-cols-1 items-stretch justify-items-center gap-5 md:grid-cols-2 ${gridColumns}`} aria-label="Planos disponíveis">
             {showTrial && (
-              <article className="relative flex h-full flex-col overflow-hidden rounded-3xl border-2 border-brand-yellow bg-gradient-to-b from-yellow-50 to-white p-6 shadow-lg shadow-yellow-100/60">
+              <article className="relative flex h-full w-full max-w-[380px] flex-col overflow-hidden rounded-3xl border-2 border-brand-yellow bg-gradient-to-b from-yellow-50 to-white p-6 shadow-lg shadow-yellow-100/60">
                 <div className="absolute right-0 top-0 rounded-bl-2xl bg-brand-yellow px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-brand-dark">
                   Comece sem risco
                 </div>
@@ -260,7 +260,7 @@ export default function Plans() {
               return (
                 <article
                   key={plan.id}
-                  className={`relative flex h-full flex-col rounded-3xl border bg-white p-6 transition-all hover:-translate-y-1 hover:shadow-xl ${
+                  className={`relative flex h-full w-full max-w-[380px] flex-col rounded-3xl border bg-white p-6 transition-all hover:-translate-y-1 hover:shadow-xl ${
                     isRecommended ? 'border-gray-950 shadow-lg shadow-gray-200/70' : 'border-gray-200 shadow-sm'
                   }`}
                 >
