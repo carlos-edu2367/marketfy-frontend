@@ -17,7 +17,6 @@ describe('FiscalSaleBlockDialog', () => {
             })),
           }}
           marketId="market-1"
-          role="cashier"
           onClose={() => {}}
         />
       </MemoryRouter>
@@ -27,17 +26,20 @@ describe('FiscalSaleBlockDialog', () => {
     expect(screen.getByText('Produto 5')).toBeInTheDocument();
     expect(screen.queryByText('Produto 6')).not.toBeInTheDocument();
     expect(screen.getByText(/e mais 1 produto/i)).toBeInTheDocument();
-    expect(screen.getByText(/chame o responsável/i)).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /abrir central fiscal/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /abrir central fiscal/i })).toHaveAttribute(
+      'href',
+      '/dashboard/settings?tab=fiscal&marketId=market-1'
+    );
+    expect(screen.getByText(/a central fiscal informará/i)).toBeInTheDocument();
   });
 
-  it('gives manager recovery access to the fiscal center', () => {
+  it('does not infer market authorization from the global user role', () => {
     render(
       <MemoryRouter>
         <FiscalSaleBlockDialog
           error={{ code: 'sale.fiscal_connection_required', items: [] }}
           marketId="market-1"
-          role="manager"
+          role="cashier"
           onClose={() => {}}
         />
       </MemoryRouter>

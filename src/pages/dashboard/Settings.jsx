@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -12,6 +12,9 @@ import { differenceInDays, parseISO } from 'date-fns';
 export default function Settings() {
   const { user, subscription, logout, refreshSubscription } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const requestedMarketId = searchParams.get('marketId');
   const [refreshingSubscription, setRefreshingSubscription] = useState(false);
   
   // Estado das Abas
@@ -29,9 +32,11 @@ export default function Settings() {
         setLoadingMarkets(true);
         const { data } = await api.get('/identity/markets');
         setMarkets(data);
-        if (data.length > 0) {
-          setSelectedMarketId(data[0].id);
-        }
+        const requestedMarket = requestedTab === 'fiscal'
+          ? data.find((market) => market.id === requestedMarketId)
+          : null;
+        if (requestedTab === 'fiscal') setActiveTab('fiscal');
+        if (data.length > 0) setSelectedMarketId(requestedMarket?.id || data[0].id);
       } catch (error) {
         console.error(error);
       } finally {
@@ -39,7 +44,7 @@ export default function Settings() {
       }
     }
     loadMarkets();
-  }, []);
+  }, [requestedMarketId, requestedTab]);
 
   // --- CÁLCULO DE VENCIMENTO DO PLANO ---
   const getPlanStatus = () => {

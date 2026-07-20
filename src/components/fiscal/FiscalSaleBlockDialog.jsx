@@ -1,17 +1,14 @@
 import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 
-const RECOVERY_ROLES = new Set(['owner', 'manager']);
-
 function productLabel(item, index) {
   return item?.product_name || item?.name || item?.product_id || `Item ${index + 1}`;
 }
 
-export default function FiscalSaleBlockDialog({ error, marketId, role, onClose }) {
+export default function FiscalSaleBlockDialog({ error, marketId, onClose }) {
   const items = Array.isArray(error?.items) ? error.items : [];
   const visibleItems = items.slice(0, 5);
   const hiddenCount = Math.max(0, items.length - visibleItems.length);
-  const canRecover = RECOVERY_ROLES.has(String(role || '').toLowerCase());
   const isConnectionError = error?.code === 'sale.fiscal_connection_required';
   const fiscalUrl = `/dashboard/settings?tab=fiscal&marketId=${marketId}`;
 
@@ -37,13 +34,10 @@ export default function FiscalSaleBlockDialog({ error, marketId, role, onClose }
           </ul>
         )}
 
-        {canRecover ? (
-          <Link to={fiscalUrl} className="mb-3 flex w-full justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
-            Abrir Central Fiscal
-          </Link>
-        ) : (
-          <p className="mb-3 rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">Chame o responsável para corrigir a configuração fiscal.</p>
-        )}
+        <Link to={fiscalUrl} className="mb-3 flex w-full justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
+          Abrir Central Fiscal
+        </Link>
+        <p className="mb-3 rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700">A Central Fiscal informará se você tem permissão para corrigir esta pendência.</p>
         <button type="button" onClick={onClose} className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Voltar ao pagamento</button>
       </div>
     </div>

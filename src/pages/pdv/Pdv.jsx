@@ -580,7 +580,6 @@ export default function PDV() {
         <FiscalSaleBlockDialog
           error={fiscalBlock}
           marketId={cleanUUID(marketId)}
-          role={user?.role}
           onClose={() => setFiscalBlock(null)}
         />
       )}
