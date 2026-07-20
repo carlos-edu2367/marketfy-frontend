@@ -153,12 +153,12 @@ export default function Plans() {
   const recommendedPlanId = plans.length >= 3 ? plans[Math.floor(plans.length / 2)].id : null;
   const cardCount = plans.length + (showTrial ? 1 : 0);
   const gridColumns = cardCount === 1
-    ? 'xl:grid-cols-1'
+    ? 'lg:grid-cols-1'
     : cardCount === 2
-      ? 'xl:grid-cols-2'
+      ? 'lg:grid-cols-2'
       : cardCount >= 4
-        ? 'xl:grid-cols-4'
-        : 'xl:grid-cols-3';
+        ? 'lg:grid-cols-3 xl:grid-cols-4'
+        : 'lg:grid-cols-3';
 
   return (
     <div className="min-h-screen bg-[#f7f8fa] font-sans text-gray-800">
