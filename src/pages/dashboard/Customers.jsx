@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom'; // Importado para navegação
 import api from '../../lib/api';
@@ -10,6 +10,7 @@ import {
   ShoppingCart, CheckCircle, ExternalLink // Ícones adicionados
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { db } from '../../lib/db';
 import toast from 'react-hot-toast';
 
 export default function Customers() {
@@ -23,12 +24,18 @@ export default function Customers() {
   // Modais
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [paymentModal, setPaymentModal] = useState({ open: false, customer: null });
+  const [creditLimitModal, setCreditLimitModal] = useState({ open: false, customer: null });
   
   // Estado do Extrato
   const [ledgerState, setLedgerState] = useState({ open: false, customer: null, transactions: [], loading: false });
 
   // Estado de loading do pagamento
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [creditLimitSaving, setCreditLimitSaving] = useState(false);
+  const [creditLimitFocusRestoreCustomerId, setCreditLimitFocusRestoreCustomerId] = useState(null);
+  const creditLimitDialogRef = useRef(null);
+  const creditLimitTriggerRef = useRef(null);
+  const creditLimitTriggerCustomerIdRef = useRef(null);
 
   const { register, handleSubmit, reset } = useForm();
   
@@ -36,6 +43,33 @@ export default function Customers() {
   const { register: registerPay, handleSubmit: handleSubmitPay, reset: resetPay } = useForm({
       defaultValues: { payment_method: 'dinheiro' }
   });
+  const {
+    register: registerCreditLimit,
+    handleSubmit: handleSubmitCreditLimit,
+    reset: resetCreditLimit,
+    setFocus: setCreditLimitFocus,
+    watch: watchCreditLimit,
+  } = useForm();
+  const enteredCreditLimit = watchCreditLimit('credit_limit');
+  const creditLimitBelowDebt = enteredCreditLimit !== undefined
+    && enteredCreditLimit !== ''
+    && parseFloat(enteredCreditLimit) < parseFloat(creditLimitModal.customer?.current_debt || 0);
+
+  useEffect(() => {
+    if (creditLimitModal.open) setCreditLimitFocus('credit_limit');
+  }, [creditLimitModal.open, setCreditLimitFocus]);
+
+  useLayoutEffect(() => {
+    if (!creditLimitFocusRestoreCustomerId || creditLimitModal.open || loading) return;
+
+    const trigger = Array.from(document.querySelectorAll('[data-credit-limit-trigger]')).find(
+      (element) => element.dataset.creditLimitTrigger === creditLimitFocusRestoreCustomerId
+    );
+    if (trigger) {
+      trigger.focus();
+      setCreditLimitFocusRestoreCustomerId(null);
+    }
+  }, [creditLimitFocusRestoreCustomerId, creditLimitModal.open, loading]);
 
   // 1. Carrega Lojas
   useEffect(() => {
@@ -96,6 +130,77 @@ export default function Customers() {
     } catch (error) {
       const msg = error.response?.data?.detail || "Erro ao cadastrar cliente.";
       toast.error(msg);
+    }
+  };
+
+  const openCreditLimitModal = (customer, trigger) => {
+    creditLimitTriggerRef.current = trigger;
+    creditLimitTriggerCustomerIdRef.current = customer.id;
+    resetCreditLimit({ credit_limit: customer.credit_limit ?? 0 });
+    setCreditLimitModal({ open: true, customer });
+  };
+
+  const closeCreditLimitModal = ({ restoreAfterRefresh = false } = {}) => {
+    setCreditLimitModal({ open: false, customer: null });
+    if (restoreAfterRefresh) {
+      setCreditLimitFocusRestoreCustomerId(creditLimitTriggerCustomerIdRef.current);
+    } else {
+      creditLimitTriggerRef.current?.focus();
+    }
+  };
+
+  const handleCreditLimitKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      if (creditLimitSaving) return;
+      event.preventDefault();
+      closeCreditLimitModal();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusableElements = creditLimitDialogRef.current?.querySelectorAll(
+      'button:not([disabled]), input:not([disabled])'
+    );
+    if (!focusableElements?.length) return;
+
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  const handleCreditLimitUpdate = async (data) => {
+    if (!creditLimitModal.customer || creditLimitSaving) return;
+
+    const creditLimit = parseFloat(data.credit_limit);
+    if (!Number.isFinite(creditLimit) || creditLimit < 0) {
+      toast.error('Informe um limite de crédito válido.');
+      return;
+    }
+
+    try {
+      setCreditLimitSaving(true);
+      const { data: updated } = await api.patch(
+        `/finance/${selectedMarketId}/customers/${creditLimitModal.customer.id}`,
+        { credit_limit: creditLimit }
+      );
+
+      await db.customers.update(updated.id, { credit_limit: updated.credit_limit });
+      toast.success('Limite de crédito atualizado com sucesso!');
+      closeCreditLimitModal({ restoreAfterRefresh: true });
+      loadCustomers();
+    } catch (error) {
+      console.error(error);
+      const msg = error.response?.data?.detail || 'Erro ao atualizar limite de crédito.';
+      toast.error(msg);
+    } finally {
+      setCreditLimitSaving(false);
     }
   };
 
@@ -225,7 +330,7 @@ export default function Customers() {
                     {customers.map(c => {
                         const limit = parseFloat(c.credit_limit || 0);
                         const debt = parseFloat(c.current_debt || 0);
-                        const available = limit - debt;
+                        const available = Math.max(0, limit - debt);
                         const progress = limit > 0 ? (debt / limit) * 100 : 0;
 
                         return (
@@ -266,6 +371,15 @@ export default function Customers() {
                                     </div>
                                     
                                     <div className="flex gap-2">
+                                        <button
+                                            onClick={(event) => openCreditLimitModal(c, event.currentTarget)}
+                                            data-credit-limit-trigger={c.id}
+                                            className="p-2 rounded-lg bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-100 transition-colors"
+                                            aria-label={`Editar limite de ${c.name}`}
+                                            title="Editar limite de crédito"
+                                        >
+                                            <DollarSign size={20} />
+                                        </button>
                                         <button 
                                             onClick={() => setPaymentModal({ open: true, customer: c })}
                                             className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 border border-green-100 transition-colors"
@@ -324,6 +438,65 @@ export default function Customers() {
                         <div className="pt-2 flex gap-3">
                             <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowRegisterModal(false)}>Cancelar</Button>
                             <Button type="submit" variant="primary" className="flex-1">Cadastrar</Button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+
+        {/* MODAL EDITAR LIMITE */}
+        {creditLimitModal.open && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="edit-credit-limit-title"
+                    ref={creditLimitDialogRef}
+                    onKeyDown={handleCreditLimitKeyDown}
+                    className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl"
+                >
+                    <div className="flex justify-between items-center mb-1">
+                        <h2 id="edit-credit-limit-title" className="text-xl font-bold">Editar limite de crédito</h2>
+                        <button
+                            onClick={closeCreditLimitModal}
+                            disabled={creditLimitSaving}
+                            aria-label="Fechar edição de limite"
+                        >
+                            <X className="text-gray-400" />
+                        </button>
+                    </div>
+                    <p className="text-gray-500 text-sm mb-6 font-medium">Cliente: {creditLimitModal.customer?.name}</p>
+
+                    <form onSubmit={handleSubmitCreditLimit(handleCreditLimitUpdate)} className="space-y-4">
+                        <Input
+                            label="Limite de crédito (R$)"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            aria-label="Limite de crédito (R$)"
+                            autoFocus
+                            className="text-2xl font-black"
+                            {...registerCreditLimit('credit_limit', { required: true, min: 0 })}
+                        />
+                        {creditLimitBelowDebt && (
+                            <p className="text-xs text-yellow-800 bg-yellow-50 border border-yellow-100 rounded-lg p-3">
+                                Novas vendas fiadas ficarão bloqueadas até a dívida ficar abaixo do limite.
+                            </p>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="flex-1"
+                                onClick={closeCreditLimitModal}
+                                disabled={creditLimitSaving}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button type="submit" className="flex-1" disabled={creditLimitSaving}>
+                                {creditLimitSaving ? <><Loader2 size={18} className="animate-spin" /> Salvando...</> : 'Salvar'}
+                            </Button>
                         </div>
                     </form>
                 </div>
