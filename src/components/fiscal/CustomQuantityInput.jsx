@@ -45,7 +45,7 @@ export default function CustomQuantityInput({ onPurchase, loading = false, minQt
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(debounceRef.current);
-  }, [qty]);
+  }, [qty, minQty, maxQty]);
 
   const handlePurchase = () => {
     const parsed = parseInt(qty, 10);

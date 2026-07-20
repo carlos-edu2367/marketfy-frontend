@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { 
   UserPlus, Users, DollarSign,
-  FileText, ArrowDownCircle, ArrowUpCircle, X, Loader2, Store, Search, CreditCard, Banknote, QrCode,
+  FileText, X, Loader2, Store, Search, CreditCard, Banknote, QrCode,
   ShoppingCart, CheckCircle, ExternalLink // Ícones adicionados
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../lib/utils';

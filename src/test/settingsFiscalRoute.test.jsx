@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { get } = vi.hoisted(() => ({ get: vi.fn() }));
 
 vi.mock('../lib/api', () => ({ default: { get } }));
-vi.mock('../context/AuthContext', () => ({
+vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ user: { name: 'Operador' }, logout: vi.fn(), refreshSubscription: vi.fn() }),
 }));
 vi.mock('../components/settings/FiscalSettings', () => ({

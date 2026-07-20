@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from './useAuth';
 import api from '../lib/api';
 
 function isValidUUID(uuid) {
@@ -61,7 +61,7 @@ export function useFiscalCredits(marketId) {
     return data;
   }, [marketId]);
 
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, typeof process !== 'undefined' && process.env?.NODE_ENV === 'test' ? 0 : ms));
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, import.meta.env.MODE === 'test' ? 0 : ms));
 
   const pollCheckoutUrl = useCallback(async (jobId, maxAttempts = 30, intervalMs = 2000) => {
     for (let i = 0; i < maxAttempts; i++) {

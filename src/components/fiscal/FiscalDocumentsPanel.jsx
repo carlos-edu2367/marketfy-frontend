@@ -12,14 +12,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../lib/api';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 import {
   RefreshCw, Search, AlertCircle, CheckCircle2, Clock,
   XCircle, FileText, ChevronDown, ChevronUp, RotateCcw,
   Ban, Filter, Loader2, Info
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import clsx from 'clsx';
 import CreditUsageBar from './CreditUsageBar';
 
 const STATUS_CONFIG = {

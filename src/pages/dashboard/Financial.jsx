@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form'; // Adicionado
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import api from '../../lib/api';
 import { formatCurrency } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';

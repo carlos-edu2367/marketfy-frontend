@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../lib/db';
 import api, { getFiscalCreditsBalance } from '../../lib/api';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { buildSyncSalePayload, isFiscalRuleFailure, useSync } from '../../hooks/useSync';
 import { useFiscalStatus } from '../../hooks/useFiscalStatus';
 import { Button } from '../../components/ui/Button';

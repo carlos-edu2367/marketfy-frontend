@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import api from '../../lib/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { MessageSquare, Send, Plus, List, ChevronRight, User, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Send, Plus, ChevronRight, ArrowLeft } from 'lucide-react';
 import { formatDate } from '../../lib/utils';
 import toast from 'react-hot-toast';
 

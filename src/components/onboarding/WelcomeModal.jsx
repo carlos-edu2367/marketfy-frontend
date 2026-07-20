@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { X, Gift, CheckCircle, TrendingUp, Package, PieChart } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function WelcomeModal() {
   const [isOpen, setIsOpen] = useState(false);
