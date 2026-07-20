@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import api from '../../lib/api';
+import api, { subscribePlan } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -17,11 +16,12 @@ export default function Plans() {
   const [selectedDuration, setSelectedDuration] = useState(30); 
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  
+  const [billingMode, setBillingMode] = useState('invoice'); // 'invoice' | 'recurring'
+  const [document, setDocument] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
-
-  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
 
   useEffect(() => {
     async function fetchPlans() {
@@ -57,34 +57,31 @@ export default function Plans() {
     return 'monthly';
   };
 
-  const onSubmitInterest = async (data) => {
+  const handleContract = async (e) => {
+    e?.preventDefault?.();
+    if (billingMode === 'recurring' && document.replace(/\D/g, '').length < 11) {
+      toast.error('Informe um CPF ou CNPJ válido para cobrança recorrente.');
+      return;
+    }
     try {
-      // Chama o backend do Marketfy — nunca o Billing Core diretamente
-      await api.post('/billing/subscriptions', {
+      setSubmitting(true);
+      const { data } = await subscribePlan({
         plan_id: selectedPlan.id,
         subscription_type: getDurationKey(selectedDuration),
-        // customer_provider_id: preenchido pelo backend se já cadastrado
+        billing_mode: billingMode,
+        document: billingMode === 'recurring' ? document : undefined,
       });
-
-      // Backup local para contato comercial (compatibilidade)
-      const interest = {
-        plan_id: selectedPlan.id,
-        plan_name: selectedPlan.name,
-        duration: selectedDuration,
-        whatsapp: data.whatsapp1,
-        created_at: new Date().toISOString(),
-      };
-      localStorage.setItem('marketfy_plan_interest', JSON.stringify(interest));
-
-      toast.success("Solicitação enviada! Aguarde a confirmação da sua assinatura.");
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+      toast.success('Assinatura iniciada. Acompanhe suas faturas em Configurações.');
       setShowModal(false);
-      reset();
-
-      // Atualiza dados de usuário e assinatura
       await refreshUser();
     } catch (error) {
-      const msg = error.response?.data?.detail || "Erro ao processar solicitação. Tente novamente.";
-      toast.error(msg);
+      toast.error(error.response?.data?.detail || 'Erro ao iniciar assinatura. Tente novamente.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -127,6 +124,11 @@ export default function Plans() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-12">
+        {user?.plan_expiration && new Date(user.plan_expiration) < new Date() && (
+            <div className="max-w-2xl mx-auto mb-8 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-center font-bold">
+                Seu uso expirou. Contrate um plano para continuar usando o Marketfy.
+            </div>
+        )}
         <div className="text-center max-w-2xl mx-auto mb-12">
             <h1 className="text-4xl font-black text-gray-900 mb-4">Escolha o plano ideal</h1>
             <p className="text-gray-500 text-lg">
@@ -248,18 +250,37 @@ export default function Plans() {
                 <h2 className="text-2xl font-black text-gray-900 mb-2">Finalizar Contratação</h2>
                 <p className="text-gray-500 mb-6">Nossa equipe ativará seu plano em instantes.</p>
 
-                <form onSubmit={handleSubmit(onSubmitInterest)} className="space-y-4">
+                <form onSubmit={handleContract} className="space-y-4">
                     <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-800 border border-blue-100">
                         <p className="font-bold mb-1">Resumo do Pedido</p>
                         <p>Plano: <strong>{selectedPlan.name}</strong></p>
                         <p>Valor: <strong>{formatCurrency(getPrice(selectedPlan))}</strong> ({selectedDuration === 30 ? 'Mensal' : (selectedDuration === 180 ? 'Semestral' : 'Anual')})</p>
                     </div>
 
-                    <Input label="Seu WhatsApp" placeholder="(00) 00000-0000" {...register('whatsapp1', { required: true })} autoFocus />
-                    
+                    <div className="space-y-2">
+                        <p className="text-sm font-bold text-gray-700">Forma de cobrança</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button type="button" onClick={() => setBillingMode('invoice')}
+                                className={`p-3 rounded-xl border-2 text-left text-sm font-bold ${billingMode === 'invoice' ? 'border-brand-yellow bg-yellow-50' : 'border-gray-200'}`}>
+                                Por pagamento
+                                <span className="block text-xs font-normal text-gray-500">Fatura por período</span>
+                            </button>
+                            <button type="button" onClick={() => setBillingMode('recurring')}
+                                className={`p-3 rounded-xl border-2 text-left text-sm font-bold ${billingMode === 'recurring' ? 'border-brand-yellow bg-yellow-50' : 'border-gray-200'}`}>
+                                Cobrança recorrente
+                                <span className="block text-xs font-normal text-gray-500">Cartão automático</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {billingMode === 'recurring' && (
+                        <Input label="CPF ou CNPJ" placeholder="Somente números" value={document}
+                               onChange={(e) => setDocument(e.target.value)} autoFocus />
+                    )}
+
                     <div className="pt-4">
-                        <Button type="submit" variant="primary" size="lg" className="w-full font-bold" isLoading={isSubmitting}>
-                            Solicitar Ativação <ArrowRight size={20} />
+                        <Button type="submit" variant="primary" size="lg" className="w-full font-bold" isLoading={submitting}>
+                            Ir para o pagamento <ArrowRight size={20} />
                         </Button>
                     </div>
                 </form>
