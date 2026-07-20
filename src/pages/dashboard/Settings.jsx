@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { User, FileText, Settings as Store, LogOut, Crown, Calendar, AlertTriangle, CreditCard, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 import { formatDate } from '../../lib/utils';
 import FiscalSettings from '../../components/settings/FiscalSettings';
+import BillingInvoices from './BillingInvoices';
 import api from '../../lib/api';
 import { differenceInDays, parseISO } from 'date-fns';
 
@@ -100,12 +101,21 @@ export default function Settings() {
             <User size={20} /> Perfil & Plano
           </button>
           
-          <button 
+          <button
             onClick={() => setActiveTab('fiscal')}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'fiscal' ? 'bg-white text-brand-dark shadow-sm border border-gray-100' : 'text-gray-500 hover:bg-gray-100'}`}
           >
             <FileText size={20} /> Fiscal (NFC-e)
           </button>
+
+          {subscription?.billing_mode === 'invoice' && (
+            <button
+              onClick={() => setActiveTab('invoices')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'invoices' ? 'bg-white text-brand-dark shadow-sm border border-gray-100' : 'text-gray-500 hover:bg-gray-100'}`}
+            >
+              <CreditCard size={20} /> Faturas
+            </button>
+          )}
 
           <div className="mt-auto pt-4 border-t border-gray-200">
              <button onClick={logout} className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-all w-full text-left">
@@ -242,6 +252,12 @@ export default function Settings() {
                         )}
                     </div>
                 )}
+            </div>
+          )}
+
+          {activeTab === 'invoices' && (
+            <div className="p-8 h-full flex flex-col animate-fade-in">
+                <BillingInvoices />
             </div>
           )}
 
