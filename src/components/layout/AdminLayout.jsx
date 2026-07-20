@@ -14,7 +14,7 @@ import WelcomeModal from '../onboarding/WelcomeModal';
 import { Button } from '../ui/Button';
 
 export default function AdminLayout() {
-  const { user, logout, refreshUser, loading: authLoading } = useAuth();
+  const { user, subscription, logout, refreshUser, loading: authLoading } = useAuth();
   
   // Extraindo novos hooks de falha
   const { isOnline, pendingSalesCount, failedSalesCount, isSyncing, syncSales, reportFailedSales, reporting } = useSync();
@@ -69,18 +69,28 @@ export default function AdminLayout() {
   useEffect(() => {
     if (!authLoading && user) {
         const isPlansPage = location.pathname.includes('/plans');
+        const isSettings = location.pathname.includes('/dashboard/settings');
+        const isSupport = location.pathname.includes('/dashboard/support');
+        const isAllowedExpired = isPlansPage || isSettings || isSupport;
+
+        const invoiceMode = subscription?.billing_mode === 'invoice';
+        const hasPendingInvoice = subscription?.invoice_pending;
+
         if (hasNoPlan && !isPlansPage) {
             navigate('/plans');
             return;
         }
-        const isAllowedExpired = isPlansPage || 
-            location.pathname.includes('/dashboard/settings') || 
-            location.pathname.includes('/dashboard/support');
         if (isExpired && !isAllowedExpired) {
-            navigate('/plans');
+            // Modo faturas com fatura pendente: manda para Configurações (aba Faturas),
+            // não prende o usuário em "Escolha seu plano".
+            if (invoiceMode && hasPendingInvoice) {
+                navigate('/dashboard/settings');
+            } else {
+                navigate('/plans');
+            }
         }
     }
-  }, [user, authLoading, hasNoPlan, isExpired, location.pathname, navigate]);
+  }, [user, authLoading, hasNoPlan, isExpired, location.pathname, navigate, subscription]);
 
   const isNearExpiration = daysLeft >= 0 && daysLeft <= 7;
   const isBasicPlan = !user?.plan_name || 
@@ -362,7 +372,20 @@ export default function AdminLayout() {
                     </Link>
                 </div>
             ) : (
-                <Outlet />
+                <>
+                    {subscription?.invoice_pending && (
+                        <div className="bg-amber-50 border border-amber-200 px-4 py-2 mb-4 rounded-xl text-sm text-amber-800 flex items-center justify-between">
+                            <span className="font-bold">
+                                Você tem uma fatura disponível para pagamento
+                                {subscription?.pending_invoice?.due_date
+                                    ? ` (vence em ${new Date(subscription.pending_invoice.due_date).toLocaleDateString('pt-BR')})`
+                                    : ''}.
+                            </span>
+                            <Link to="/dashboard/settings" className="underline font-bold shrink-0 ml-4">Ver faturas</Link>
+                        </div>
+                    )}
+                    <Outlet />
+                </>
             )}
         </div>
       </main>
