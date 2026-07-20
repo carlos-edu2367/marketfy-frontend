@@ -101,4 +101,13 @@ api.interceptors.response.use(
   }
 );
 
+export const getSubscription = () => api.get('/billing/subscription');
+
+export const subscribePlan = ({ plan_id, subscription_type, billing_mode, document, idempotency_key }) =>
+  api.post('/billing/subscribe', { plan_id, subscription_type, billing_mode, document, idempotency_key });
+
+export const getInvoices = () => api.get('/billing/invoices');
+
+export const getInvoice = (invoiceId) => api.get(`/billing/invoices/${invoiceId}`);
+
 export default api;
