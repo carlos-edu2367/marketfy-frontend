@@ -10,6 +10,12 @@ import {
   pixUpdateSettings,
 } from '../../lib/api';
 
+// Data de referência da informação pública de tarifas exibida ao lojista.
+// A spec (10-frontend-ux-spec.md §2.4) pede que este texto seja administrável;
+// enquanto o painel de administração não existe, a data fica explícita aqui e
+// deve ser revisada junto com a fonte oficial.
+const FEES_REFERENCE_DATE = '20/07/2026';
+
 const STATUS_INFO = {
   not_connected: { label: 'Não conectado', color: 'text-gray-500 bg-gray-100', icon: XCircle },
   connected: { label: 'Conectado', color: 'text-green-700 bg-green-50', icon: CheckCircle },
@@ -127,7 +133,7 @@ export default function PixPaymentsSettings({ marketId }) {
           <QrCode size={22} />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-gray-900">Pagamentos Pix</h3>
+          <h3 className="text-lg font-bold text-gray-900">Pagamentos Pix (Mercado Pago)</h3>
           <div className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-bold ${statusInfo.color}`}>
             <StatusIcon size={12} /> {statusInfo.label}
           </div>
@@ -167,18 +173,30 @@ export default function PixPaymentsSettings({ marketId }) {
         </div>
       )}
 
-      <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-5 text-sm text-yellow-900 space-y-3">
+      <div
+        data-testid="pix-fees-notice"
+        className="bg-yellow-50 border border-yellow-100 rounded-2xl p-5 text-sm text-yellow-900 space-y-3"
+      >
         <p>
-          O gateway de pagamentos cobra tarifas sobre transações Pix processadas pela sua conta.
-          A Neectify não adiciona tarifa sobre esta transação.
+          Os pagamentos serão processados pelo Mercado Pago e o dinheiro será recebido{' '}
+          <strong>na conta Mercado Pago da sua loja</strong>. O Mercado Pago pode cobrar tarifas
+          sobre a operação — atualmente, receber Pix por QR Code costuma ser <strong>isento</strong>{' '}
+          para muitos vendedores, mas pode haver tarifa (ex.: 0,49%) dependendo do perfil da sua
+          conta, contrato, prazo de recebimento e promoções. Essa condição é definida pelo Mercado
+          Pago, pode variar e mudar no futuro. Consulte as tarifas oficiais antes de ativar.{' '}
+          <strong>A Neectify não adiciona tarifa sobre esta transação.</strong>
+        </p>
+        <p className="text-xs opacity-80">
+          Informação de tarifas atualizada em {FEES_REFERENCE_DATE}. A condição real da sua conta
+          pode ser diferente — confirme sempre na fonte oficial.
         </p>
         <a
-          href="https://www.mercadopago.com.br/ajuda/tarifas"
+          href="https://www.mercadopago.com.br/developers/pt/support/37740"
           target="_blank"
           rel="noreferrer"
           className="underline font-bold"
         >
-          Ver tarifas oficiais do gateway
+          Ver tarifas oficiais do Mercado Pago
         </a>
         {isConnected && (
           <label className="flex items-center gap-2 font-bold">
