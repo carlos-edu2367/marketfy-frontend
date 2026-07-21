@@ -128,4 +128,26 @@ export const getInvoices = () => api.get('/billing/invoices');
 
 export const getInvoice = (invoiceId) => api.get(`/billing/invoices/${invoiceId}`);
 
+export const pixOauthAuthorize = (marketId) => api.post(`/pix/${marketId}/oauth/authorize`);
+
+export const pixOauthStatus = (marketId) => api.get(`/pix/${marketId}/oauth/status`);
+
+export const pixOauthTest = (marketId) => api.post(`/pix/${marketId}/oauth/test`);
+
+export const pixOauthDisconnect = (marketId) => api.delete(`/pix/${marketId}/oauth`);
+
+export const pixUpdateSettings = (marketId, payload) => api.put(`/pix/${marketId}/settings`, payload);
+
+export const createPixQr = (marketId, { terminal_id, box_id, items }) =>
+  api.post(`/pix/${marketId}/qr`, { terminal_id, box_id, items });
+
+export const getPixAttempt = (marketId, attemptId) => api.get(`/pix/${marketId}/attempts/${attemptId}`);
+
+export const verifyPixAttempt = (marketId, attemptId) => api.post(`/pix/${marketId}/attempts/${attemptId}/verify`);
+
+export const cancelPixAttempt = (marketId, attemptId) => api.post(`/pix/${marketId}/attempts/${attemptId}/cancel`);
+
+export const pixEventsUrl = (marketId, attemptId) =>
+  `${API_BASE_URL}/pix/${marketId}/attempts/${attemptId}/events`;
+
 export default api;
