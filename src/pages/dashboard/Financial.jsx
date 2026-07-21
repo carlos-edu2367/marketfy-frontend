@@ -18,9 +18,12 @@ import {
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
+const isForbidden = (error) => error.response?.status === 403;
+
 export default function Financial() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [markets, setMarkets] = useState([]);
   const [selectedMarketId, setSelectedMarketId] = useState("");
   const [data, setData] = useState(null);
@@ -58,7 +61,11 @@ export default function Financial() {
             }
         } catch (error) {
             console.error("Erro ao carregar lojas:", error);
-            toast.error("Não foi possível carregar suas lojas.");
+            if (isForbidden(error)) {
+                setAccessDenied(true);
+            } else {
+                toast.error("Não foi possível carregar suas lojas.");
+            }
             setLoading(false);
         }
     }
@@ -80,7 +87,11 @@ export default function Financial() {
       setData(data);
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao carregar dados financeiros.");
+      if (isForbidden(error)) {
+        setAccessDenied(true);
+      } else {
+        toast.error("Erro ao carregar dados financeiros.");
+      }
     } finally {
       setLoading(false);
     }
@@ -158,6 +169,10 @@ export default function Financial() {
               </div>
           </div>
       );
+  }
+
+  if (accessDenied) {
+      return <div role="alert">Você não tem acesso ao Financeiro desta loja.</div>;
   }
 
   // --- RENDERIZAÇÃO: ESTADO VAZIO / SEM LOJA ---
