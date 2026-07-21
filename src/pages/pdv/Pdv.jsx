@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { db } from '../../lib/db';
-import api, { getFiscalCreditsBalance } from '../../lib/api';
+import api, { getFiscalCreditsBalance, pixOauthStatus } from '../../lib/api';
 import { useAuth } from '../../hooks/useAuth';
 import { buildSyncSalePayload, isFiscalRuleFailure, useSync } from '../../hooks/useSync';
 import { useFiscalStatus } from '../../hooks/useFiscalStatus';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import PaymentModal from '../../components/pdv/PaymentModal';
+import PixQrModal from '../../components/pdv/PixQrModal';
 import TerminalSelector from '../../components/pdv/TerminalSelector';
+import { computePixAvailability } from './pixAvailability';
 import { generateReceipt } from '../../components/pdv/Receipt';
 import { isAuthorizedNfceInvoice, printAuthorizedNfce } from '../../lib/fiscalPrint';
 import FiscalSaleBlockDialog from '../../components/fiscal/FiscalSaleBlockDialog';
@@ -80,6 +82,9 @@ export default function PDV() {
 
   const [lastSale, setLastSale] = useState(null);
   const [marketInfo, setMarketInfo] = useState(null);
+
+  const [pixStatus, setPixStatus] = useState(null);
+  const [showPixQr, setShowPixQr] = useState(false);
 
   // Polling de status fiscal — ativo apenas após sync e emissão solicitada
   const {
@@ -158,6 +163,27 @@ export default function PDV() {
     db.fiscal_state.get(safeMarketId).then(setFiscalState).catch(() => setFiscalState(null));
   }, [marketId]);
 
+  useEffect(() => {
+    const safeMarketId = cleanUUID(marketId);
+    if (!safeMarketId) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await pixOauthStatus(safeMarketId);
+        if (!cancelled) setPixStatus(data);
+      } catch {
+        if (!cancelled) setPixStatus(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [marketId]);
+
+  const pixIntegrationAvailable = computePixAvailability({
+    isOnline,
+    status: pixStatus?.status,
+    enabledInPdv: pixStatus?.enabled_in_pdv,
+  });
+
   const checkBoxStatus = useCallback(async (isBackground = false) => {
       const safeMarketId = cleanUUID(marketId);
       const safeTerminalId = cleanUUID(terminalId);
@@ -215,6 +241,7 @@ export default function PDV() {
   }, [searchTerm, marketId]);
 
   const addToCart = (product) => {
+    if (showPixQr) return;
     playBeep();
     const price = Number(product.price || 0);
     setCart(prev => {
@@ -229,14 +256,43 @@ export default function PDV() {
   };
 
   const removeFromCart = (index) => {
+    if (showPixQr) return;
     setCart(prev => prev.filter((_, i) => i !== index));
     searchInputRef.current?.focus();
   };
 
   const clearCart = () => {
+      if (showPixQr) return;
       if (window.confirm("Limpar carrinho atual?")) {
           setCart([]); searchInputRef.current?.focus();
       }
+  };
+
+  const handleGeneratePixQr = () => {
+    setShowPayment(false);
+    setShowPixQr(true);
+  };
+
+  const handlePixApproved = () => {
+    const saleId = uuidv4();
+    const salePayload = {
+      id: saleId,
+      market_id: cleanUUID(marketId),
+      box_id: box?.id,
+      terminal_id: cleanUUID(terminalId),
+      total_amount: total,
+      items: cart.map(item => ({ product_id: item.id, name: item.name, quantity: item.quantity, unit_price: item.price, total: item.total })),
+      payments: [{ method: 'pix', amount: total }],
+      customer_cpf: customerCpf,
+      created_at: new Date().toISOString(),
+      status: 'completed',
+    };
+    setShowPixQr(false);
+    completeSale(salePayload, 0);
+  };
+
+  const handlePixModalClose = () => {
+    setShowPixQr(false);
   };
 
   const total = useMemo(() => cart.reduce((acc, item) => acc + (Number(item.total) || 0), 0), [cart]);
@@ -248,6 +304,7 @@ export default function PDV() {
             else if (e.key === 'Escape') { e.preventDefault(); handleNewSale(); }
             return;
         }
+        if (showPixQr) return;
         if (showPayment || showCloseBoxModal || showOpenBoxModal) {
             if (e.key === 'Escape') {
                 setShowPayment(false); setShowCloseBoxModal(false); setShowOpenBoxModal(false);
@@ -269,7 +326,7 @@ export default function PDV() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart, box, showPayment, showCloseBoxModal, showOpenBoxModal, searchResults, selectedIndex, searchTerm, saleSuccess]);
+  }, [cart, box, showPayment, showCloseBoxModal, showOpenBoxModal, showPixQr, searchResults, selectedIndex, searchTerm, saleSuccess]);
 
   const requestFiscalEmission = async (saleId) => {
     try {
@@ -574,7 +631,27 @@ export default function PDV() {
          </div>
       </div>
 
-      {showPayment && <PaymentModal total={total} marketId={cleanUUID(marketId)} onCancel={() => setShowPayment(false)} onConfirm={handleFinishSale} />}
+      {showPayment && (
+        <PaymentModal
+          total={total}
+          marketId={cleanUUID(marketId)}
+          onCancel={() => setShowPayment(false)}
+          onConfirm={handleFinishSale}
+          pixIntegrationAvailable={pixIntegrationAvailable}
+          onGeneratePixQr={handleGeneratePixQr}
+        />
+      )}
+
+      {showPixQr && (
+        <PixQrModal
+          marketId={cleanUUID(marketId)}
+          terminalId={cleanUUID(terminalId)}
+          boxId={box?.id}
+          items={cart.map(item => ({ product_id: item.id, quantity: item.quantity }))}
+          onApproved={handlePixApproved}
+          onClose={handlePixModalClose}
+        />
+      )}
 
       {fiscalBlock && (
         <FiscalSaleBlockDialog
