@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { 
     Plus, Package, ArrowUpCircle, ArrowDownCircle, History, 
     Search, Store, Loader2, Barcode, ScanBarcode, X, Wand2, Download, RefreshCw,
-    Edit2, Check 
+    Edit2, Check, Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProductHistoryModal from '../../components/inventory/ProductHistoryModal';
@@ -35,6 +35,9 @@ export default function Inventory() {
   const [taxRules, setTaxRules] = useState([]);
   const [showTaxRuleAssignment, setShowTaxRuleAssignment] = useState(false);
   const [assigningTaxRule, setAssigningTaxRule] = useState(false);
+  const [pendingDuplicateProduct, setPendingDuplicateProduct] = useState(null);
+  const [productPendingDeletion, setProductPendingDeletion] = useState(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
   const { 
     register: registerEdit, 
     handleSubmit: handleSubmitEdit, 
@@ -151,7 +154,9 @@ export default function Inventory() {
   };
 
   // CORREÇÃO: Tratamento de Tipos para evitar 422
-  const handleCreateProduct = async (data) => {
+  const normalizeBarcode = (barcode) => String(barcode || '').replace(/\D/g, '');
+
+  const submitCreateProduct = async (data) => {
       try {
           const payload = {
               name: data.name,
@@ -177,6 +182,41 @@ export default function Inventory() {
           } else {
               toast.error(typeof msg === 'string' ? msg : "Erro ao criar produto.");
           }
+      }
+  };
+
+  const handleCreateProduct = async (data) => {
+      const barcode = normalizeBarcode(data.barcode);
+      const existingProduct = barcode && products.find(
+          (product) => normalizeBarcode(product.barcode) === barcode
+      );
+      if (existingProduct) {
+          setPendingDuplicateProduct({ data, existingProduct });
+          return;
+      }
+      await submitCreateProduct(data);
+  };
+
+  const confirmDuplicateProduct = async () => {
+      if (!pendingDuplicateProduct) return;
+      const { data } = pendingDuplicateProduct;
+      setPendingDuplicateProduct(null);
+      await submitCreateProduct(data);
+  };
+
+  const deleteProduct = async () => {
+      if (!productPendingDeletion) return;
+      try {
+          setDeletingProduct(true);
+          await api.delete(`/inventory/${selectedMarketId}/products/${productPendingDeletion.id}`);
+          toast.success('Produto removido com sucesso.');
+          setSelectedFiscalProductIds((selected) => selected.filter((id) => id !== productPendingDeletion.id));
+          setProductPendingDeletion(null);
+          loadProducts();
+      } catch (error) {
+          toast.error(error.response?.data?.detail || 'Não foi possível remover o produto.');
+      } finally {
+          setDeletingProduct(false);
       }
   };
 
@@ -517,6 +557,14 @@ export default function Inventory() {
                     >
                         <History size={20} />
                     </button>
+                    <button
+                        onClick={() => setProductPendingDeletion(p)}
+                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-colors"
+                        title="Excluir Produto"
+                        aria-label={`Excluir ${p.name}`}
+                    >
+                        <Trash2 size={20} />
+                    </button>
                 </div>
             </div>
         </div>
@@ -583,6 +631,32 @@ export default function Inventory() {
                             <Button type="submit" variant="primary" className="flex-1" isLoading={creating}>Cadastrar Produto</Button>
                         </div>
                     </form>
+                </div>
+            </div>
+        )}
+
+        {pendingDuplicateProduct && (
+            <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="duplicate-barcode-title">
+                <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                    <h2 id="duplicate-barcode-title" className="text-xl font-bold text-gray-900">Código de barras já cadastrado</h2>
+                    <p className="text-gray-600 mt-3">O produto <strong>{pendingDuplicateProduct.existingProduct.name}</strong> já usa este código de barras. Deseja cadastrar mesmo assim?</p>
+                    <div className="flex gap-3 mt-6">
+                        <Button type="button" variant="secondary" className="flex-1" onClick={() => setPendingDuplicateProduct(null)}>Cancelar</Button>
+                        <Button type="button" variant="primary" className="flex-1" onClick={confirmDuplicateProduct}>Cadastrar mesmo assim</Button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {productPendingDeletion && (
+            <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-product-title">
+                <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                    <h2 id="delete-product-title" className="text-xl font-bold text-gray-900">Excluir produto</h2>
+                    <p className="text-gray-600 mt-3">Remover <strong>{productPendingDeletion.name}</strong> do estoque ativo? As vendas e o histórico serão preservados.</p>
+                    <div className="flex gap-3 mt-6">
+                        <Button type="button" variant="secondary" className="flex-1" onClick={() => setProductPendingDeletion(null)} disabled={deletingProduct}>Cancelar</Button>
+                        <Button type="button" variant="danger" className="flex-1" onClick={deleteProduct} isLoading={deletingProduct}>Excluir produto</Button>
+                    </div>
                 </div>
             </div>
         )}
