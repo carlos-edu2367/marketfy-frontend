@@ -5,7 +5,7 @@ import { CreditCard, Banknote, Check, DollarSign, Users, QrCode, Trash2, AlertCi
 import toast from 'react-hot-toast';
 import CustomerSelectorModal from './CustomerSelectorModal';
 
-export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
+export default function PaymentModal({ total, onConfirm, onCancel, marketId, pixIntegrationAvailable = false, onGeneratePixQr }) {
   const [payments, setPayments] = useState([]);
   const [currentAmount, setCurrentAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('dinheiro');
@@ -198,6 +198,24 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId }) {
                     />
                 </div>
             </div>
+
+            {selectedMethod === 'pix' && (
+                <div className="bg-white p-4 rounded-2xl border border-teal-100 shadow-sm relative animate-fade-in space-y-3">
+                    <p className="text-sm font-bold text-gray-700">Registrar Pix manualmente</p>
+                    <p className="text-xs text-gray-400">Sem confirmação automática do Mercado Pago. Use "Adicionar Pagamento" abaixo.</p>
+                    {pixIntegrationAvailable && (
+                        <Button
+                            type="button"
+                            variant="primary"
+                            className="w-full"
+                            onClick={() => onGeneratePixQr && onGeneratePixQr()}
+                            disabled={isProcessing}
+                        >
+                            Gerar QR Code (Pix automático)
+                        </Button>
+                    )}
+                </div>
+            )}
 
             {selectedMethod === 'fiado' && (
                 <div className="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm relative animate-fade-in">

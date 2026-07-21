@@ -3,6 +3,7 @@ import api from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { Printer, Loader2, ShoppingBag, Store, Search, CheckCircle, XCircle, Eye, X, User, Package } from 'lucide-react';
 import { Receipt } from '../../components/pdv/Receipt';
+import PixStatusBadge from '../../components/pdv/PixStatusBadge';
 import { Button } from '../../components/ui/Button';
 import { isAuthorizedNfceInvoice, printAuthorizedNfce } from '../../lib/fiscalPrint';
 import toast from 'react-hot-toast';
@@ -274,11 +275,16 @@ export default function SalesHistory() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
-                                        {sale.payments?.map((p, i) => (
-                                            <span key={i} className="inline-block bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase mr-1 border border-gray-200">
-                                                {p.method.replace('_', ' ')}
-                                            </span>
-                                        ))}
+                                        <div className="flex flex-wrap gap-1 items-center">
+                                            {sale.payments?.map((p, i) => (
+                                                <span key={i} className="inline-block bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase border border-gray-200">
+                                                    {p.method.replace('_', ' ')}
+                                                </span>
+                                            ))}
+                                            {sale.payments?.some((p) => p.method === 'pix') && (
+                                                <PixStatusBadge modality={sale.modality} pixStatus={sale.pix_status} />
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 text-right font-bold text-gray-900 text-lg">
                                         {formatCurrency(sale.total_amount)}
