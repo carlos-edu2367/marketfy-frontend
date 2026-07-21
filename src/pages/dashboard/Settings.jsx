@@ -3,9 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { User, FileText, Settings as Store, LogOut, Crown, Calendar, AlertTriangle, CreditCard, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { User, FileText, Settings as Store, LogOut, Crown, Calendar, AlertTriangle, CreditCard, CheckCircle, XCircle, Clock, RefreshCw, QrCode } from 'lucide-react';
 import { formatDate } from '../../lib/utils';
 import FiscalSettings from '../../components/settings/FiscalSettings';
+import PixPaymentsSettings from '../../components/settings/PixPaymentsSettings';
 import BillingInvoices from './BillingInvoices';
 import api from '../../lib/api';
 import { differenceInDays, parseISO } from 'date-fns';
@@ -115,6 +116,13 @@ export default function Settings() {
             className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'fiscal' ? 'bg-white text-brand-dark shadow-sm border border-gray-100' : 'text-gray-500 hover:bg-gray-100'}`}
           >
             <FileText size={20} /> Fiscal (NFC-e)
+          </button>
+
+          <button
+            onClick={() => setActiveTab('pix')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${activeTab === 'pix' ? 'bg-white text-brand-dark shadow-sm border border-gray-100' : 'text-gray-500 hover:bg-gray-100'}`}
+          >
+            <QrCode size={20} /> Pagamentos Pix
           </button>
 
           {subscription?.billing_mode === 'invoice' && (
@@ -259,6 +267,26 @@ export default function Settings() {
                                 <p>Nenhuma loja selecionada.</p>
                             </div>
                         )}
+                    </div>
+                )}
+            </div>
+          )}
+
+          {activeTab === 'pix' && (
+            <div className="p-8 h-full flex flex-col animate-fade-in">
+                <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2 shrink-0">
+                    <QrCode className="text-brand-yellow" /> Pagamentos Pix
+                </h2>
+                {loadingMarkets ? (
+                    <p className="text-gray-500">Carregando lojas...</p>
+                ) : selectedMarketId ? (
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        <PixPaymentsSettings marketId={selectedMarketId} />
+                    </div>
+                ) : (
+                    <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                        <Store size={48} className="mx-auto mb-2 opacity-20" />
+                        <p>Nenhuma loja selecionada.</p>
                     </div>
                 )}
             </div>
