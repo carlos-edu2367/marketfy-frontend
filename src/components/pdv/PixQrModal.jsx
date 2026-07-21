@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../lib/utils';
-import { Copy, X, Loader2, RefreshCw } from 'lucide-react';
+import { Copy, X, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   createPixQr,
@@ -74,7 +74,15 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
           // ignore malformed event payloads
         }
       };
-      ['payment.pending', 'payment.approved', 'payment.expired', 'payment.cancelled'].forEach((type) => {
+      // Precisa cobrir TODOS os eventos que o backend publica — inclusive
+      // `payment.error` (divergência de valor). Sem ele, uma divergência
+      // deixaria o modal preso em "pendente": o polling de fallback só entra
+      // quando o SSE cai, o que não acontece nesse cenário.
+      [
+        'payment.created', 'payment.pending', 'payment.approved',
+        'payment.expired', 'payment.cancelled', 'payment.error',
+        'payment.confirmation_pending',
+      ].forEach((type) => {
         es.addEventListener(type, handleEvent);
       });
       es.onerror = () => {
@@ -211,6 +219,20 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
               )}
               {(attempt.status === 'canceled' || attempt.status === 'cancelled') && (
                 <p className="text-gray-600 font-bold mt-2">Cobrança cancelada.</p>
+              )}
+              {attempt.status === 'confirmation_pending' && (
+                <p className="text-amber-600 font-bold mt-2">Confirmando pagamento...</p>
+              )}
+              {attempt.status === 'divergent' && (
+                <div className="mt-3 rounded-xl border-2 border-red-200 bg-red-50 p-3 text-left">
+                  <p className="flex items-center gap-2 font-bold text-red-700">
+                    <AlertTriangle size={18} /> Divergência de valor
+                  </p>
+                  <p className="mt-1 text-sm text-red-700">
+                    O valor pago não confere com o valor da venda. A venda <strong>não</strong> foi
+                    concluída. Não entregue a mercadoria e chame a gerência.
+                  </p>
+                </div>
               )}
             </div>
 

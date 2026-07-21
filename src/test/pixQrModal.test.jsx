@@ -12,8 +12,23 @@ vi.mock('../lib/api', () => ({
   cancelPixAttempt: vi.fn(() => Promise.resolve({ data: { status: 'canceled' } })),
   pixEventsUrl: vi.fn(() => 'http://x/events'),
 }));
-// EventSource stub
-beforeEach(() => { global.EventSource = vi.fn(() => ({ addEventListener: vi.fn(), close: vi.fn() })); });
+// EventSource stub que guarda os listeners registrados, permitindo emitir
+// eventos SSE reais para o componente durante o teste.
+let lastEventSource;
+beforeEach(() => {
+  lastEventSource = undefined;
+  // Precisa ser `function` (não arrow) para ser construível via `new`.
+  global.EventSource = vi.fn(function () {
+    const listeners = {};
+    lastEventSource = {
+      listeners,
+      addEventListener: vi.fn((type, fn) => { listeners[type] = fn; }),
+      close: vi.fn(),
+      emit(type, payload) { listeners[type]?.({ data: JSON.stringify(payload) }); },
+    };
+    return lastEventSource;
+  });
+});
 
 describe('PixQrModal', () => {
   it('creates the qr once and shows amount and copy-paste', async () => {
@@ -23,6 +38,16 @@ describe('PixQrModal', () => {
     await waitFor(() => expect(api.createPixQr).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByText(/20,00|20\.00/)).toBeInTheDocument());
     expect(screen.getByText(/000201QR/)).toBeInTheDocument();
+  });
+
+  it('surfaces a divergence pushed over SSE as payment.error', async () => {
+    render(<PixQrModal marketId="m1" terminalId="t1" boxId="b1"
+      items={[{ product_id: 'p1', quantity: 2 }]} onApproved={vi.fn()} onClose={vi.fn()} />);
+    await waitFor(() => expect(lastEventSource?.listeners['payment.error']).toBeDefined());
+
+    lastEventSource.emit('payment.error', { attempt_id: 'a1', status: 'divergent' });
+
+    await waitFor(() => expect(screen.getByText(/diverg/i)).toBeInTheDocument());
   });
 
   it('verify approved calls onApproved', async () => {
