@@ -7,10 +7,18 @@ const { get } = vi.hoisted(() => ({ get: vi.fn() }));
 
 vi.mock('../lib/api', () => ({ default: { get } }));
 vi.mock('../hooks/useAuth', () => ({
-  useAuth: () => ({ user: { name: 'Operador' }, logout: vi.fn(), refreshSubscription: vi.fn() }),
+  useAuth: () => ({
+    user: { name: 'Operador' },
+    subscription: { billing_mode: 'invoice' },
+    logout: vi.fn(),
+    refreshSubscription: vi.fn(),
+  }),
 }));
 vi.mock('../components/settings/FiscalSettings', () => ({
   default: ({ marketId }) => <div data-testid="fiscal-market">Fiscal: {marketId}</div>,
+}));
+vi.mock('../pages/dashboard/BillingInvoices', () => ({
+  default: () => <div data-testid="billing-invoices">Faturas</div>,
 }));
 
 import Settings from '../pages/dashboard/Settings';
@@ -34,6 +42,13 @@ describe('Settings fiscal route state', () => {
 
     await waitFor(() => expect(screen.getByTestId('fiscal-market')).toHaveTextContent('market-b'));
     expect(screen.getByRole('button', { name: /fiscal \(nfc-e\)/i })).toHaveClass('bg-white');
+  });
+
+  it('opens the invoice tab requested by the payment flow', async () => {
+    renderSettings('/dashboard/settings?tab=invoices');
+
+    expect(await screen.findByTestId('billing-invoices')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /faturas/i })).toHaveClass('bg-white');
   });
 
   it('falls back safely when the route requests an unavailable market or tab', async () => {

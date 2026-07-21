@@ -30,7 +30,13 @@ export default function Settings() {
   // Carrega as lojas ao montar o componente
   useEffect(() => {
     let cancelled = false;
-    if (requestedTab !== 'fiscal') setActiveTab('profile');
+    const canOpenInvoices = subscription?.billing_mode === 'invoice';
+    if (requestedTab !== 'fiscal') {
+      const nextTab = requestedTab === 'pix' || (requestedTab === 'invoices' && canOpenInvoices)
+        ? requestedTab
+        : 'profile';
+      setActiveTab(nextTab);
+    }
     async function loadMarkets() {
       try {
         setLoadingMarkets(true);
@@ -50,7 +56,7 @@ export default function Settings() {
     }
     loadMarkets();
     return () => { cancelled = true; };
-  }, [requestedMarketId, requestedTab]);
+  }, [requestedMarketId, requestedTab, subscription?.billing_mode]);
 
   // --- CÁLCULO DE VENCIMENTO DO PLANO ---
   const getPlanStatus = () => {
@@ -186,7 +192,7 @@ export default function Settings() {
                             <Button onClick={() => navigate('/plans')} variant="primary" className="font-bold shadow-lg">
                                 {planStatus.type === 'expired' ? 'Renovar Agora' : 'Fazer Upgrade / Renovar'}
                             </Button>
-                            <Button variant="secondary">Ver Faturas</Button>
+                            <Button variant="secondary" onClick={() => navigate('/dashboard/settings?tab=invoices')}>Ver Faturas</Button>
                         </div>
                     </div>
                 </div>

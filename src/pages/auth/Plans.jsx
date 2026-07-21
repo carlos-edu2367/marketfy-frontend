@@ -114,6 +114,14 @@ export default function Plans() {
         document: billingMode === 'recurring' ? document : undefined,
       });
 
+      if (billingMode === 'invoice') {
+        toast.success('Fatura criada. Clique em Pagar para gerar o checkout.');
+        setShowModal(false);
+        await refreshUser();
+        navigate('/dashboard/settings?tab=invoices');
+        return;
+      }
+
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
         return;

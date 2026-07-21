@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Plans from '../pages/auth/Plans';
-import api from '../lib/api';
+import api, { subscribePlan } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 
 const navigate = vi.fn();
@@ -44,6 +45,7 @@ function renderPlans({ user }) {
 describe('Plans', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    subscribePlan.mockResolvedValue({ data: { invoice_id: 'invoice-1', checkout_url: null } });
   });
 
   it('hides the free trial for a user who already has a plan', async () => {
@@ -61,5 +63,17 @@ describe('Plans', () => {
     expect(screen.getByText(/200 emissões fiscais por mês/i)).toBeInTheDocument();
     expect(screen.getAllByText(/até 3 lojas/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/até 6 caixas/i).length).toBeGreaterThan(0);
+  });
+
+  it('takes invoice customers to their invoices instead of opening checkout during subscription', async () => {
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /escolher plano/i }));
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    expect(subscribePlan).toHaveBeenCalledWith(expect.objectContaining({ billing_mode: 'invoice' }));
+    expect(navigate).toHaveBeenCalledWith('/dashboard/settings?tab=invoices');
   });
 });

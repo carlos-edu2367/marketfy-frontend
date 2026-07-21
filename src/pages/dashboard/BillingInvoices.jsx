@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getInvoices, getInvoice } from '../../lib/api';
+import { getInvoices, getInvoice, requestInvoiceCheckout } from '../../lib/api';
 import { Button } from '../../components/ui/Button';
 import { Loader2, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -33,11 +33,17 @@ export default function BillingInvoices() {
   const handlePay = async (invoice) => {
     try {
       setPaying(invoice.invoice_id);
-      let url = invoice.checkout_url;
-      if (!url) {
-        const { data } = await getInvoice(invoice.invoice_id);
-        url = data.checkout_url;
+      const { data } = await requestInvoiceCheckout(invoice.invoice_id);
+      let url = data.checkout_url;
+
+      // O checkout é assíncrono no Billing Core. O polling abaixo apenas lê a
+      // fatura já criada; não gera uma segunda cobrança.
+      for (let attempt = 0; !url && attempt < 10; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const response = await getInvoice(invoice.invoice_id);
+        url = response.data.checkout_url;
       }
+
       if (url) { window.location.href = url; return; }
       toast.error('Link de pagamento ainda não disponível. Tente novamente em instantes.');
     } catch {

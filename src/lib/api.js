@@ -128,6 +128,9 @@ export const getInvoices = () => api.get('/billing/invoices');
 
 export const getInvoice = (invoiceId) => api.get(`/billing/invoices/${invoiceId}`);
 
+export const requestInvoiceCheckout = (invoiceId) =>
+  api.post(`/billing/invoices/${invoiceId}/checkout`);
+
 export const pixOauthAuthorize = (marketId) => api.post(`/pix/${marketId}/oauth/authorize`);
 
 export const pixOauthStatus = (marketId) => api.get(`/pix/${marketId}/oauth/status`);

@@ -6,6 +6,7 @@ describe('billing api helpers', () => {
     expect(typeof apiModule.subscribePlan).toBe('function');
     expect(typeof apiModule.getInvoices).toBe('function');
     expect(typeof apiModule.getInvoice).toBe('function');
+    expect(typeof apiModule.requestInvoiceCheckout).toBe('function');
     expect(typeof apiModule.getSubscription).toBe('function');
   });
 });
