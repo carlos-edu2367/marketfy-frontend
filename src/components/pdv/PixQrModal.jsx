@@ -9,7 +9,6 @@ import {
   getPixAttempt,
   verifyPixAttempt,
   cancelPixAttempt,
-  pixEventsUrl,
 } from '../../lib/api';
 
 const POLL_INTERVAL_MS = 3000;
@@ -24,25 +23,30 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
   const [creationError, setCreationError] = useState(null);
 
   const createdRef = useRef(false);
-  const eventSourceRef = useRef(null);
+  const attemptRef = useRef(null);
+  const approvalSentRef = useRef(false);
   const pollRef = useRef(null);
   const tickRef = useRef(null);
 
+  const notifyApproved = useCallback((nextAttempt) => {
+    if (approvalSentRef.current) return;
+    approvalSentRef.current = true;
+    onApproved(nextAttempt);
+  }, [onApproved]);
+
   const applyAttemptUpdate = useCallback((data) => {
-    setAttempt((prev) => ({ ...prev, ...data }));
+    const nextAttempt = { ...(attemptRef.current || {}), ...data };
+    attemptRef.current = nextAttempt;
+    setAttempt(nextAttempt);
     if (data.next_verify_allowed_at) {
       setCooldownUntil(new Date(data.next_verify_allowed_at).getTime());
     }
     if (data.status === 'approved') {
-      onApproved({ ...attempt, ...data });
+      notifyApproved(nextAttempt);
     }
-  }, [attempt, onApproved]);
+  }, [notifyApproved]);
 
   const stopStreams = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
     if (pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;
@@ -62,49 +66,20 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
     }, POLL_INTERVAL_MS);
   }, [marketId, applyAttemptUpdate, stopStreams]);
 
-  const startEvents = useCallback((attemptId) => {
-    try {
-      const es = new EventSource(pixEventsUrl(marketId, attemptId));
-      eventSourceRef.current = es;
-      const handleEvent = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          applyAttemptUpdate(data);
-          if (FINAL_STATUSES.includes(data.status)) stopStreams();
-        } catch {
-          // ignore malformed event payloads
-        }
-      };
-      // Precisa cobrir TODOS os eventos que o backend publica — inclusive
-      // `payment.error` (divergência de valor). Sem ele, uma divergência
-      // deixaria o modal preso em "pendente": o polling de fallback só entra
-      // quando o SSE cai, o que não acontece nesse cenário.
-      [
-        'payment.created', 'payment.pending', 'payment.approved',
-        'payment.expired', 'payment.cancelled', 'payment.error',
-        'payment.confirmation_pending',
-      ].forEach((type) => {
-        es.addEventListener(type, handleEvent);
-      });
-      es.onerror = () => {
-        stopStreams();
-        startPolling(attemptId);
-      };
-    } catch {
-      startPolling(attemptId);
-    }
-  }, [marketId, applyAttemptUpdate, stopStreams, startPolling]);
-
   const createAttempt = useCallback(async () => {
     setLoading(true);
     setCreationError(null);
     try {
       const { data } = await createPixQr(marketId, { terminal_id: terminalId, box_id: boxId, items });
+      approvalSentRef.current = false;
+      attemptRef.current = data;
       setAttempt(data);
       if (data.next_verify_allowed_at) {
         setCooldownUntil(new Date(data.next_verify_allowed_at).getTime());
       }
-      startEvents(data.attempt_id);
+      // EventSource não transporta o token Bearer do Axios. O polling autenticado
+      // evita expor o token na URL e mantém uma única fonte confiável de estado.
+      startPolling(data.attempt_id);
     } catch (error) {
       const errorCode = error?.response?.data?.detail?.code;
       if (errorCode === 'pix.location_not_configured') {
@@ -115,7 +90,7 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
     } finally {
       setLoading(false);
     }
-  }, [marketId, terminalId, boxId, items, startEvents]);
+  }, [marketId, terminalId, boxId, items, startPolling]);
 
   useEffect(() => {
     if (createdRef.current) return;
@@ -138,7 +113,6 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
       applyAttemptUpdate(data);
       if (data.status === 'approved') {
         stopStreams();
-        onApproved({ ...attempt, ...data });
       }
     } catch {
       toast.error('Não foi possível verificar o pagamento agora.');
@@ -162,6 +136,8 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
   const handleRecreate = () => {
     stopStreams();
     createdRef.current = false;
+    attemptRef.current = null;
+    approvalSentRef.current = false;
     setAttempt(null);
     setCooldownUntil(null);
     createdRef.current = true;

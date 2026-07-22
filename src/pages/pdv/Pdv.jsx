@@ -85,6 +85,7 @@ export default function PDV() {
 
   const [pixStatus, setPixStatus] = useState(null);
   const [showPixQr, setShowPixQr] = useState(false);
+  const processedPixSaleIdRef = useRef(null);
 
   // Polling de status fiscal — ativo apenas após sync e emissão solicitada
   const {
@@ -269,26 +270,46 @@ export default function PDV() {
   };
 
   const handleGeneratePixQr = () => {
+    processedPixSaleIdRef.current = null;
     setShowPayment(false);
     setShowPixQr(true);
   };
 
-  const handlePixApproved = () => {
-    const saleId = uuidv4();
-    const salePayload = {
-      id: saleId,
-      market_id: cleanUUID(marketId),
-      box_id: box?.id,
-      terminal_id: cleanUUID(terminalId),
-      total_amount: total,
-      items: cart.map(item => ({ product_id: item.id, name: item.name, quantity: item.quantity, unit_price: item.price, total: item.total })),
-      payments: [{ method: 'pix', amount: total }],
-      customer_cpf: customerCpf,
-      created_at: new Date().toISOString(),
-      status: 'completed',
-    };
-    setShowPixQr(false);
-    completeSale(salePayload, 0);
+  const handlePixApproved = async (attempt) => {
+    const saleId = attempt?.sale_id;
+    if (!saleId) {
+      toast.error('O pagamento foi aprovado, mas a venda não pôde ser identificada. Verifique o histórico antes de entregar os itens.');
+      return;
+    }
+    if (processedPixSaleIdRef.current === saleId) return;
+    processedPixSaleIdRef.current = saleId;
+
+    try {
+      const { data: persistedSale } = await api.get(
+        `/sales/${cleanUUID(marketId)}/${saleId}`,
+      );
+      if (!persistedSale?.id) throw new Error('Venda Pix não encontrada após aprovação.');
+
+      const salePayload = {
+        ...persistedSale,
+        total_amount: Number(persistedSale.total_amount),
+        items: (persistedSale.items || []).map((item) => ({
+          ...item,
+          name: item.product_name || item.name,
+        })),
+      };
+      setShowPixQr(false);
+      completeSale(salePayload, 0);
+    } catch {
+      // O pagamento já é autoritativo no servidor. Não inventamos uma venda local
+      // para recibo: liberamos o próximo atendimento e orientamos a consulta no histórico.
+      setShowPixQr(false);
+      setCart([]);
+      setCustomerCpf('');
+      toast.error('Pagamento confirmado. A venda está no histórico; atualize a tela antes de imprimir o recibo.');
+    }
+    checkBoxStatus(true);
+    requestFiscalEmission(saleId);
   };
 
   const handlePixModalClose = () => {
