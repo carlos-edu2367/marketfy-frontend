@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getInvoices, getInvoice, requestInvoiceCheckout } from '../../lib/api';
+import { getInvoices, requestInvoiceCheckout, retryInvoice } from '../../lib/api';
 import { Button } from '../../components/ui/Button';
 import { Loader2, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,6 +16,7 @@ export default function BillingInvoices() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(null);
+  const [retrying, setRetrying] = useState(null);
 
   const load = async () => {
     try {
@@ -36,11 +37,11 @@ export default function BillingInvoices() {
       const { data } = await requestInvoiceCheckout(invoice.invoice_id);
       let url = data.checkout_url;
 
-      // O checkout é assíncrono no Billing Core. O polling abaixo apenas lê a
-      // fatura já criada; não gera uma segunda cobrança.
+      // O checkout é assíncrono no Billing Core. Repetir esse endpoint só
+      // consulta o job existente depois da primeira criação; não cobra de novo.
       for (let attempt = 0; !url && attempt < 10; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        const response = await getInvoice(invoice.invoice_id);
+        const response = await requestInvoiceCheckout(invoice.invoice_id);
         url = response.data.checkout_url;
       }
 
@@ -50,6 +51,19 @@ export default function BillingInvoices() {
       toast.error('Erro ao abrir o pagamento.');
     } finally {
       setPaying(null);
+    }
+  };
+
+  const handleRetry = async (invoice) => {
+    try {
+      setRetrying(invoice.invoice_id);
+      await retryInvoice(invoice.invoice_id);
+      toast.success('Nova fatura criada. Clique em Pagar para continuar.');
+      await load();
+    } catch {
+      toast.error('Não foi possível criar uma nova fatura. Tente novamente.');
+    } finally {
+      setRetrying(null);
     }
   };
 
@@ -81,6 +95,11 @@ export default function BillingInvoices() {
             {inv.status === 'pending' && (
               <Button onClick={() => handlePay(inv)} isLoading={paying === inv.invoice_id} className="font-bold">
                 Pagar
+              </Button>
+            )}
+            {inv.status === 'canceled' && (
+              <Button onClick={() => handleRetry(inv)} isLoading={retrying === inv.invoice_id} className="font-bold">
+                Tentar novamente
               </Button>
             )}
           </div>
