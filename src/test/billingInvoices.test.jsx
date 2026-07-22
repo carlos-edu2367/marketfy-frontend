@@ -41,6 +41,19 @@ describe('BillingInvoices', () => {
     expect(getInvoice).not.toHaveBeenCalled();
   });
 
+  it('polls the existing checkout job until its payment link is ready', async () => {
+    const user = userEvent.setup();
+    requestInvoiceCheckout
+      .mockResolvedValueOnce({ data: { checkout_url: null } })
+      .mockResolvedValueOnce({ data: { checkout_url: 'https://pay.example/checkout' } });
+
+    render(<BillingInvoices />);
+    await user.click(await screen.findByRole('button', { name: /pagar/i }));
+
+    await waitFor(() => expect(requestInvoiceCheckout).toHaveBeenCalledTimes(2), { timeout: 1500 });
+    expect(getInvoice).not.toHaveBeenCalled();
+  });
+
   it('replaces a canceled invoice without creating checkout', async () => {
     const user = userEvent.setup();
     getInvoices.mockResolvedValue({

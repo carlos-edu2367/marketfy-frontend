@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getInvoices, getInvoice, requestInvoiceCheckout, retryInvoice } from '../../lib/api';
+import { getInvoices, requestInvoiceCheckout, retryInvoice } from '../../lib/api';
 import { Button } from '../../components/ui/Button';
 import { Loader2, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -37,11 +37,11 @@ export default function BillingInvoices() {
       const { data } = await requestInvoiceCheckout(invoice.invoice_id);
       let url = data.checkout_url;
 
-      // O checkout é assíncrono no Billing Core. O polling abaixo apenas lê a
-      // fatura já criada; não gera uma segunda cobrança.
+      // O checkout é assíncrono no Billing Core. Repetir esse endpoint só
+      // consulta o job existente depois da primeira criação; não cobra de novo.
       for (let attempt = 0; !url && attempt < 10; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        const response = await getInvoice(invoice.invoice_id);
+        const response = await requestInvoiceCheckout(invoice.invoice_id);
         url = response.data.checkout_url;
       }
 
