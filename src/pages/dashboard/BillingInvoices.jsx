@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getInvoices, getInvoice, requestInvoiceCheckout } from '../../lib/api';
+import { getInvoices, getInvoice, requestInvoiceCheckout, retryInvoice } from '../../lib/api';
 import { Button } from '../../components/ui/Button';
 import { Loader2, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,6 +16,7 @@ export default function BillingInvoices() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(null);
+  const [retrying, setRetrying] = useState(null);
 
   const load = async () => {
     try {
@@ -53,6 +54,19 @@ export default function BillingInvoices() {
     }
   };
 
+  const handleRetry = async (invoice) => {
+    try {
+      setRetrying(invoice.invoice_id);
+      await retryInvoice(invoice.invoice_id);
+      toast.success('Nova fatura criada. Clique em Pagar para continuar.');
+      await load();
+    } catch {
+      toast.error('Não foi possível criar uma nova fatura. Tente novamente.');
+    } finally {
+      setRetrying(null);
+    }
+  };
+
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="animate-spin text-brand-yellow" size={36} /></div>;
 
   if (!items.length) {
@@ -81,6 +95,11 @@ export default function BillingInvoices() {
             {inv.status === 'pending' && (
               <Button onClick={() => handlePay(inv)} isLoading={paying === inv.invoice_id} className="font-bold">
                 Pagar
+              </Button>
+            )}
+            {inv.status === 'canceled' && (
+              <Button onClick={() => handleRetry(inv)} isLoading={retrying === inv.invoice_id} className="font-bold">
+                Tentar novamente
               </Button>
             )}
           </div>
