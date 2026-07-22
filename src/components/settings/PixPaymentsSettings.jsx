@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '../ui/Button';
-import { QrCode, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { QrCode, CheckCircle, XCircle, AlertTriangle, Loader2, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   pixOauthStatus,
@@ -8,7 +8,9 @@ import {
   pixOauthTest,
   pixOauthDisconnect,
   pixUpdateSettings,
+  getPixLocation,
 } from '../../lib/api';
+import PixLocationSetup from './PixLocationSetup';
 
 // Data de referência da informação pública de tarifas exibida ao lojista.
 // A spec (10-frontend-ux-spec.md §2.4) pede que este texto seja administrável;
@@ -23,18 +25,28 @@ const STATUS_INFO = {
 };
 
 export default function PixPaymentsSettings({ marketId }) {
+  const locationStepRequested = new URLSearchParams(window.location.search).get('step') === 'location';
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [feesAck, setFeesAck] = useState(false);
   const [testing, setTesting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [savingEnabled, setSavingEnabled] = useState(false);
+  const [location, setLocation] = useState(null);
+  const [showLocationSetup, setShowLocationSetup] = useState(false);
 
   const load = async () => {
     try {
       const { data } = await pixOauthStatus(marketId);
       setStatus(data);
       setFeesAck(Boolean(data?.fees_acknowledged));
+      if (data?.status === 'connected') {
+        const locationResponse = await getPixLocation(marketId);
+        setLocation(locationResponse.data);
+        if (locationStepRequested) setShowLocationSetup(true);
+      } else {
+        setLocation(null);
+      }
     } catch {
       toast.error('Não foi possível carregar o status da integração Pix.');
     } finally {
@@ -42,7 +54,9 @@ export default function PixPaymentsSettings({ marketId }) {
     }
   };
 
-  useEffect(() => { load(); }, [marketId]);
+  // `load` is intentionally scoped to this component and depends on the market/query step.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [marketId, locationStepRequested]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -94,6 +108,10 @@ export default function PixPaymentsSettings({ marketId }) {
   };
 
   const handleToggleEnabled = async (enabled) => {
+    if (enabled && location?.status !== 'ready') {
+      setShowLocationSetup(true);
+      return;
+    }
     setSavingEnabled(true);
     try {
       await pixUpdateSettings(marketId, { enabled_in_pdv: enabled, fees_acknowledged: feesAck });
@@ -123,6 +141,7 @@ export default function PixPaymentsSettings({ marketId }) {
   }
 
   const isConnected = status?.status === 'connected';
+  const locationReady = location?.status === 'ready';
   const statusInfo = STATUS_INFO[status?.status] || STATUS_INFO.not_connected;
   const StatusIcon = statusInfo.icon;
 
@@ -165,11 +184,26 @@ export default function PixPaymentsSettings({ marketId }) {
             <input
               type="checkbox"
               checked={Boolean(status?.enabled_in_pdv)}
-              disabled={!feesAck}
+              disabled={savingEnabled || !feesAck || (!locationReady && !status?.enabled_in_pdv)}
               onChange={(e) => handleToggleEnabled(e.target.checked)}
             />
             Habilitar no PDV
           </label>
+          <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <MapPin size={18} className={locationReady ? 'text-green-600' : 'text-amber-600'} />
+              <div>
+                <p className="font-bold text-gray-900">Localização da loja</p>
+                {locationReady ? (
+                  <p className="text-sm text-green-700">Endereço e ponto no mapa confirmados.</p>
+                ) : (
+                  <p className="text-sm text-amber-700">Configure a localização antes de habilitar o Pix no PDV.</p>
+                )}
+              </div>
+            </div>
+            {!locationReady && <Button type="button" variant="secondary" onClick={() => setShowLocationSetup(true)}>Configurar localização</Button>}
+            {showLocationSetup && <PixLocationSetup marketId={marketId} onSaved={(data) => { setLocation(data); setShowLocationSetup(false); }} />}
+          </div>
         </div>
       )}
 

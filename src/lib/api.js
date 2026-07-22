@@ -141,6 +141,12 @@ export const pixOauthDisconnect = (marketId) => api.delete(`/pix/${marketId}/oau
 
 export const pixUpdateSettings = (marketId, payload) => api.put(`/pix/${marketId}/settings`, payload);
 
+export const getPixLocation = (marketId) => api.get(`/pix/${marketId}/location`);
+
+export const savePixLocation = (marketId, payload) => api.put(`/pix/${marketId}/location`, payload);
+
+export const lookupAddressByCep = (postalCode) => api.get(`/pix/address/cep/${postalCode}`);
+
 export const createPixQr = (marketId, { terminal_id, box_id, items }) =>
   api.post(`/pix/${marketId}/qr`, { terminal_id, box_id, items });
 

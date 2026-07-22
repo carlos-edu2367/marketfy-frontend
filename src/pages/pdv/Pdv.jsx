@@ -650,6 +650,7 @@ export default function PDV() {
           items={cart.map(item => ({ product_id: item.id, quantity: item.quantity }))}
           onApproved={handlePixApproved}
           onClose={handlePixModalClose}
+          canConfigurePix={['owner', 'manager', 'admin'].includes(user?.role)}
         />
       )}
 

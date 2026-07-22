@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../lib/utils';
-import { Copy, X, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Copy, X, Loader2, RefreshCw, AlertTriangle, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   createPixQr,
@@ -15,12 +15,13 @@ import {
 const POLL_INTERVAL_MS = 3000;
 const FINAL_STATUSES = ['approved', 'expired', 'canceled', 'cancelled'];
 
-export default function PixQrModal({ marketId, terminalId, boxId, items, onApproved, onClose }) {
+export default function PixQrModal({ marketId, terminalId, boxId, items, onApproved, onClose, canConfigurePix = false }) {
   const [attempt, setAttempt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState(null);
   const [now, setNow] = useState(Date.now());
+  const [creationError, setCreationError] = useState(null);
 
   const createdRef = useRef(false);
   const eventSourceRef = useRef(null);
@@ -96,6 +97,7 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
 
   const createAttempt = useCallback(async () => {
     setLoading(true);
+    setCreationError(null);
     try {
       const { data } = await createPixQr(marketId, { terminal_id: terminalId, box_id: boxId, items });
       setAttempt(data);
@@ -103,8 +105,13 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
         setCooldownUntil(new Date(data.next_verify_allowed_at).getTime());
       }
       startEvents(data.attempt_id);
-    } catch {
-      toast.error('Não foi possível gerar o QR Code Pix.');
+    } catch (error) {
+      const errorCode = error?.response?.data?.detail?.code;
+      if (errorCode === 'pix.location_not_configured') {
+        setCreationError(errorCode);
+      } else {
+        toast.error('Não foi possível gerar o QR Code Pix.');
+      }
     } finally {
       setLoading(false);
     }
@@ -195,6 +202,32 @@ export default function PixQrModal({ marketId, terminalId, boxId, items, onAppro
         {loading && !attempt && (
           <div className="flex items-center justify-center gap-2 py-10 text-gray-500">
             <Loader2 size={20} className="animate-spin" /> Gerando QR Code...
+          </div>
+        )}
+
+        {!loading && !attempt && creationError === 'pix.location_not_configured' && (
+          <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+            <div className="flex items-start gap-3">
+              <MapPin size={20} className="mt-0.5 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-bold">Configure a localização da loja</p>
+                <p className="mt-1 text-sm">
+                  O Mercado Pago precisa do endereço completo para gerar o Pix deste mercado.
+                </p>
+                {canConfigurePix ? (
+                  <a
+                    href={`/dashboard/settings?tab=pix&marketId=${encodeURIComponent(marketId)}&step=location`}
+                    className="mt-3 inline-flex font-bold text-amber-800 underline underline-offset-2"
+                  >
+                    Configurar localização
+                  </a>
+                ) : (
+                  <p className="mt-3 text-sm font-semibold">
+                    Solicite ao responsável pelo mercado que conclua essa configuração.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

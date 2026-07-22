@@ -202,7 +202,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId, pix
             {selectedMethod === 'pix' && (
                 <div className="bg-white p-4 rounded-2xl border border-teal-100 shadow-sm relative animate-fade-in space-y-3">
                     <p className="text-sm font-bold text-gray-700">Registrar Pix manualmente</p>
-                    <p className="text-xs text-gray-400">Sem confirmação automática do Mercado Pago. Use "Adicionar Pagamento" abaixo.</p>
+                <p className="text-xs text-gray-400">Sem confirmação automática do Mercado Pago. Use &quot;Adicionar Pagamento&quot; abaixo.</p>
                     {pixIntegrationAvailable && (
                         <Button
                             type="button"

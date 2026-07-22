@@ -18,7 +18,7 @@ let lastEventSource;
 beforeEach(() => {
   lastEventSource = undefined;
   // Precisa ser `function` (não arrow) para ser construível via `new`.
-  global.EventSource = vi.fn(function () {
+  globalThis.EventSource = vi.fn(function () {
     const listeners = {};
     lastEventSource = {
       listeners,
@@ -57,5 +57,22 @@ describe('PixQrModal', () => {
     await waitFor(() => screen.getByText(/Verificar pagamento/i));
     fireEvent.click(screen.getByText(/Verificar pagamento/i));
     await waitFor(() => expect(onApproved).toHaveBeenCalled());
+  });
+
+  it('explains when the market location is required and offers configuration', async () => {
+    const api = await import('../lib/api');
+    api.createPixQr.mockRejectedValueOnce({
+      response: { data: { detail: { code: 'pix.location_not_configured' } } },
+    });
+
+    render(<PixQrModal marketId="m1" terminalId="t1" boxId="b1"
+      items={[{ product_id: 'p1', quantity: 2 }]} onApproved={vi.fn()} onClose={vi.fn()}
+      canConfigurePix />);
+
+    await waitFor(() => expect(screen.getByText(/localiza.*loja/i)).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: /configurar localiza/i })).toHaveAttribute(
+      'href',
+      '/dashboard/settings?tab=pix&marketId=m1&step=location',
+    );
   });
 });

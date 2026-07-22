@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import api, * as apiModule from '../lib/api';
 
 vi.mock('axios', () => {
@@ -18,5 +18,13 @@ describe('pix api', () => {
   });
   it('pixEventsUrl builds the stream path', () => {
     expect(apiModule.pixEventsUrl('m1', 'a1')).toContain('/pix/m1/attempts/a1/events');
+  });
+  it('reads and saves the market Pix location through the API', async () => {
+    await apiModule.getPixLocation('m1');
+    await apiModule.savePixLocation('m1', { postal_code: '01001000' });
+    await apiModule.lookupAddressByCep('01001000');
+    expect(api.get).toHaveBeenCalledWith('/pix/m1/location');
+    expect(api.put).toHaveBeenCalledWith('/pix/m1/location', { postal_code: '01001000' });
+    expect(api.get).toHaveBeenCalledWith('/pix/address/cep/01001000');
   });
 });

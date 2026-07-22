@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import PixPaymentsSettings from '../components/settings/PixPaymentsSettings';
 
+const { getPixLocation } = vi.hoisted(() => ({ getPixLocation: vi.fn() }));
 vi.mock('../lib/api', () => ({
   pixOauthStatus: vi.fn(() => Promise.resolve({ data: { status: 'not_connected' } })),
   pixOauthAuthorize: vi.fn(() => Promise.resolve({ data: { authorization_url: 'https://auth.mercadopago.com/x' } })),
-  pixOauthTest: vi.fn(), pixOauthDisconnect: vi.fn(), pixUpdateSettings: vi.fn(),
+  pixOauthTest: vi.fn(), pixOauthDisconnect: vi.fn(), pixUpdateSettings: vi.fn(), getPixLocation,
 }));
 
 describe('PixPaymentsSettings', () => {
@@ -33,5 +34,18 @@ describe('PixPaymentsSettings', () => {
     const link = await screen.findByRole('link', { name: /tarifas oficiais/i });
     expect(link).toHaveAttribute('href', expect.stringContaining('mercadopago'));
     expect(await screen.findByTestId('pix-fees-notice')).toHaveTextContent(/atualizada em \d{2}\/\d{2}\/\d{4}/i);
+  });
+
+  it('blocks PDV activation while the market location is not configured', async () => {
+    const api = await import('../lib/api');
+    api.pixOauthStatus.mockResolvedValue({ data: {
+      status: 'connected', enabled_in_pdv: false, fees_acknowledged: true,
+    } });
+    getPixLocation.mockResolvedValue({ data: { status: 'not_configured' } });
+
+    render(<PixPaymentsSettings marketId="m1" />);
+
+    expect(await screen.findByText(/configure a localização/i)).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: /habilitar no pdv/i })).toBeDisabled();
   });
 });

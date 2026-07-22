@@ -43,10 +43,11 @@ export default function Settings() {
         const { data } = await api.get('/identity/markets');
         if (cancelled) return;
         setMarkets(data);
-        const requestedMarket = requestedTab === 'fiscal'
+        const requestedMarket = ['fiscal', 'pix'].includes(requestedTab)
           ? data.find((market) => market.id === requestedMarketId)
           : null;
         if (requestedTab === 'fiscal') setActiveTab('fiscal');
+        if (requestedTab === 'pix') setActiveTab('pix');
         if (data.length > 0) setSelectedMarketId(requestedMarket?.id || data[0].id);
       } catch (error) {
         if (!cancelled) console.error(error);
