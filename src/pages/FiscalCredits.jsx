@@ -18,7 +18,20 @@ const PACKAGE_LABELS = {
   pack_500: '500 emissoes extras',
 };
 
-function packageLabel(slug) {
+const GRANT_TYPE = 'nfce_admin_grant';
+
+const GRANT_REASON_LABELS = {
+  courtesy: 'Cortesia da equipe Marketfy',
+  compensation: 'Compensação por indisponibilidade',
+  bonus: 'Bônus promocional',
+  migration: 'Créditos de migração de plano',
+};
+
+function packageLabel(item) {
+  if (item?.package_type === GRANT_TYPE) {
+    return GRANT_REASON_LABELS[item.grant_reason_code] || 'Créditos concedidos pelo Marketfy';
+  }
+  const slug = item?.package_slug;
   if (!slug) return '-';
   if (PACKAGE_LABELS[slug]) return PACKAGE_LABELS[slug];
   if (slug.startsWith('custom_')) {
@@ -255,21 +268,22 @@ export default function FiscalCredits() {
           </div>
         </section>
 
-        {/* Histórico de Compras Table Card */}
+        {/* Histórico de Créditos Table Card */}
         <section className="rounded-3xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col">
           <div className="border-b border-gray-100 px-6 py-5">
-            <h2 className="text-lg font-black text-gray-900">Histórico de Compras</h2>
-            <p className="text-sm font-medium text-gray-500 mt-0.5">Últimos pacotes de créditos extras adquiridos.</p>
+            <h2 className="text-lg font-black text-gray-900">Histórico de Créditos</h2>
+            <p className="text-sm font-medium text-gray-500 mt-0.5">Créditos extras adquiridos e concedidos pelo Marketfy.</p>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-left text-sm">
               <thead className="bg-gray-50/75 border-b border-gray-100 text-xs uppercase tracking-wider font-bold text-gray-400">
                 <tr>
-                  <th className="px-6 py-4">Data de Compra</th>
-                  <th className="px-6 py-4">Pacote</th>
+                  <th className="px-6 py-4">Data</th>
+                  <th className="px-6 py-4">Origem</th>
                   <th className="px-6 py-4 text-center">Quantidade</th>
                   <th className="px-6 py-4 text-center">Créditos Restantes</th>
+                  <th className="px-6 py-4">Validade</th>
                   <th className="px-6 py-4">Valor Total</th>
                   <th className="px-6 py-4">Status</th>
                 </tr>
@@ -277,8 +291,8 @@ export default function FiscalCredits() {
               <tbody className="divide-y divide-gray-100">
                 {history.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-gray-400 font-medium">
-                      Você ainda não adquiriu nenhum crédito extra.
+                    <td colSpan="7" className="px-6 py-12 text-center text-gray-400 font-medium">
+                      Nenhum crédito extra por aqui ainda.
                       <button
                         type="button"
                         onClick={() => window.scrollTo({ top: 400, behavior: 'smooth' })}
@@ -288,33 +302,43 @@ export default function FiscalCredits() {
                       </button>
                     </td>
                   </tr>
-                ) : history.map(item => (
+                ) : history.map(item => {
+                  const isGrant = item.package_type === GRANT_TYPE;
+                  return (
                   <tr key={item.package_id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-gray-700">{formatDateOnly(item.created_at)}</td>
-                    <td className="px-6 py-4 text-gray-600 font-medium">{packageLabel(item.package_slug)}</td>
+                    <td className="px-6 py-4 text-gray-600 font-medium">{packageLabel(item)}</td>
                     <td className="px-6 py-4 text-center font-mono font-bold text-gray-600">{item.quantity}</td>
                     <td className="px-6 py-4 text-center font-mono font-bold text-brand-dark">{item.remaining}</td>
-                    <td className="px-6 py-4 font-bold text-gray-800">{formatCurrency(Number(item.price_gross || 0))}</td>
+                    <td className="px-6 py-4 font-medium text-gray-600">{formatDateOnly(item.valid_until)}</td>
+                    <td className="px-6 py-4 font-bold text-gray-800">
+                      {isGrant ? 'Cortesia' : formatCurrency(Number(item.price_gross || 0))}
+                    </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-black shadow-sm ${
-                        item.payment_status === 'paid' 
-                          ? 'bg-green-50 text-green-700 border border-green-100' 
-                          : item.payment_status === 'pending'
-                            ? 'bg-amber-50 text-amber-700 border border-amber-100'
-                            : 'bg-gray-100 text-gray-500'
+                        isGrant
+                          ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                          : item.payment_status === 'paid'
+                            ? 'bg-green-50 text-green-700 border border-green-100'
+                            : item.payment_status === 'pending'
+                              ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                              : 'bg-gray-100 text-gray-500'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${
-                          item.payment_status === 'paid' 
-                            ? 'bg-green-500' 
-                            : item.payment_status === 'pending'
-                              ? 'bg-amber-500'
-                              : 'bg-gray-400'
+                          isGrant
+                            ? 'bg-blue-500'
+                            : item.payment_status === 'paid'
+                              ? 'bg-green-500'
+                              : item.payment_status === 'pending'
+                                ? 'bg-amber-500'
+                                : 'bg-gray-400'
                         }`} />
-                        {STATUS_LABELS[item.payment_status] || item.payment_status}
+                        {isGrant ? 'Recebido' : (STATUS_LABELS[item.payment_status] || item.payment_status)}
                       </span>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

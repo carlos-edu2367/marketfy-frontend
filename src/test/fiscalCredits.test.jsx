@@ -476,4 +476,77 @@ describe('FiscalCredits', () => {
       /não foi possível carregar as informações/i
     );
   });
+
+  it('mostra credito concedido pelo admin de forma amigavel', async () => {
+    api.get.mockImplementation((url) => {
+      if (url === '/identity/markets') {
+        return Promise.resolve({ data: [{ id: 'market-1', name: 'Loja Centro' }] });
+      }
+      if (url === '/fiscal/credits/packages') {
+        return Promise.resolve({ data: packagesPayload });
+      }
+      if (url === '/fiscal/credits/config') {
+        return Promise.resolve({ data: configPayload });
+      }
+      if (url === '/fiscal/market-1/credits/balance') {
+        return Promise.resolve({ data: balancePayload });
+      }
+      if (url === '/fiscal/market-1/credits/history') {
+        return Promise.resolve({
+          data: {
+            page: 1,
+            per_page: 10,
+            items: [
+              {
+                package_id: 'pkg-grant',
+                package_type: 'nfce_admin_grant',
+                package_slug: 'admin_grant',
+                grant_reason_code: 'courtesy',
+                quantity: 500,
+                remaining: 500,
+                payment_status: 'paid',
+                price_gross: '0.00',
+                valid_until: '2027-08-10T00:00:00',
+                created_at: '2026-08-10T00:00:00',
+              },
+              {
+                package_id: 'pkg-buy',
+                package_type: 'nfce_addon',
+                package_slug: 'pack_100',
+                grant_reason_code: null,
+                quantity: 100,
+                remaining: 40,
+                payment_status: 'paid',
+                price_gross: '41.99',
+                valid_until: '2027-05-01T00:00:00',
+                created_at: '2026-05-01T00:00:00',
+              },
+            ],
+          },
+        });
+      }
+      return Promise.reject(new Error(`unexpected GET ${url}`));
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/fiscal/credits?marketId=market-1']}>
+        <FiscalCredits />
+      </MemoryRouter>
+    );
+
+    // Grant: rotulo da categoria, badge "Recebido", valor "Cortesia"
+    expect(await screen.findByText(/Cortesia da equipe Marketfy/i)).toBeInTheDocument();
+    expect(screen.getByText('Recebido')).toBeInTheDocument();
+    expect(screen.getByText('Cortesia')).toBeInTheDocument();
+
+    // Compra: rotulo do pacote (dentro da tabela de historico, distinto do
+    // card de compra que tambem mostra "100 emissoes extras"), badge "Pago"
+    const historyTable = screen.getByRole('table');
+    expect(within(historyTable).getByText(/100 emissoes extras/i)).toBeInTheDocument();
+    expect(screen.getByText('Pago')).toBeInTheDocument();
+
+    // Coluna de validade preenchida nos dois casos
+    expect(screen.getByText('10/08/2027')).toBeInTheDocument();
+    expect(screen.getByText('01/05/2027')).toBeInTheDocument();
+  });
 });
