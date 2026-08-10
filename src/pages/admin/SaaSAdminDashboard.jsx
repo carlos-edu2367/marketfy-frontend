@@ -3,28 +3,30 @@ import api from '../../lib/api';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { 
-  TrendingUp, Users, Store, AlertCircle, Search, 
-  Shield, Lock, Unlock, Key, RefreshCw, Loader2, CreditCard, Calendar
+import {
+  TrendingUp, Users, Store, AlertCircle, Search,
+  Shield, Lock, Unlock, Key, RefreshCw, Loader2, CreditCard, Calendar, Coins
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
+import GrantFiscalCreditsModal from '../../components/admin/GrantFiscalCreditsModal';
 
 export default function SaaSAdminDashboard() {
   const [loading, setLoading] = useState(true);
-  
+
   // Dados do Dashboard
   const [metrics, setMetrics] = useState(null);
   const [expiringUsers, setExpiringUsers] = useState([]);
   const [users, setUsers] = useState([]);
   const [plans, setPlans] = useState([]); // Lista de planos para o select
-  
+
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
 
   // Modais
   const [passwordModal, setPasswordModal] = useState({ open: false, userId: null, userName: null });
   const [planModal, setPlanModal] = useState({ open: false, userId: null, userName: null });
+  const [creditsModal, setCreditsModal] = useState({ open: false, userId: null, userName: null });
 
   // Carregamento Inicial
   const loadDashboardData = useCallback(async () => {
@@ -262,8 +264,16 @@ export default function SaaSAdminDashboard() {
                                             >
                                                 <CreditCard size={14} /> Renovar
                                             </button>
-                                            
-                                            <button 
+
+                                            <button
+                                                onClick={() => setCreditsModal({ open: true, userId: user.user_id, userName: user.name })}
+                                                className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                title="Conceder créditos NFC-e"
+                                            >
+                                                <Coins size={16} />
+                                            </button>
+
+                                            <button
                                                 onClick={() => setPasswordModal({ open: true, userId: user.user_id, userName: user.name })}
                                                 className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                 title="Resetar Senha"
@@ -454,6 +464,14 @@ export default function SaaSAdminDashboard() {
                 </form>
             </div>
         </div>
+      )}
+
+      {creditsModal.open && (
+        <GrantFiscalCreditsModal
+          userId={creditsModal.userId}
+          userName={creditsModal.userName}
+          onClose={() => setCreditsModal({ open: false, userId: null, userName: null })}
+        />
       )}
 
     </div>
