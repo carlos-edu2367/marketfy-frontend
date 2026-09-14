@@ -96,7 +96,7 @@ export default function GrantFiscalCreditsModal({ userId, userName, onClose, onG
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl animate-scale-in border border-slate-100 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
         <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mb-4 text-amber-600 mx-auto">
           <Coins size={24} />
         </div>

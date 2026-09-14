@@ -369,7 +369,7 @@ export default function SaaSAdminDashboard() {
       {/* --- MODAL RESET SENHA --- */}
       {passwordModal.open && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-scale-in border border-slate-100">
+            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-slate-100">
                 <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-600 mx-auto">
                     <Key size={24} />
                 </div>
@@ -409,7 +409,7 @@ export default function SaaSAdminDashboard() {
       {/* --- MODAL ATRIBUIR PLANO (NOVO) --- */}
       {planModal.open && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-scale-in border border-slate-100">
+            <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl border border-slate-100">
                 <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center mb-4 text-purple-600 mx-auto">
                     <CreditCard size={24} />
                 </div>

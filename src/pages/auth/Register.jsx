@@ -9,11 +9,12 @@ import { User, Mail, Lock, FileText, ArrowRight, Check, ShieldCheck, Store } fro
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { savePlanIntent } from '../../lib/planIntent';
+import { maskCpf, onlyDigits } from '../../lib/documentMask';
 
 const registerSchema = z.object({
   name: z.string().min(3, 'Nome muito curto'),
   email: z.string().email('Email inválido'),
-  cpf: z.string().min(11, 'CPF inválido (mínimo 11 números)'),
+  cpf: z.string().refine((value) => onlyDigits(value).length === 11, 'CPF deve ter 11 números'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
   acceptedTerms: z.boolean().refine((value) => value === true, {
     message: 'É preciso aceitar os Termos e a Política de Privacidade.',
@@ -29,6 +30,7 @@ export default function Register() {
     resolver: zodResolver(registerSchema),
     defaultValues: { acceptedTerms: false },
   });
+  const cpfField = register('cpf');
 
   // Função para truncar a senha em 72 bytes (limite do bcrypt)
   const truncateTo72Bytes = (str) => {
@@ -42,7 +44,7 @@ export default function Register() {
 
   const onSubmit = async (data) => {
     const safePassword = truncateTo72Bytes(data.password);
-    const userData = { name: data.name, email: data.email, cpf: data.cpf };
+    const userData = { name: data.name, email: data.email, cpf: onlyDigits(data.cpf) };
 
     try {
       await registerUser({ ...userData, password: safePassword });
@@ -105,10 +107,16 @@ export default function Register() {
             <Input
               label="CPF"
               icon={FileText}
-              placeholder="Somente números"
+              placeholder="000.000.000-00"
               inputMode="numeric"
+              autoComplete="off"
+              maxLength={14}
               error={errors.cpf?.message}
-              {...register('cpf')}
+              {...cpfField}
+              onChange={(event) => {
+                event.target.value = maskCpf(event.target.value);
+                cpfField.onChange(event);
+              }}
             />
             <p className="-mt-3 text-xs text-gray-400">Usamos o CPF para emitir suas notas fiscais (NFC-e).</p>
             <Input
