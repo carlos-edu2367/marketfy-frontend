@@ -63,11 +63,13 @@ export default function Plans() {
   const [showModal, setShowModal] = useState(false);
   const [billingMode, setBillingMode] = useState('invoice');
   const [billingDocument, setBillingDocument] = useState('');
+  const [useRegisteredDocument, setUseRegisteredDocument] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const modalRef = useRef(null);
 
   const { user, subscription, refreshUser, logout } = useAuth();
   const navigate = useNavigate();
+  const registeredDocument = user?.document_masked || null;
   const showTrial = !user?.plan_id;
   const stage = getStage(user, subscription);
   const stageCopy = STAGE_COPY[stage];
@@ -117,12 +119,14 @@ export default function Plans() {
     setSelectedPlan(plan);
     setBillingMode('invoice');
     setBillingDocument('');
+    setUseRegisteredDocument(true);
     setShowModal(true);
   };
 
   const handleContract = async (event) => {
     event?.preventDefault?.();
-    if (billingMode === 'recurring' && billingDocument.replace(/\D/g, '').length < 11) {
+    const typesDocument = billingMode === 'recurring' && !(registeredDocument && useRegisteredDocument);
+    if (typesDocument && billingDocument.replace(/\D/g, '').length < 11) {
       toast.error('Informe um CPF ou CNPJ válido para cobrança recorrente.');
       return;
     }
@@ -133,7 +137,7 @@ export default function Plans() {
         plan_id: selectedPlan.id,
         subscription_type: cycleKey,
         billing_mode: billingMode,
-        document: billingMode === 'recurring' ? billingDocument : undefined,
+        document: typesDocument ? billingDocument : undefined,
       });
       clearPlanIntent();
 
@@ -378,10 +382,24 @@ export default function Plans() {
                 </div>
               </fieldset>
 
-              {billingMode === 'recurring' && (
+              {billingMode === 'recurring' && registeredDocument && (
+                <label htmlFor="use-registered-document" className="flex items-start gap-2.5 rounded-xl border border-gray-200 p-3 text-sm text-gray-700">
+                  <input
+                    id="use-registered-document"
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4"
+                    checked={useRegisteredDocument}
+                    onChange={(event) => setUseRegisteredDocument(event.target.checked)}
+                  />
+                  <span>Usar o CPF do cadastro <strong className="font-mono">{registeredDocument}</strong></span>
+                </label>
+              )}
+
+              {billingMode === 'recurring' && (!registeredDocument || !useRegisteredDocument) && (
                 <Input
-                  label="CPF ou CNPJ do titular do cartão"
+                  label="CPF ou CNPJ do titular"
                   placeholder="Somente números"
+                  inputMode="numeric"
                   value={billingDocument}
                   onChange={(event) => setBillingDocument(event.target.value)}
                   autoFocus

@@ -152,6 +152,35 @@ describe('Plans', () => {
     expect(screen.getAllByText(/sem fidelidade/i)).toHaveLength(2); // faixa unica + nota do toggle, nunca 1 por card
   });
 
+  it('reuses the registered CPF for card billing without asking again', async () => {
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null, document_masked: '***.456.789-**' } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /cartão de crédito/i }));
+
+    expect(screen.getByLabelText(/usar o cpf do cadastro/i)).toBeChecked();
+    expect(screen.queryByPlaceholderText(/somente números/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    expect(subscribePlan).toHaveBeenCalledWith(expect.objectContaining({ billing_mode: 'recurring', document: undefined }));
+  });
+
+  it('asks for another document when the user unchecks the registered one', async () => {
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null, document_masked: '***.456.789-**' } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /cartão de crédito/i }));
+    await user.click(screen.getByLabelText(/usar o cpf do cadastro/i));
+    await user.type(screen.getByPlaceholderText(/somente números/i), '98765432000110');
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    expect(subscribePlan).toHaveBeenCalledWith(expect.objectContaining({ document: '98765432000110' }));
+  });
+
   it('lets the user log out from the plans page', async () => {
     const user = userEvent.setup();
     renderPlans({ user: { name: 'Ana', plan_id: 'plan-existing' } });
