@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import api from '../../lib/api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Plus, Edit2, LayoutDashboard, Loader2, Store, X, ArrowLeft } from 'lucide-react';
+import { Plus, Edit2, FileText, LayoutDashboard, Loader2, Store, X, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../../lib/utils';
@@ -43,8 +43,12 @@ export default function PlansManagement() {
         setValue('price_monthly', plan.price_monthly);
         setValue('price_180days', plan.price_180days);
         setValue('price_annual', plan.price_annual);
+        setValue('fiscal_monthly_limit', plan.fiscal_monthly_limit ?? 0);
+        setValue('description', plan.description ?? '');
+        setValue('display_order', plan.display_order ?? 0);
+        setValue('is_recommended', Boolean(plan.is_recommended));
     } else {
-        reset({ type: 'pago', is_active: true });
+        reset({ type: 'pago', is_active: true, fiscal_monthly_limit: 0, description: '', display_order: 0, is_recommended: false });
     }
     setIsModalOpen(true);
   };
@@ -60,7 +64,11 @@ export default function PlansManagement() {
             max_terminals: parseInt(data.max_terminals), // Garante int
             price_monthly: parseFloat(data.price_monthly), // Garante float
             price_180days: parseFloat(data.price_180days || 0),
-            price_annual: parseFloat(data.price_annual || 0)
+            price_annual: parseFloat(data.price_annual || 0),
+            fiscal_monthly_limit: parseInt(data.fiscal_monthly_limit || 0, 10),
+            description: data.description?.trim() || null,
+            display_order: parseInt(data.display_order || 0, 10),
+            is_recommended: Boolean(data.is_recommended),
         };
 
         if (editingPlan) {
@@ -104,8 +112,8 @@ export default function PlansManagement() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {plans.map(plan => (
                     <div key={plan.id} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative group hover:border-gray-300 transition-all">
-                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleOpenModal(plan)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-brand-dark">
+                        <div className="absolute top-4 right-4 opacity-60 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            <button onClick={() => handleOpenModal(plan)} aria-label={`Editar ${plan.name}`} className="p-2 hover:bg-gray-100 rounded-full text-gray-500 hover:text-brand-dark">
                                 <Edit2 size={18} />
                             </button>
                         </div>
@@ -122,6 +130,13 @@ export default function PlansManagement() {
                                 <LayoutDashboard size={16} className="text-brand-yellow" />
                                 <span>Até <strong>{plan.max_terminals}</strong> PDVs por loja</span>
                             </div>
+                            <div className="flex items-center gap-2">
+                                <FileText size={16} className="text-brand-yellow" />
+                                <span><strong>{plan.fiscal_monthly_limit ?? 0}</strong> NFC-e por mês</span>
+                            </div>
+                            {plan.is_recommended && (
+                                <span className="inline-block rounded-full bg-brand-yellow px-2 py-0.5 text-[11px] font-black uppercase text-brand-dark">Recomendado</span>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -158,6 +173,26 @@ export default function PlansManagement() {
                                 <Input label="Max. Lojas" type="number" {...register('max_markets', { required: true })} />
                                 <Input label="Max. Terminais" type="number" {...register('max_terminals', { required: true })} />
                             </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-1">
+                                    <label htmlFor="plan-fiscal-limit" className="text-sm font-medium text-gray-700">Emissões NFC-e por mês</label>
+                                    <input id="plan-fiscal-limit" type="number" min="0" className="w-full border border-gray-300 rounded-lg p-2.5" {...register('fiscal_monthly_limit', { required: true, min: 0 })} />
+                                    <span className="text-xs text-gray-400">0 = emissão não incluída no plano.</span>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label htmlFor="plan-display-order" className="text-sm font-medium text-gray-700">Ordem de exibição</label>
+                                    <input id="plan-display-order" type="number" className="w-full border border-gray-300 rounded-lg p-2.5" {...register('display_order')} />
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label htmlFor="plan-description" className="text-sm font-medium text-gray-700">Descrição curta (aparece no card)</label>
+                                <textarea id="plan-description" rows={2} maxLength={280} className="w-full border border-gray-300 rounded-lg p-2.5" {...register('description')} />
+                            </div>
+                            <label htmlFor="plan-recommended" className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <input id="plan-recommended" type="checkbox" {...register('is_recommended')} />
+                                Plano recomendado (destacado na landing e em /plans; desmarca os outros)
+                            </label>
 
                             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 space-y-3">
                                 <p className="text-xs font-bold text-yellow-800 uppercase tracking-wider mb-1">Precificação</p>
