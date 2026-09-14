@@ -4,6 +4,7 @@ import { AlertTriangle, ChevronLeft, ChevronRight, Loader2, RefreshCw, Store } f
 import toast from 'react-hot-toast';
 
 import CreditPackageCard from '../components/fiscal/CreditPackageCard';
+import CreditsRunwayNotice from '../components/fiscal/CreditsRunwayNotice';
 import CreditUsageBar from '../components/fiscal/CreditUsageBar';
 import CustomQuantityInput from '../components/fiscal/CustomQuantityInput';
 import PurchaseConfirmModal from '../components/fiscal/PurchaseConfirmModal';
@@ -227,13 +228,20 @@ export default function FiscalCredits() {
                 <Loader2 className="animate-spin text-brand-yellow" size={32} />
               </div>
             ) : (
-              <CreditUsageBar
-                used={balance?.used_count || 0}
-                includedLimit={balance?.included_limit || 0}
-                addonLimit={balance?.addon_limit || 0}
-                addonTotal={balance?.addon_total || 0}
-                period={balance?.period}
-              />
+              <>
+                <CreditUsageBar
+                  used={balance?.used_count || 0}
+                  includedLimit={balance?.included_limit || 0}
+                  addonLimit={balance?.addon_limit || 0}
+                  addonTotal={balance?.addon_total || 0}
+                  period={balance?.period}
+                />
+                <CreditsRunwayNotice
+                  period={balance?.period}
+                  usedCount={balance?.used_count}
+                  remaining={balance?.remaining}
+                />
+              </>
             )}
           </div>
         </section>
