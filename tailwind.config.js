@@ -18,7 +18,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['Fira Code', 'monospace'], // Essencial para alinhar valores no PDV
       },
       boxShadow: {

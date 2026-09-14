@@ -1,18 +1,22 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Plans from '../pages/auth/Plans';
 import api, { subscribePlan } from '../lib/api';
+import { fetchInvoiceCheckoutUrl } from '../lib/invoiceCheckout';
 import { useAuth } from '../hooks/useAuth';
 
 const navigate = vi.fn();
 const refreshUser = vi.fn();
 const logout = vi.fn();
+const originalLocation = window.location;
 
 vi.mock('../lib/api', () => ({
   default: { get: vi.fn(), post: vi.fn() },
   subscribePlan: vi.fn(),
 }));
+
+vi.mock('../lib/invoiceCheckout', () => ({ fetchInvoiceCheckoutUrl: vi.fn() }));
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: vi.fn(),
@@ -55,6 +59,14 @@ describe('Plans', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     subscribePlan.mockResolvedValue({ data: { invoice_id: 'invoice-1', checkout_url: null } });
+    fetchInvoiceCheckoutUrl.mockResolvedValue(null);
+    delete window.location;
+    window.location = { href: '' };
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    window.location = originalLocation;
   });
 
   it('hides the free trial banner for a user who already has a plan', async () => {
@@ -75,18 +87,53 @@ describe('Plans', () => {
     expect(screen.getAllByText(/até 6 caixas/i).length).toBeGreaterThan(0);
   });
 
-  it('generates an invoice and sends the user to the invoices tab instead of pretending to open checkout', async () => {
+  it('sends the user straight to payment after generating the invoice', async () => {
+    const user = userEvent.setup();
+    fetchInvoiceCheckoutUrl.mockResolvedValue('https://pay.example/checkout');
+    renderPlans({ user: { name: 'Ana', plan_id: null } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    expect(subscribePlan).toHaveBeenCalledWith(expect.objectContaining({ billing_mode: 'invoice', subscription_type: 'monthly' }));
+    await waitFor(() => expect(fetchInvoiceCheckoutUrl).toHaveBeenCalledWith('invoice-1'));
+    expect(window.location.href).toBe('https://pay.example/checkout');
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the invoices tab when the payment link is not ready', async () => {
     const user = userEvent.setup();
     renderPlans({ user: { name: 'Ana', plan_id: null } });
 
     await screen.findByText('Plano Essencial');
     await user.click(screen.getByRole('button', { name: /assinar plano/i }));
-    // Modo padrao (fatura) roda o CTA "Gerar fatura e continuar", nunca "Ir para o pagamento",
-    // para nao prometer um pagamento que so acontece depois em Configuracoes > Faturas.
-    await user.click(screen.getByRole('button', { name: /gerar fatura e continuar/i }));
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
 
-    expect(subscribePlan).toHaveBeenCalledWith(expect.objectContaining({ billing_mode: 'invoice', subscription_type: 'monthly' }));
-    expect(navigate).toHaveBeenCalledWith('/dashboard/settings?tab=invoices');
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard/settings?tab=invoices'));
+  });
+
+  it('resumes the plan chosen on the landing with its billing cycle', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('marketfy_plan_intent', JSON.stringify({ planId: 'plan-essential', cycle: 'annual', savedAt: Date.now() }));
+    renderPlans({ user: { name: 'Ana', plan_id: 'plan-trial' }, subscription: { status: 'trialing' } });
+
+    expect(await screen.findByText(/você escolheu o/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /assinar plano essencial/i }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Anual')).toBeInTheDocument();
+  });
+
+  it('forgets the landing choice when the user wants to see every plan', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('marketfy_plan_intent', JSON.stringify({ planId: 'plan-essential', cycle: 'monthly', savedAt: Date.now() }));
+    renderPlans({ user: { name: 'Ana', plan_id: 'plan-trial' }, subscription: { status: 'trialing' } });
+
+    await user.click(await screen.findByRole('button', { name: /ver todos os planos/i }));
+
+    expect(screen.queryByText(/você escolheu o/i)).not.toBeInTheDocument();
+    expect(localStorage.getItem('marketfy_plan_intent')).toBeNull();
   });
 
   it('lets the user log out from the plans page', async () => {
