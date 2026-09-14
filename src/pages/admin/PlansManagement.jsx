@@ -47,8 +47,9 @@ export default function PlansManagement() {
         setValue('description', plan.description ?? '');
         setValue('display_order', plan.display_order ?? 0);
         setValue('is_recommended', Boolean(plan.is_recommended));
+        setValue('includes_finance', plan.includes_finance ?? true);
     } else {
-        reset({ type: 'pago', is_active: true, fiscal_monthly_limit: 0, description: '', display_order: 0, is_recommended: false });
+        reset({ type: 'pago', is_active: true, fiscal_monthly_limit: 0, description: '', display_order: 0, is_recommended: false, includes_finance: true });
     }
     setIsModalOpen(true);
   };
@@ -69,6 +70,7 @@ export default function PlansManagement() {
             description: data.description?.trim() || null,
             display_order: parseInt(data.display_order || 0, 10),
             is_recommended: Boolean(data.is_recommended),
+            includes_finance: Boolean(data.includes_finance),
         };
 
         if (editingPlan) {
@@ -134,9 +136,14 @@ export default function PlansManagement() {
                                 <FileText size={16} className="text-brand-yellow" />
                                 <span><strong>{plan.fiscal_monthly_limit ?? 0}</strong> NFC-e por mês</span>
                             </div>
-                            {plan.is_recommended && (
-                                <span className="inline-block rounded-full bg-brand-yellow px-2 py-0.5 text-[11px] font-black uppercase text-brand-dark">Recomendado</span>
-                            )}
+                            <div className="flex flex-wrap gap-2">
+                                {plan.is_recommended && (
+                                    <span className="inline-block rounded-full bg-brand-yellow px-2 py-0.5 text-[11px] font-black uppercase text-brand-dark">Recomendado</span>
+                                )}
+                                {!plan.includes_finance && (
+                                    <span className="inline-block rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-black uppercase text-gray-600">Sem financeiro</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -192,6 +199,10 @@ export default function PlansManagement() {
                             <label htmlFor="plan-recommended" className="flex items-center gap-2 text-sm font-bold text-gray-700">
                                 <input id="plan-recommended" type="checkbox" {...register('is_recommended')} />
                                 Plano recomendado (destacado na landing e em /plans; desmarca os outros)
+                            </label>
+                            <label htmlFor="plan-includes-finance" className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <input id="plan-includes-finance" type="checkbox" {...register('includes_finance')} />
+                                Inclui Financeiro (dashboard e lançamentos financeiros)
                             </label>
 
                             <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 space-y-3">
