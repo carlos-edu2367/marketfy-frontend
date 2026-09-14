@@ -13,9 +13,9 @@ import api, { getApiErrorMessage } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 
 const PACKAGE_LABELS = {
-  pack_100: '100 emissoes extras',
-  pack_250: '250 emissoes extras',
-  pack_500: '500 emissoes extras',
+  pack_100: '100 emissões extras',
+  pack_250: '250 emissões extras',
+  pack_500: '500 emissões extras',
 };
 
 const GRANT_TYPE = 'nfce_admin_grant';
@@ -36,7 +36,7 @@ function packageLabel(item) {
   if (PACKAGE_LABELS[slug]) return PACKAGE_LABELS[slug];
   if (slug.startsWith('custom_')) {
     const qty = slug.replace('custom_', '');
-    return `${qty} emissoes (personalizado)`;
+    return `${qty} emissões (personalizado)`;
   }
   return slug;
 }
@@ -121,7 +121,7 @@ export default function FiscalCredits() {
     try {
       await initiatePurchase(selectedPackage.slug, setCheckoutPhase);
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Nao foi possivel iniciar o checkout.'));
+      toast.error(getApiErrorMessage(err, 'Não foi possível iniciar o checkout.'));
       setConfirming(false);
       setCheckoutPhase(null);
     }
@@ -132,7 +132,7 @@ export default function FiscalCredits() {
     try {
       await initiateCustomPurchase(qty, setCheckoutPhase);
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Nao foi possivel iniciar o checkout.'));
+      toast.error(getApiErrorMessage(err, 'Não foi possível iniciar o checkout.'));
       setCheckoutPhase(null);
     } finally {
       setCustomPurchaseLoading(false);

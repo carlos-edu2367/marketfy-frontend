@@ -93,9 +93,9 @@ export default function AdminLayout() {
   }, [user, authLoading, hasNoPlan, isExpired, location.pathname, navigate, subscription]);
 
   const isNearExpiration = daysLeft >= 0 && daysLeft <= 7;
-  const isBasicPlan = !user?.plan_name || 
-                      user?.plan_name.toLowerCase().includes('básico') || 
-                      user?.plan_name.toLowerCase().includes('basico');
+  // Fonte de verdade: subscription.features.finance (backend). O nome do
+  // plano e definido pelo admin e pode mudar, entao nao e usado como regra.
+  const isBasicPlan = subscription?.features ? subscription.features.finance !== true : !user?.plan_id;
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Visão Geral', path: '/dashboard' },
@@ -200,7 +200,7 @@ export default function AdminLayout() {
           return (
              <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-md z-50">
                  <div className="flex items-center gap-3">
-                     <div className="bg-brand-yellow text-brand-dark p-1.5 rounded-lg animate-pulse">
+                     <div className="bg-brand-yellow text-brand-dark p-1.5 rounded-lg">
                         <AlertTriangle size={18} />
                      </div>
                      <div>
@@ -217,11 +217,11 @@ export default function AdminLayout() {
       }
       if (isExpired) {
           return (
-              <div className="bg-red-600 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-sm z-50 animate-pulse">
+              <div className="bg-red-600 text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-sm z-50">
                  <div className="flex items-center gap-3">
-                     <AlertTriangle className="animate-bounce" />
+                     <AlertTriangle />
                      <div>
-                        <p className="font-bold text-sm">⛔ Plano Expirado. Renove agora para continuar usando.</p>
+                        <p className="font-bold text-sm">Plano expirado. Renove agora para continuar usando.</p>
                      </div>
                  </div>
                  <Link to="/plans">
@@ -239,7 +239,7 @@ export default function AdminLayout() {
                      <AlertTriangle />
                      <div>
                         <p className="font-bold text-sm">
-                            ⚠️ Atenção: Seu plano vence em {daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}.
+                            Seu plano vence em {daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}.
                         </p>
                      </div>
                  </div>

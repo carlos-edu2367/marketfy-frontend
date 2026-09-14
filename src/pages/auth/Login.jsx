@@ -7,7 +7,6 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { User, Lock, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../../lib/api';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -36,18 +35,9 @@ export default function Login() {
     try {
       // Sanitiza a senha antes de enviar
       const safePassword = truncateTo72Bytes(data.password);
-      
-      await login(data.email, safePassword);
-      
-      // Verificação rápida de acesso e redirecionamento
-      try {
-         await api.get('/identity/plans'); 
-         navigate('/dashboard');
-      } catch (e) {
-         // Se der erro ao buscar planos, mas login foi ok, manda pro dashboard igual
-         navigate('/dashboard');
-      }
 
+      await login(data.email, safePassword);
+      navigate('/dashboard');
     } catch (error) {
       toast.error("Email ou senha incorretos.");
     }
@@ -60,7 +50,7 @@ export default function Login() {
           <div className="w-16 h-16 bg-brand-yellow rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-yellow-200">
              <User size={32} className="text-brand-dark" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">SGM Marketfy</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Marketfy</h1>
           <p className="text-gray-500 mt-2">Sistema de Gestão para Mercados</p>
         </div>
 
@@ -99,7 +89,7 @@ export default function Login() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-100 text-center text-xs text-gray-400">
-          &copy; {new Date().getFullYear()} Neectify Tecnologia. Todos os direitos reservados.
+          &copy; {new Date().getFullYear()} Marketfy. Todos os direitos reservados.
         </div>
       </div>
     </div>

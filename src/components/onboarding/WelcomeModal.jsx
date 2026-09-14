@@ -5,16 +5,19 @@ import { useAuth } from '../../hooks/useAuth';
 
 export default function WelcomeModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
+  const isTrialing = subscription?.status === 'trialing';
 
   useEffect(() => {
-    // Verifica se já viu o modal
+    // So mostra o "bem-vindo ao trial" para quem de fato esta em trial —
+    // nunca para quem ja contratou um plano pago.
+    if (!isTrialing) return;
     const hasSeen = localStorage.getItem(`welcome_seen_${user?.id}`);
     if (!hasSeen && user) {
         // Pequeno delay para animação de entrada ficar suave
         setTimeout(() => setIsOpen(true), 1000);
     }
-  }, [user]);
+  }, [user, isTrialing]);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -27,7 +30,7 @@ export default function WelcomeModal() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-scale-in">
+      <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-fade-in">
         
         {/* Lado Esquerdo - Visual */}
         <div className="bg-brand-yellow w-full md:w-5/12 p-8 flex flex-col justify-between relative overflow-hidden">
@@ -45,14 +48,14 @@ export default function WelcomeModal() {
                     Bem-vindo ao Marketfy!
                 </h2>
                 <p className="text-brand-dark/80 font-medium">
-                    Seu período de teste Premium começou. Aproveite tudo sem limites.
+                    Seu teste grátis de 14 dias começou, com acesso aos recursos pagos do sistema.
                 </p>
             </div>
 
             <div className="relative z-10 mt-8">
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
                     <p className="text-xs font-bold uppercase tracking-wider text-brand-dark/60 mb-1">Seu Plano Atual</p>
-                    <p className="text-2xl font-black text-brand-dark">PRO Trial 14 Dias</p>
+                    <p className="text-2xl font-black text-brand-dark">Teste grátis · 14 dias</p>
                 </div>
             </div>
         </div>

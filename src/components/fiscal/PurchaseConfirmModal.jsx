@@ -1,12 +1,27 @@
+import { useEffect } from 'react';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
 import { formatCurrency } from '../../lib/utils';
 import { Button } from '../ui/Button';
 
 export default function PurchaseConfirmModal({ packageItem, loading = false, checkoutPhase = null, error = null, onCancel, onConfirm }) {
+  useEffect(() => {
+    if (!packageItem) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && !loading) onCancel?.();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [packageItem, loading, onCancel]);
+
   if (!packageItem) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/70 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !loading) onCancel?.();
+      }}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -29,13 +44,10 @@ export default function PurchaseConfirmModal({ packageItem, loading = false, che
         <div className="space-y-5 px-6 py-5">
           <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="font-bold text-gray-500">Pacote</dt>
-            <dd className="font-black text-gray-900">{packageItem.emission_count} emissoes extras</dd>
-            <dt className="font-bold text-gray-500">Valor total</dt>
+            <dd className="font-black text-gray-900">{packageItem.emission_count} emissões extras</dd>
+            <dt className="font-bold text-gray-500">Valor cobrado</dt>
             <dd className="font-black text-gray-900">
-              {formatCurrency(Number(packageItem.price_net_target))}
-              <span className="block text-xs font-normal text-gray-500 mt-0.5">
-                Com taxas: {formatCurrency(Number(packageItem.price_gross))}
-              </span>
+              {formatCurrency(Number(packageItem.price_gross))}
             </dd>
           </dl>
 
@@ -49,9 +61,9 @@ export default function PurchaseConfirmModal({ packageItem, loading = false, che
           <div className="flex gap-3 rounded-xl border border-yellow-100 bg-yellow-50 p-4 text-sm text-yellow-900">
             <AlertTriangle size={20} className="mt-0.5 shrink-0" />
             <p>
-              Voce sera redirecionado para o checkout seguro do Asaas. La, o comprador informa
-              CPF/CNPJ, nome e e-mail para concluir o pagamento. Os creditos serao ativados
-              automaticamente apos a confirmacao.
+              Você será redirecionado para o checkout seguro do Asaas. Lá, o comprador informa
+              CPF/CNPJ, nome e e-mail para concluir o pagamento. Os créditos são ativados
+              automaticamente após a confirmação.
             </p>
           </div>
         </div>
@@ -60,7 +72,7 @@ export default function PurchaseConfirmModal({ packageItem, loading = false, che
           <Button variant="secondary" className="flex-1" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
-          <Button className="flex-1 font-black animate-transition" onClick={onConfirm} disabled={loading}>
+          <Button className="flex-1 font-black" onClick={onConfirm} disabled={loading}>
             {loading ? <Loader2 size={18} className="animate-spin mr-1.5" /> : null}
             {checkoutPhase === 'processing' ? 'Criando checkout...' :
              checkoutPhase === 'waiting_gateway' ? 'Preparando checkout seguro...' :

@@ -17,7 +17,10 @@ vi.mock('../hooks/useAuth', () => ({
 describe('Financial', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useAuth.mockReturnValue({ user: { plan_name: 'Pro' } });
+    useAuth.mockReturnValue({
+      user: { plan_name: 'Pro', plan_id: 'plan-1' },
+      subscription: { features: { finance: true } },
+    });
   });
 
   it('shows an access-denied message when the Financial API returns 403', async () => {

@@ -13,6 +13,8 @@ import Plans from './pages/auth/Plans';
 import AdminLayout from './components/layout/AdminLayout';
 import SaaSLayout from './components/layout/SaaSLayout';
 import NotFound from './pages/NotFound';
+import Terms from './pages/legal/Terms';
+import Privacy from './pages/legal/Privacy';
 
 const Dashboard = React.lazy(() => import('./pages/dashboard/Dashboard'));
 const MarketDashboard = React.lazy(() => import('./pages/dashboard/MarketDashboard'));
@@ -83,7 +85,16 @@ function App() {
 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/plans" element={<Plans />} />
+            <Route path="/termos" element={<Terms />} />
+            <Route path="/privacidade" element={<Privacy />} />
+            <Route
+              path="/plans"
+              element={
+                <ProtectedRoute>
+                  <Plans />
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path="/dashboard"
@@ -99,7 +110,7 @@ function App() {
               <Route
                 path="financial"
                 element={
-                  <PlanGuard>
+                  <PlanGuard feature="finance">
                     <Financial />
                   </PlanGuard>
                 }
