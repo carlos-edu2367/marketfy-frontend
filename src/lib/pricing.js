@@ -82,14 +82,24 @@ export function formatFiscalLimit(value) {
 
 /**
  * Ordena e filtra os planos publicos e vendaveis retornados por
- * GET /identity/plans (planos ativos do tipo "pago"), do mais barato ao mais
- * caro pelo preco mensal.
+ * GET /identity/plans (planos ativos do tipo "pago"), na ordem definida pelo
+ * admin (display_order) e depois pelo preco mensal.
  */
 export function selectPublicPlans(plans) {
   if (!Array.isArray(plans)) return [];
   return plans
     .filter((plan) => plan.is_active && plan.type === 'pago')
-    .sort((a, b) => Number(a.price_monthly || 0) - Number(b.price_monthly || 0));
+    .sort((a, b) => (Number(a.display_order || 0) - Number(b.display_order || 0))
+      || (Number(a.price_monthly || 0) - Number(b.price_monthly || 0)));
+}
+
+/**
+ * Plano recomendado definido pelo admin (Plan.is_recommended). Sem marcacao,
+ * nenhum card e destacado — nao escolhemos por posicao.
+ */
+export function getRecommendedPlanId(plans) {
+  if (!Array.isArray(plans)) return null;
+  return plans.find((plan) => plan.is_recommended)?.id ?? null;
 }
 
 export function selectTrialPlan(plans) {

@@ -136,6 +136,22 @@ describe('Plans', () => {
     expect(localStorage.getItem('marketfy_plan_intent')).toBeNull();
   });
 
+  it('highlights only the plan the business marked as recommended', async () => {
+    useAuth.mockReturnValue({ user: { name: 'Ana', plan_id: 'x' }, subscription: null, refreshUser, logout });
+    api.get.mockResolvedValue({
+      data: [
+        { ...paidPlan, id: 'p1', name: 'Básico', price_monthly: 49.9 },
+        { ...paidPlan, id: 'p2', name: 'Pro', price_monthly: 99.9, is_recommended: true },
+        { ...paidPlan, id: 'p3', name: 'Rede', price_monthly: 199.9 },
+      ],
+    });
+    render(<Plans />);
+
+    expect(await screen.findAllByText('Recomendado')).toHaveLength(1);
+    expect(screen.getByText('Recomendado').closest('article')).toHaveTextContent('Pro');
+    expect(screen.getAllByText(/sem fidelidade/i)).toHaveLength(2); // faixa unica + nota do toggle, nunca 1 por card
+  });
+
   it('lets the user log out from the plans page', async () => {
     const user = userEvent.setup();
     renderPlans({ user: { name: 'Ana', plan_id: 'plan-existing' } });

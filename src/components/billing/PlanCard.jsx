@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ReceiptText, ShieldCheck, Store } from 'lucide-react';
+import { ArrowRight, ReceiptText, ShieldCheck, Store } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { formatCurrency } from '../../lib/utils';
 import {
@@ -16,7 +16,9 @@ import {
  * apresentacao (preco, limites, destaque) nunca divirja entre as duas.
  *
  * Todos os numeros vem do plano retornado pela API (GET /identity/plans);
- * nada aqui e um valor fixo no codigo.
+ * nada aqui e um valor fixo no codigo. O que vale para todos os planos
+ * (PDV offline, suporte, sem fidelidade) fica em PlanIncludesStrip, mostrado
+ * uma vez por pagina em vez de repetido em cada card.
  */
 export default function PlanCard({
   plan,
@@ -65,9 +67,9 @@ export default function PlanCard({
 
       <div className={`mb-5 border-b pb-5 ${isDark ? (highlighted ? 'border-gray-200/60' : 'border-slate-700') : 'border-gray-100'}`}>
         <h3 className={`text-2xl font-black tracking-tight ${headingText}`}>{plan.name}</h3>
-        <p className={`mt-2 min-h-[40px] text-sm leading-6 ${mutedText}`}>
-          {plan.description || 'Para negocios que querem vender com mais organizacao.'}
-        </p>
+        {plan.description && (
+          <p className={`mt-2 text-sm leading-6 ${mutedText}`}>{plan.description}</p>
+        )}
 
         <div className="mt-4 flex items-baseline gap-1.5">
           <span className={`text-sm font-medium opacity-60 ${headingText}`}>R$</span>
@@ -100,12 +102,6 @@ export default function PlanCard({
           <ReceiptText size={17} className={`mt-0.5 shrink-0 ${limitIcon}`} />
           <span className={`text-sm leading-5 ${limitText}`}>{formatFiscalLimit(plan.fiscal_monthly_limit)}</span>
         </div>
-      </div>
-
-      <div className={`mb-5 space-y-2 text-sm ${isDark ? (highlighted ? 'text-gray-600' : 'text-slate-300') : 'text-gray-600'}`}>
-        <div className="flex items-center gap-2"><Check size={16} className="text-emerald-500 shrink-0" /> PDV offline e gestao em um so lugar</div>
-        <div className="flex items-center gap-2"><Check size={16} className="text-emerald-500 shrink-0" /> Suporte incluido</div>
-        <div className="flex items-center gap-2"><Check size={16} className="text-emerald-500 shrink-0" /> Sem fidelidade</div>
       </div>
 
       <div className="mt-auto pt-2">

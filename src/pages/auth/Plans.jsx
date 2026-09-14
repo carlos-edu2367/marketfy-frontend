@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import BillingCycleToggle from '../../components/billing/BillingCycleToggle';
 import PlanCard from '../../components/billing/PlanCard';
+import PlanIncludesStrip from '../../components/billing/PlanIncludesStrip';
 import {
   AlertTriangle,
   ArrowRight,
@@ -23,7 +24,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatCurrency } from '../../lib/utils';
-import { formatFiscalLimit, getCycleTotal } from '../../lib/pricing';
+import { formatFiscalLimit, getCycleTotal, getRecommendedPlanId } from '../../lib/pricing';
 
 // Estagio do usuario em relacao ao plano, usado para adaptar o titulo da
 // pagina (visitante novo, trial ativo, plano expirado ou renovacao/upgrade).
@@ -182,7 +183,7 @@ export default function Plans() {
     }
   };
 
-  const recommendedPlanId = plans.length >= 3 ? plans[Math.floor(plans.length / 2)].id : null;
+  const recommendedPlanId = getRecommendedPlanId(plans);
 
   return (
     <div className="min-h-screen bg-[#f7f8fa] font-sans text-gray-800">
@@ -295,13 +296,15 @@ export default function Plans() {
                 cycleKey={cycleKey}
                 theme="light"
                 highlighted={plan.id === recommendedPlanId}
-                badgeLabel={plan.id === recommendedPlanId ? 'Mais escolhido' : null}
+                badgeLabel={plan.id === recommendedPlanId ? 'Recomendado' : null}
                 ctaLabel="Assinar plano"
                 onCtaClick={() => handleSelectPlan(plan)}
               />
             ))}
           </section>
         )}
+
+        {!loading && plans.length > 0 && <PlanIncludesStrip />}
 
         {!loading && plans.length === 0 && (
           <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-gray-200 bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
