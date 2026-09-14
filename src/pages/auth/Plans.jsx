@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { subscribePlan } from '../../lib/api';
+import { fetchInvoiceCheckoutUrl } from '../../lib/invoiceCheckout';
 import { useAuth } from '../../hooks/useAuth';
 import { usePublicPlans } from '../../hooks/usePublicPlans';
 import { Button } from '../../components/ui/Button';
@@ -126,7 +127,16 @@ export default function Plans() {
       });
 
       if (billingMode === 'invoice') {
-        toast.success('Fatura gerada! Finalize o pagamento na aba Faturas, em Configurações.');
+        // A fatura ja existe; se o link nao sair (Billing Core lento/indisponivel)
+        // o usuario continua o pagamento pela aba Faturas, sem erro de assinatura.
+        const checkoutUrl = data.invoice_id
+          ? await fetchInvoiceCheckoutUrl(data.invoice_id).catch(() => null)
+          : null;
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+          return;
+        }
+        toast.success('Fatura gerada! O link de pagamento fica disponível em Configurações > Faturas.');
         setShowModal(false);
         await refreshUser();
         navigate('/dashboard/settings?tab=invoices');
@@ -349,11 +359,11 @@ export default function Plans() {
               )}
 
               <Button type="submit" variant="primary" size="lg" className="h-12 w-full font-bold" isLoading={submitting}>
-                {billingMode === 'invoice' ? 'Gerar fatura e continuar' : 'Ir para o pagamento'} <ArrowRight size={19} />
+                Ir para o pagamento <ArrowRight size={19} />
               </Button>
               <p className="text-center text-xs leading-5 text-gray-400">
                 {billingMode === 'invoice'
-                  ? 'A fatura fica disponível em Configurações > Faturas para pagamento.'
+                  ? 'Você será direcionado para pagar com PIX ou boleto.'
                   : 'Você será direcionado para concluir o pagamento com segurança.'}
               </p>
             </form>

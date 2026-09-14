@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getInvoices, requestInvoiceCheckout, retryInvoice } from '../../lib/api';
+import { getInvoices, retryInvoice } from '../../lib/api';
+import { fetchInvoiceCheckoutUrl } from '../../lib/invoiceCheckout';
 import { Button } from '../../components/ui/Button';
 import { Loader2, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -34,17 +35,7 @@ export default function BillingInvoices() {
   const handlePay = async (invoice) => {
     try {
       setPaying(invoice.invoice_id);
-      const { data } = await requestInvoiceCheckout(invoice.invoice_id);
-      let url = data.checkout_url;
-
-      // O checkout é assíncrono no Billing Core. Repetir esse endpoint só
-      // consulta o job existente depois da primeira criação; não cobra de novo.
-      for (let attempt = 0; !url && attempt < 10; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const response = await requestInvoiceCheckout(invoice.invoice_id);
-        url = response.data.checkout_url;
-      }
-
+      const url = await fetchInvoiceCheckoutUrl(invoice.invoice_id);
       if (url) { window.location.href = url; return; }
       toast.error('Link de pagamento ainda não disponível. Tente novamente em instantes.');
     } catch {
