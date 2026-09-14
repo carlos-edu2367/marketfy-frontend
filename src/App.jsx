@@ -10,6 +10,7 @@ import Home from './pages/Home';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Plans from './pages/auth/Plans';
+import Pricing from './pages/Pricing';
 import AdminLayout from './components/layout/AdminLayout';
 import SaaSLayout from './components/layout/SaaSLayout';
 import NotFound from './pages/NotFound';
@@ -87,6 +88,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/termos" element={<Terms />} />
             <Route path="/privacidade" element={<Privacy />} />
+            <Route path="/precos" element={<Pricing />} />
             <Route
               path="/plans"
               element={

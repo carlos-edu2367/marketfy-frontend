@@ -431,6 +431,7 @@ export default function Home() {
             )}
           </div>
           <div className="flex gap-6 text-sm text-gray-500 font-medium">
+            <Link to="/precos" className="hover:text-brand-dark hover:underline">Preços</Link>
             <Link to="/termos" className="hover:text-brand-dark hover:underline">Termos</Link>
             <Link to="/privacidade" className="hover:text-brand-dark hover:underline">Privacidade</Link>
           </div>
