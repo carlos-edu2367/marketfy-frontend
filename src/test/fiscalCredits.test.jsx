@@ -117,7 +117,7 @@ describe('CreditUsageBar', () => {
 // ---------------------------------------------------------------------------
 
 describe('CreditPackageCard', () => {
-  it('renders package price and popular marker', () => {
+  it('renders the charged price and the price per emission, not the internal net target', () => {
     render(
       <CreditPackageCard
         packageItem={packagesPayload.items[1]}
@@ -126,9 +126,26 @@ describe('CreditPackageCard', () => {
       />
     );
 
-    expect(screen.getByRole('article', { name: /250 emissoes extras/i })).toBeInTheDocument();
+    expect(screen.getByRole('article', { name: /250 emissões extras/i })).toBeInTheDocument();
+    // price_gross (o que e efetivamente cobrado) e o preco em destaque —
+    // price_net_target nunca aparece, para nao sugerir dois valores possiveis.
     expect(screen.getByText('R$ 73,57')).toBeInTheDocument();
-    expect(screen.getByText('Mais popular')).toBeInTheDocument();
+    expect(screen.queryByText('R$ 69,90')).not.toBeInTheDocument();
+    expect(screen.getByText(/por emissão/i)).toBeInTheDocument();
+  });
+
+  it('only shows the "highlight" marker when the caller explicitly asks for it', () => {
+    const { rerender } = render(
+      <CreditPackageCard packageItem={packagesPayload.items[1]} onPurchase={vi.fn()} />
+    );
+    expect(screen.queryByText(/mais popular/i)).not.toBeInTheDocument();
+
+    rerender(
+      <CreditPackageCard packageItem={packagesPayload.items[1]} onPurchase={vi.fn()} highlight />
+    );
+    // Sem dado real de popularidade vindo do backend, o componente nao decide
+    // sozinho qual pacote e "popular" — apenas reflete a prop.
+    expect(screen.getByRole('article')).toHaveClass('border-brand-yellow');
   });
 });
 
@@ -245,9 +262,9 @@ describe('FiscalCredits', () => {
     expect(await screen.findByText(/créditos fiscais/i)).toBeInTheDocument();
     const cards = await screen.findAllByRole('article');
     expect(cards).toHaveLength(3);
-    expect(within(cards[0]).getByText('100 emissoes extras')).toBeInTheDocument();
-    expect(within(cards[1]).getByText('250 emissoes extras')).toBeInTheDocument();
-    expect(within(cards[2]).getByText('500 emissoes extras')).toBeInTheDocument();
+    expect(within(cards[0]).getByText('100 emissões extras')).toBeInTheDocument();
+    expect(within(cards[1]).getByText('250 emissões extras')).toBeInTheDocument();
+    expect(within(cards[2]).getByText('500 emissões extras')).toBeInTheDocument();
 
     // Coluna Restante (PR8)
     expect(screen.getByText('Créditos Restantes')).toBeInTheDocument();
@@ -311,7 +328,7 @@ describe('FiscalCredits', () => {
       </MemoryRouter>
     );
 
-    const pack250 = await screen.findByRole('article', { name: /250 emissoes extras/i });
+    const pack250 = await screen.findByRole('article', { name: /250 emissões extras/i });
     await user.click(within(pack250).getByRole('button', { name: /comprar/i }));
     expect(screen.getByRole('dialog', { name: /confirmar compra/i })).toBeInTheDocument();
 
@@ -375,7 +392,7 @@ describe('FiscalCredits', () => {
       </MemoryRouter>
     );
 
-    const pack250 = await screen.findByRole('article', { name: /250 emissoes extras/i });
+    const pack250 = await screen.findByRole('article', { name: /250 emissões extras/i });
     await user.click(within(pack250).getByRole('button', { name: /comprar/i }));
     
     const confirmButton = screen.getByRole('button', { name: /ir para pagamento/i });
@@ -430,7 +447,7 @@ describe('FiscalCredits', () => {
       </MemoryRouter>
     );
 
-    const pack250 = await screen.findByRole('article', { name: /250 emissoes extras/i });
+    const pack250 = await screen.findByRole('article', { name: /250 emissões extras/i });
     await user.click(within(pack250).getByRole('button', { name: /comprar/i }));
     
     const confirmButton = screen.getByRole('button', { name: /ir para pagamento/i });
@@ -540,9 +557,9 @@ describe('FiscalCredits', () => {
     expect(screen.getByText('Cortesia')).toBeInTheDocument();
 
     // Compra: rotulo do pacote (dentro da tabela de historico, distinto do
-    // card de compra que tambem mostra "100 emissoes extras"), badge "Pago"
+    // card de compra que tambem mostra "100 emissões extras"), badge "Pago"
     const historyTable = screen.getByRole('table');
-    expect(within(historyTable).getByText(/100 emissoes extras/i)).toBeInTheDocument();
+    expect(within(historyTable).getByText(/100 emissões extras/i)).toBeInTheDocument();
     expect(screen.getByText('Pago')).toBeInTheDocument();
 
     // Coluna de validade preenchida nos dois casos

@@ -21,7 +21,7 @@ import clsx from 'clsx';
 const isForbidden = (error) => error.response?.status === 403;
 
 export default function Financial() {
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
   const [markets, setMarkets] = useState([]);
@@ -39,11 +39,14 @@ export default function Financial() {
   // Watch para mostrar campo de data de pagamento condicionalmente
   const isPaid = watch('is_paid');
 
-  // --- 1. VALIDAÇÃO DE PLANO (SEGURANÇA) ---
+  // --- 1. VALIDAÇÃO DE PLANO (UX) ---
+  // Fonte de verdade: subscription.features.finance (backend). So cai no
+  // fallback "sem plano" enquanto a assinatura ainda esta carregando — o
+  // backend sempre valida de novo na request real.
   const isBasicPlan = useMemo(() => {
-      const plan = user?.plan_name?.toLowerCase() || '';
-      return plan.includes('básico') || plan.includes('basico') || plan.includes('free');
-  }, [user]);
+      if (subscription?.features) return subscription.features.finance !== true;
+      return !user?.plan_id;
+  }, [user, subscription]);
 
   // --- 2. CARREGAR LOJAS ---
   useEffect(() => {
@@ -136,13 +139,8 @@ export default function Financial() {
   if (isBasicPlan) {
       return (
           <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center animate-fade-in relative overflow-hidden rounded-3xl bg-slate-50 border border-slate-200 m-4">
-              <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-50">
-                  <div className="absolute top-10 left-10 w-64 h-64 bg-yellow-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-                  <div className="absolute bottom-10 right-10 w-64 h-64 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-              </div>
-
               <div className="relative z-10 max-w-lg mx-auto">
-                <div className="w-24 h-24 bg-gradient-to-br from-brand-yellow to-orange-400 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-orange-200 rotate-3 transform hover:rotate-6 transition-transform">
+                <div className="w-24 h-24 bg-gradient-to-br from-brand-yellow to-orange-400 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-xl shadow-orange-200">
                     <Crown size={48} className="text-white" />
                 </div>
 
@@ -150,21 +148,17 @@ export default function Financial() {
                     Gestão Financeira Profissional
                 </h1>
                 <p className="text-slate-600 mb-8 text-lg leading-relaxed">
-                    O plano <strong>Básico</strong> não inclui o módulo financeiro avançado. 
-                    Desbloqueie o DRE, controle de fluxo de caixa, gráficos de evolução e muito mais fazendo o upgrade para o <strong>Marketfy PRO</strong>.
+                    Seu plano atual não inclui o módulo financeiro.
+                    Desbloqueie o controle de receita, despesas, lucro líquido e gráficos de evolução assinando um plano que inclua o Financeiro.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Link to="/dashboard/settings">
-                        <Button size="xl" className="w-full sm:w-auto font-black shadow-lg shadow-slate-200 bg-slate-900 text-white hover:bg-slate-800 border-none">
-                            Quero Fazer Upgrade Agora
-                        </Button>
-                    </Link>
-                    <Link to="/dashboard">
-                        <Button variant="secondary" size="xl" className="w-full sm:w-auto font-bold bg-white/80 backdrop-blur-sm">
-                            Voltar ao Início
-                        </Button>
-                    </Link>
+                    <Button as={Link} to="/plans" size="xl" className="w-full sm:w-auto font-black shadow-lg shadow-slate-200 bg-slate-900 text-white hover:bg-slate-800 border-none">
+                        Ver planos
+                    </Button>
+                    <Button as={Link} to="/dashboard" variant="secondary" size="xl" className="w-full sm:w-auto font-bold bg-white/80 backdrop-blur-sm">
+                        Voltar ao Início
+                    </Button>
                 </div>
               </div>
           </div>
@@ -459,7 +453,7 @@ export default function Financial() {
       {/* --- MODAL NOVA MOVIMENTAÇÃO (NOVO) --- */}
       {showTransactionModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-            <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl animate-scale-in border border-slate-100 overflow-hidden">
+            <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl animate-fade-in border border-slate-100 overflow-hidden">
                 <div className="bg-slate-50 p-4 border-b border-slate-100 flex justify-between items-center">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2">
                         <div className="bg-brand-yellow p-1.5 rounded-lg text-slate-900">
