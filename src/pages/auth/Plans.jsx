@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { subscribePlan } from '../../lib/api';
 import { fetchInvoiceCheckoutUrl } from '../../lib/invoiceCheckout';
+import { clearPlanIntent, readPlanIntent } from '../../lib/planIntent';
 import { useAuth } from '../../hooks/useAuth';
 import { usePublicPlans } from '../../hooks/usePublicPlans';
 import { Button } from '../../components/ui/Button';
@@ -55,7 +56,8 @@ const STAGE_COPY = {
 export default function Plans() {
   const { plans, trialPlan, loading } = usePublicPlans();
   const [activatingTrial, setActivatingTrial] = useState(false);
-  const [cycleKey, setCycleKey] = useState('monthly');
+  const [planIntent, setPlanIntent] = useState(() => readPlanIntent());
+  const [cycleKey, setCycleKey] = useState(() => planIntent?.cycle || 'monthly');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [billingMode, setBillingMode] = useState('invoice');
@@ -68,6 +70,13 @@ export default function Plans() {
   const showTrial = !user?.plan_id;
   const stage = getStage(user, subscription);
   const stageCopy = STAGE_COPY[stage];
+
+  const intendedPlan = planIntent ? plans.find((plan) => plan.id === planIntent.planId) : null;
+
+  const handleDismissIntent = () => {
+    clearPlanIntent();
+    setPlanIntent(null);
+  };
 
   useEffect(() => {
     if (!showModal) return undefined;
@@ -125,6 +134,7 @@ export default function Plans() {
         billing_mode: billingMode,
         document: billingMode === 'recurring' ? billingDocument : undefined,
       });
+      clearPlanIntent();
 
       if (billingMode === 'invoice') {
         // A fatura ja existe; se o link nao sair (Billing Core lento/indisponivel)
@@ -242,6 +252,23 @@ export default function Plans() {
             >
               Ativar teste grátis <ArrowRight size={16} />
             </Button>
+          </section>
+        )}
+
+        {intendedPlan && (
+          <section
+            aria-label="Plano escolhido"
+            className="mx-auto mt-9 flex max-w-3xl flex-col items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:flex-row"
+          >
+            <p className="text-center text-sm text-gray-600 sm:text-left">
+              Você escolheu o <strong className="text-gray-950">{intendedPlan.name}</strong> na página inicial.
+            </p>
+            <div className="flex shrink-0 gap-2">
+              <Button variant="ghost" size="sm" onClick={handleDismissIntent}>Ver todos os planos</Button>
+              <Button size="sm" className="font-bold" onClick={() => handleSelectPlan(intendedPlan)}>
+                Assinar {intendedPlan.name}
+              </Button>
+            </div>
           </section>
         )}
 

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Plans from '../pages/auth/Plans';
@@ -62,6 +62,7 @@ describe('Plans', () => {
     fetchInvoiceCheckoutUrl.mockResolvedValue(null);
     delete window.location;
     window.location = { href: '' };
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -110,6 +111,29 @@ describe('Plans', () => {
     await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard/settings?tab=invoices'));
+  });
+
+  it('resumes the plan chosen on the landing with its billing cycle', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('marketfy_plan_intent', JSON.stringify({ planId: 'plan-essential', cycle: 'annual', savedAt: Date.now() }));
+    renderPlans({ user: { name: 'Ana', plan_id: 'plan-trial' }, subscription: { status: 'trialing' } });
+
+    expect(await screen.findByText(/você escolheu o/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /assinar plano essencial/i }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Anual')).toBeInTheDocument();
+  });
+
+  it('forgets the landing choice when the user wants to see every plan', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('marketfy_plan_intent', JSON.stringify({ planId: 'plan-essential', cycle: 'monthly', savedAt: Date.now() }));
+    renderPlans({ user: { name: 'Ana', plan_id: 'plan-trial' }, subscription: { status: 'trialing' } });
+
+    await user.click(await screen.findByRole('button', { name: /ver todos os planos/i }));
+
+    expect(screen.queryByText(/você escolheu o/i)).not.toBeInTheDocument();
+    expect(localStorage.getItem('marketfy_plan_intent')).toBeNull();
   });
 
   it('lets the user log out from the plans page', async () => {

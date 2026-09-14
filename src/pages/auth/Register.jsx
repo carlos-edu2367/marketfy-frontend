@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button';
 import { User, Mail, Lock, FileText, ArrowRight, Check, ShieldCheck, Store } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
+import { savePlanIntent } from '../../lib/planIntent';
 
 const registerSchema = z.object({
   name: z.string().min(3, 'Nome muito curto'),
@@ -18,20 +19,6 @@ const registerSchema = z.object({
     message: 'É preciso aceitar os Termos e a Política de Privacidade.',
   }),
 });
-
-// Guarda a intencao de plano vinda da landing (?plan=&cycle=) para retomar
-// depois que o cadastro e o trial forem concluidos.
-function storePlanIntent(searchParams) {
-  const plan = searchParams.get('plan');
-  const cycle = searchParams.get('cycle');
-  if (plan) {
-    try {
-      sessionStorage.setItem('marketfy_plan_intent', JSON.stringify({ plan, cycle: cycle || 'monthly' }));
-    } catch {
-      // sessionStorage indisponivel (modo privado, etc.) — segue sem guardar a intencao.
-    }
-  }
-}
 
 export default function Register() {
   const { registerUser, login } = useAuth();
@@ -66,7 +53,7 @@ export default function Register() {
       return;
     }
 
-    storePlanIntent(searchParams);
+    savePlanIntent({ planId: searchParams.get('plan'), cycle: searchParams.get('cycle') });
 
     try {
       await login(data.email, safePassword);
