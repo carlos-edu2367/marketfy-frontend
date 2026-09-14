@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { usePublicPlans } from '../hooks/usePublicPlans';
+import { getCompanyInfo } from '../lib/company';
 import BillingCycleToggle from '../components/billing/BillingCycleToggle';
 import PlanCard from '../components/billing/PlanCard';
 import { Loader2 } from 'lucide-react';
@@ -17,6 +18,7 @@ export default function Home() {
   const [cycleKey, setCycleKey] = useState('monthly');
   const [openFaq, setOpenFaq] = useState(null);
   const { plans, loading: plansLoading } = usePublicPlans();
+  const company = getCompanyInfo();
 
   const toggleFaq = (index) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -319,15 +321,22 @@ export default function Home() {
             </div>
           )}
 
-          <div className="mt-10 text-center">
-            <p className="text-slate-400 text-sm">
-              Rede com várias lojas ou operação de alto volume?{' '}
-              <Link to="/register?intent=business" className="font-bold text-brand-yellow hover:underline">
-                Cadastre-se e fale com a gente
-              </Link>
-              .
-            </p>
-          </div>
+          {company.salesContactUrl && (
+            <div className="mt-10 text-center">
+              <p className="text-slate-400 text-sm">
+                Rede com várias lojas ou operação de alto volume?{' '}
+                <a
+                  href={company.salesContactUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-brand-yellow hover:underline"
+                >
+                  Fale com a gente
+                </a>
+                .
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -414,6 +423,11 @@ export default function Home() {
           </div>
           <div className="text-center md:text-left">
             <p className="text-sm text-gray-500">© {new Date().getFullYear()} Marketfy. Todos os direitos reservados.</p>
+            {company.legalName && company.cnpj && (
+              <p className="mt-1 text-xs text-gray-400">
+                {company.legalName} · CNPJ {company.cnpj}{company.address ? ` · ${company.address}` : ''}
+              </p>
+            )}
           </div>
           <div className="flex gap-6 text-sm text-gray-500 font-medium">
             <Link to="/termos" className="hover:text-brand-dark hover:underline">Termos</Link>

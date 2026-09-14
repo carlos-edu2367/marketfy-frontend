@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Home from '../pages/Home';
 import api from '../lib/api';
 
@@ -27,6 +27,8 @@ describe('Home (landing)', () => {
     vi.clearAllMocks();
     api.get.mockResolvedValue({ data: [paidPlan] });
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   it('uses a single, consistent primary CTA label site-wide', async () => {
     render(
@@ -72,5 +74,29 @@ describe('Home (landing)', () => {
     expect(screen.queryByText(/ticket médio/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/importa[cç][aã]o de produtos/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/aplicativo instalado/i)).not.toBeInTheDocument();
+  });
+
+  it('hides the tailored-plan contact when no sales channel is configured', async () => {
+    render(<MemoryRouter><Home /></MemoryRouter>);
+    await screen.findByText('Plano Essencial');
+
+    expect(screen.queryByText(/rede com várias lojas/i)).not.toBeInTheDocument();
+    expect(document.querySelector('a[href*="intent=business"]')).toBeNull();
+  });
+
+  it('links the tailored-plan contact to the configured sales channel', async () => {
+    vi.stubEnv('VITE_SALES_CONTACT_URL', 'https://wa.me/5500000000000');
+    render(<MemoryRouter><Home /></MemoryRouter>);
+
+    const link = await screen.findByRole('link', { name: /fale com a gente/i });
+    expect(link).toHaveAttribute('href', 'https://wa.me/5500000000000');
+  });
+
+  it('shows legal name and CNPJ in the footer only when configured', async () => {
+    vi.stubEnv('VITE_COMPANY_LEGAL_NAME', 'Marketfy Tecnologia LTDA');
+    vi.stubEnv('VITE_COMPANY_CNPJ', '00.000.000/0001-00');
+    render(<MemoryRouter><Home /></MemoryRouter>);
+
+    expect(await screen.findByText(/Marketfy Tecnologia LTDA · CNPJ 00\.000\.000\/0001-00/)).toBeInTheDocument();
   });
 });
