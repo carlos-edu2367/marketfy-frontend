@@ -10,8 +10,10 @@ import {
 import { Button } from '../components/ui/Button';
 import { usePublicPlans } from '../hooks/usePublicPlans';
 import { getCompanyInfo } from '../lib/company';
+import { getRecommendedPlanId } from '../lib/pricing';
 import BillingCycleToggle from '../components/billing/BillingCycleToggle';
 import PlanCard from '../components/billing/PlanCard';
+import PlanIncludesStrip from '../components/billing/PlanIncludesStrip';
 import { Loader2 } from 'lucide-react';
 
 export default function Home() {
@@ -24,10 +26,7 @@ export default function Home() {
     setOpenFaq(openFaq === index ? null : index);
   };
 
-  // O plano do meio (por preco) e sugerido como recomendado quando ha 3+
-  // planos pagos. Sem um campo de negocio (`is_recommended`) no backend, esta
-  // e uma heuristica de apresentacao, nao uma escolha comercial.
-  const recommendedPlanId = plans.length >= 3 ? plans[Math.floor(plans.length / 2)].id : null;
+  const recommendedPlanId = getRecommendedPlanId(plans);
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 scroll-smooth">
@@ -321,6 +320,8 @@ export default function Home() {
             </div>
           )}
 
+          {!plansLoading && plans.length > 0 && <PlanIncludesStrip theme="dark" />}
+
           {company.salesContactUrl && (
             <div className="mt-10 text-center">
               <p className="text-slate-400 text-sm">
@@ -430,6 +431,7 @@ export default function Home() {
             )}
           </div>
           <div className="flex gap-6 text-sm text-gray-500 font-medium">
+            <Link to="/precos" className="hover:text-brand-dark hover:underline">Preços</Link>
             <Link to="/termos" className="hover:text-brand-dark hover:underline">Termos</Link>
             <Link to="/privacidade" className="hover:text-brand-dark hover:underline">Privacidade</Link>
           </div>

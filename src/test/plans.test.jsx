@@ -136,6 +136,51 @@ describe('Plans', () => {
     expect(localStorage.getItem('marketfy_plan_intent')).toBeNull();
   });
 
+  it('highlights only the plan the business marked as recommended', async () => {
+    useAuth.mockReturnValue({ user: { name: 'Ana', plan_id: 'x' }, subscription: null, refreshUser, logout });
+    api.get.mockResolvedValue({
+      data: [
+        { ...paidPlan, id: 'p1', name: 'Básico', price_monthly: 49.9 },
+        { ...paidPlan, id: 'p2', name: 'Pro', price_monthly: 99.9, is_recommended: true },
+        { ...paidPlan, id: 'p3', name: 'Rede', price_monthly: 199.9 },
+      ],
+    });
+    render(<Plans />);
+
+    expect(await screen.findAllByText('Recomendado')).toHaveLength(1);
+    expect(screen.getByText('Recomendado').closest('article')).toHaveTextContent('Pro');
+    expect(screen.getAllByText(/sem fidelidade/i)).toHaveLength(2); // faixa unica + nota do toggle, nunca 1 por card
+  });
+
+  it('reuses the registered CPF for card billing without asking again', async () => {
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null, document_masked: '***.456.789-**' } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /cartão de crédito/i }));
+
+    expect(screen.getByLabelText(/usar o cpf do cadastro/i)).toBeChecked();
+    expect(screen.queryByPlaceholderText(/somente números/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    expect(subscribePlan).toHaveBeenCalledWith(expect.objectContaining({ billing_mode: 'recurring', document: undefined }));
+  });
+
+  it('asks for another document when the user unchecks the registered one', async () => {
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null, document_masked: '***.456.789-**' } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /cartão de crédito/i }));
+    await user.click(screen.getByLabelText(/usar o cpf do cadastro/i));
+    await user.type(screen.getByPlaceholderText(/somente números/i), '98765432000110');
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    expect(subscribePlan).toHaveBeenCalledWith(expect.objectContaining({ document: '98765432000110' }));
+  });
+
   it('lets the user log out from the plans page', async () => {
     const user = userEvent.setup();
     renderPlans({ user: { name: 'Ana', plan_id: 'plan-existing' } });
