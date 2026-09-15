@@ -28,6 +28,7 @@ const Settings = React.lazy(() => import('./pages/dashboard/Settings'));
 const PDV = React.lazy(() => import('./pages/pdv/Pdv'));
 const FiscalCredits = React.lazy(() => import('./pages/FiscalCredits'));
 const CreditPaymentReturn = React.lazy(() => import('./pages/CreditPaymentReturn'));
+const BillingReturn = React.lazy(() => import('./pages/BillingReturn'));
 const Support = React.lazy(() => import('./pages/support/Support'));
 const SaaSAdminDashboard = React.lazy(() => import('./pages/admin/SaaSAdminDashboard'));
 const PlansManagement = React.lazy(() => import('./pages/admin/PlansManagement'));
@@ -100,6 +101,10 @@ function App() {
             <Route path="/termos" element={<Terms />} />
             <Route path="/privacidade" element={<Privacy />} />
             <Route path="/precos" element={<Pricing />} />
+            <Route path="/billing/retorno" element={<BillingReturn />} />
+            <Route path="/billing/success" element={<Navigate to="/billing/retorno" replace />} />
+            <Route path="/billing/cancel" element={<Navigate to="/billing/retorno?status=cancel" replace />} />
+            <Route path="/billing/expired" element={<Navigate to="/billing/retorno?status=expired" replace />} />
             <Route
               path="/plans"
               element={
