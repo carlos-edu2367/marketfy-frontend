@@ -8,8 +8,9 @@ import { formatDate } from '../../lib/utils';
 import FiscalSettings from '../../components/settings/FiscalSettings';
 import PixPaymentsSettings from '../../components/settings/PixPaymentsSettings';
 import BillingInvoices from './BillingInvoices';
-import api from '../../lib/api';
+import api, { cancelSubscription } from '../../lib/api';
 import { differenceInDays, parseISO } from 'date-fns';
+import toast from 'react-hot-toast';
 
 export default function Settings() {
   const { user, subscription, logout, refreshSubscription } = useAuth();
@@ -18,7 +19,9 @@ export default function Settings() {
   const requestedTab = searchParams.get('tab');
   const requestedMarketId = searchParams.get('marketId');
   const [refreshingSubscription, setRefreshingSubscription] = useState(false);
-  
+  const [cancelingSubscription, setCancelingSubscription] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+
   // Estado das Abas
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -231,6 +234,55 @@ export default function Settings() {
                                 <Clock size={14} className="shrink-0" />
                                 Aguardando confirmação de pagamento pelo sistema de cobrança.
                             </div>
+                        )}
+
+                        {subscription.cancel_at_period_end && subscription.expires_at && (
+                            <div className="flex items-center gap-2 mt-3 p-3 bg-blue-50 rounded-xl border border-blue-100 text-blue-800 text-xs font-medium">
+                                <Clock size={14} className="shrink-0" />
+                                Assinatura cancelada — ativa até {formatDate(subscription.expires_at).split(' ')[0]}, sem nova cobrança.
+                            </div>
+                        )}
+
+                        {['active', 'trialing'].includes(subscription.status) && !subscription.cancel_at_period_end && (
+                            <>
+                                {!showCancelConfirm ? (
+                                    <button
+                                        onClick={() => setShowCancelConfirm(true)}
+                                        className="mt-3 text-xs font-bold text-red-500 hover:underline"
+                                    >
+                                        Cancelar assinatura
+                                    </button>
+                                ) : (
+                                    <div className="mt-3 p-3 bg-red-50 rounded-xl border border-red-100 text-xs text-red-800">
+                                        <p className="font-bold mb-2">
+                                            Cancelar agora? Você mantém acesso até {subscription.expires_at ? formatDate(subscription.expires_at).split(' ')[0] : 'o fim do período pago'}, sem nova cobrança depois disso.
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                isLoading={cancelingSubscription}
+                                                onClick={async () => {
+                                                    try {
+                                                        setCancelingSubscription(true);
+                                                        await cancelSubscription();
+                                                        toast.success('Assinatura cancelada. Seu acesso continua até o fim do período pago.');
+                                                        await refreshSubscription();
+                                                        setShowCancelConfirm(false);
+                                                    } catch (error) {
+                                                        toast.error(error.response?.data?.detail || 'Erro ao cancelar assinatura.');
+                                                    } finally {
+                                                        setCancelingSubscription(false);
+                                                    }
+                                                }}
+                                            >
+                                                Confirmar cancelamento
+                                            </Button>
+                                            <Button size="sm" variant="ghost" onClick={() => setShowCancelConfirm(false)}>Voltar</Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 )}
