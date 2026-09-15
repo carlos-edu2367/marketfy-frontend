@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import { formatCurrency, formatDate } from '../../lib/utils';
 import toast from 'react-hot-toast';
 import { Printer } from 'lucide-react';
+import { onlyDigits } from '../../lib/documentMask';
 
 const PAYMENT_METHOD_LABELS = {
   '01': 'DINHEIRO',
@@ -121,7 +122,10 @@ export const generateReceipt = (sale, marketInfo) => {
         const addressLines = doc.splitTextToSize(marketInfo.address, contentWidth);
         addressLines.forEach(line => { centerText(line, y); y += lineHeight; });
     }
-    if (marketInfo?.document) { centerText(`CNPJ: ${marketInfo.document}`, y); y += lineHeight; }
+    if (marketInfo?.document) {
+        const documentLabel = onlyDigits(marketInfo.document).length === 11 ? 'CPF' : 'CNPJ';
+        centerText(`${documentLabel}: ${marketInfo.document}`, y); y += lineHeight;
+    }
 
     y += 2; dashedLine(y); y += 4;
 

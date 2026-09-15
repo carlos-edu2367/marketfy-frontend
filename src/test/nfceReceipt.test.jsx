@@ -75,3 +75,34 @@ describe('generateFiscalDanfe', () => {
     expect(window.open).toHaveBeenCalledWith('blob:danfe', '_blank');
   });
 });
+
+describe('generateReceipt', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('labels an 11-digit document as CPF', async () => {
+    const { generateReceipt } = await import('../components/pdv/Receipt');
+
+    generateReceipt(
+      { items: [], total: 0, payment_method: 'dinheiro' },
+      { name: 'Mercado Teste', address: 'Rua A', document: '12345678901' }
+    );
+
+    const printedText = doc.text.mock.calls.map((call) => call[0]).join('\n');
+    expect(printedText).toContain('CPF: 12345678901');
+    expect(printedText).not.toContain('CNPJ: 12345678901');
+  });
+
+  it('labels a 14-digit document as CNPJ', async () => {
+    const { generateReceipt } = await import('../components/pdv/Receipt');
+
+    generateReceipt(
+      { items: [], total: 0, payment_method: 'dinheiro' },
+      { name: 'Mercado Teste', address: 'Rua A', document: '12345678000195' }
+    );
+
+    const printedText = doc.text.mock.calls.map((call) => call[0]).join('\n');
+    expect(printedText).toContain('CNPJ: 12345678000195');
+  });
+});
