@@ -22,30 +22,37 @@ describe('Register', () => {
     api.post.mockResolvedValue({ data: {} });
   });
 
-  it('masks the CPF while typing and sends only digits', async () => {
+  it('does not render a CPF field', () => {
+    render(<MemoryRouter><Register /></MemoryRouter>);
+    expect(screen.queryByPlaceholderText('000.000.000-00')).not.toBeInTheDocument();
+    expect(screen.queryByText(/cpf/i)).not.toBeInTheDocument();
+  });
+
+  it('submits name, email and password without cpf', async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><Register /></MemoryRouter>);
 
     await user.type(screen.getByPlaceholderText('Seu nome'), 'Ana Souza');
     await user.type(screen.getByPlaceholderText('seu@email.com'), 'ana@example.com');
-    const cpf = screen.getByPlaceholderText('000.000.000-00');
-    await user.type(cpf, '12345678901');
-    expect(cpf).toHaveValue('123.456.789-01');
     await user.type(screen.getByPlaceholderText('Mínimo 6 caracteres'), 'segredo123');
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /começar meu teste grátis/i }));
 
-    await waitFor(() => expect(registerUser).toHaveBeenCalledWith(expect.objectContaining({ cpf: '12345678901' })));
+    await waitFor(() => expect(registerUser).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Ana Souza', email: 'ana@example.com' })
+    ));
+    const [payload] = registerUser.mock.calls[0];
+    expect(payload).not.toHaveProperty('cpf');
   });
 
-  it('rejects a CPF with fewer than 11 digits', async () => {
+  it('rejects a name shorter than 3 characters', async () => {
     const user = userEvent.setup();
     render(<MemoryRouter><Register /></MemoryRouter>);
 
-    await user.type(screen.getByPlaceholderText('000.000.000-00'), '1234');
+    await user.type(screen.getByPlaceholderText('Seu nome'), 'An');
     await user.click(screen.getByRole('button', { name: /começar meu teste grátis/i }));
 
-    expect(await screen.findByText(/cpf deve ter 11 números/i)).toBeInTheDocument();
+    expect(await screen.findByText(/nome muito curto/i)).toBeInTheDocument();
     expect(registerUser).not.toHaveBeenCalled();
   });
 });
