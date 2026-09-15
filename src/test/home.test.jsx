@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Home from '../pages/Home';
@@ -7,6 +8,7 @@ import api from '../lib/api';
 vi.mock('../lib/api', () => ({
   default: { get: vi.fn(), post: vi.fn() },
 }));
+vi.mock('../lib/analytics', () => ({ track: vi.fn() }));
 
 const paidPlan = {
   id: 'plan-essential',
@@ -98,5 +100,22 @@ describe('Home (landing)', () => {
     render(<MemoryRouter><Home /></MemoryRouter>);
 
     expect(await screen.findByText(/Marketfy Tecnologia LTDA · CNPJ 00\.000\.000\/0001-00/)).toBeInTheDocument();
+  });
+
+  it('tracks landing_viewed on mount', async () => {
+    const { track } = await import('../lib/analytics');
+    render(<MemoryRouter><Home /></MemoryRouter>);
+    expect(track).toHaveBeenCalledWith('landing_viewed');
+  });
+
+  it('tracks plan_cta_clicked when a plan CTA is clicked', async () => {
+    const { track } = await import('../lib/analytics');
+    const user = userEvent.setup();
+    render(<MemoryRouter><Home /></MemoryRouter>);
+
+    const planCard = (await screen.findByRole('heading', { name: 'Plano Essencial', level: 3 })).closest('article');
+    await user.click(within(planCard).getByRole('link', { name: /testar grátis/i }));
+
+    expect(track).toHaveBeenCalledWith('plan_cta_clicked', expect.objectContaining({ plan_id: 'plan-essential' }));
   });
 });

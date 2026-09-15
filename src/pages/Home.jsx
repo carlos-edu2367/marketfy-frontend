@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Store, WifiOff, ShoppingCart,
@@ -15,6 +15,7 @@ import BillingCycleToggle from '../components/billing/BillingCycleToggle';
 import PlanCard from '../components/billing/PlanCard';
 import PlanIncludesStrip from '../components/billing/PlanIncludesStrip';
 import CookieConsentBanner from '../components/CookieConsentBanner';
+import { track } from '../lib/analytics';
 import { Loader2 } from 'lucide-react';
 
 export default function Home() {
@@ -28,6 +29,10 @@ export default function Home() {
   };
 
   const recommendedPlanId = getRecommendedPlanId(plans);
+
+  useEffect(() => {
+    track('landing_viewed');
+  }, []);
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900 scroll-smooth">
@@ -316,6 +321,7 @@ export default function Home() {
                   badgeLabel={plan.id === recommendedPlanId ? 'Recomendado' : null}
                   ctaLabel="Testar grátis"
                   ctaTo={`/register?plan=${plan.id}&cycle=${cycleKey}`}
+                  onCtaClick={() => track('plan_cta_clicked', { plan_id: plan.id, cycle: cycleKey })}
                 />
               ))}
             </div>

@@ -109,7 +109,7 @@ export default function PlanCard({
           as={ctaTo ? Link : 'button'}
           to={ctaTo}
           type={ctaTo ? undefined : 'button'}
-          onClick={ctaTo ? undefined : onCtaClick}
+          onClick={onCtaClick}
           isLoading={isLoading}
           variant={highlighted ? 'primary' : (isDark ? undefined : 'secondary')}
           className={`h-12 w-full font-bold ${

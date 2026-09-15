@@ -7,6 +7,7 @@ import PlanCard from '../components/billing/PlanCard';
 import PlanIncludesStrip from '../components/billing/PlanIncludesStrip';
 import PlanComparisonTable from '../components/billing/PlanComparisonTable';
 import CookieConsentBanner from '../components/CookieConsentBanner';
+import { track } from '../lib/analytics';
 import { usePublicPlans } from '../hooks/usePublicPlans';
 import { getRecommendedPlanId } from '../lib/pricing';
 
@@ -80,6 +81,7 @@ export default function Pricing() {
                   badgeLabel={plan.id === recommendedPlanId ? 'Recomendado' : null}
                   ctaLabel="Testar grátis"
                   ctaTo={`/register?plan=${plan.id}&cycle=${cycleKey}`}
+                  onCtaClick={() => track('plan_cta_clicked', { plan_id: plan.id, cycle: cycleKey })}
                 />
               ))}
             </section>

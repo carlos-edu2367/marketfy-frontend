@@ -6,6 +6,7 @@ import Pricing from '../pages/Pricing';
 import api from '../lib/api';
 
 vi.mock('../lib/api', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock('../lib/analytics', () => ({ track: vi.fn() }));
 
 const plans = [
   { id: 'p1', name: 'Básico', type: 'pago', is_active: true, max_markets: 1, max_terminals: 1, fiscal_monthly_limit: 0, price_monthly: '49.90', price_180days: '269.90', price_annual: '499.90' },
@@ -46,5 +47,16 @@ describe('Pricing (/precos)', () => {
 
     expect(screen.getByText(/quais formas de pagamento/i)).toBeInTheDocument();
     expect(screen.getByText(/3 dias de tolerância/i)).toBeInTheDocument();
+  });
+
+  it('tracks plan_cta_clicked when a plan CTA is clicked', async () => {
+    const { track } = await import('../lib/analytics');
+    const user = userEvent.setup();
+    renderPage();
+
+    const proCard = (await screen.findByRole('heading', { name: 'Pro', level: 3 })).closest('article');
+    await user.click(within(proCard).getByRole('link', { name: /testar grátis/i }));
+
+    expect(track).toHaveBeenCalledWith('plan_cta_clicked', expect.objectContaining({ plan_id: 'p2' }));
   });
 });
