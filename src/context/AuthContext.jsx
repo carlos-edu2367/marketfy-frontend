@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api, { clearAccessToken, setAccessToken } from '../lib/api';
 import { db } from '../lib/db';
 import { AuthContext } from './AuthContextDefinition';
+import { identifyUser } from '../lib/analytics';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -24,6 +25,7 @@ export const AuthProvider = ({ children }) => {
   const refreshUser = useCallback(async () => {
     const { data } = await api.get('/auth/me');
     setUser(data);
+    identifyUser(data);
     refreshSubscription().catch(() => {});
     return data;
   }, [refreshSubscription]);
