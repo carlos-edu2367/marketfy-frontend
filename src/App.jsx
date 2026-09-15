@@ -33,6 +33,7 @@ const Support = React.lazy(() => import('./pages/support/Support'));
 const SaaSAdminDashboard = React.lazy(() => import('./pages/admin/SaaSAdminDashboard'));
 const PlansManagement = React.lazy(() => import('./pages/admin/PlansManagement'));
 const AdminTickets = React.lazy(() => import('./pages/admin/AdminTickets'));
+const MarketingFunnels = React.lazy(() => import('./pages/admin/MarketingFunnels'));
 const FunilDiaDoMercado = React.lazy(() => import('./pages/marketing/FunilDiaDoMercado'));
 const FunilDiagnostico = React.lazy(() => import('./pages/marketing/FunilDiagnostico'));
 
@@ -155,6 +156,7 @@ function App() {
             >
               <Route index element={<SaaSAdminDashboard />} />
               <Route path="plans" element={<PlansManagement />} />
+              <Route path="funis" element={<MarketingFunnels />} />
               <Route path="tickets" element={<AdminTickets />} />
             </Route>
 
