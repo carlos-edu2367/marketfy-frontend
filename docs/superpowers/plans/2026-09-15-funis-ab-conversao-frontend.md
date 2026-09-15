@@ -1529,8 +1529,8 @@ describe('MarketingFunnels (/admin/funis)', () => {
   it('shows lead counts and CTA rate for both funnels', async () => {
     render(<MarketingFunnels />);
 
-    expect(await screen.findByText(/funil a/i)).toBeInTheDocument();
-    expect(screen.getByText(/funil b/i)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /funil a/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /funil b/i })).toBeInTheDocument();
     expect(screen.getByText(/20 leads/i)).toBeInTheDocument();
     expect(screen.getByText(/30 leads/i)).toBeInTheDocument();
     expect(screen.getByText(/50% dos leads clicaram no cta/i)).toBeInTheDocument();
