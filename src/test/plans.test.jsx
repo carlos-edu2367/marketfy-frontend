@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Plans from '../pages/auth/Plans';
 import api, { subscribePlan } from '../lib/api';
 import { fetchInvoiceCheckoutUrl } from '../lib/invoiceCheckout';
+import { fetchSubscriptionCheckoutUrl } from '../lib/subscriptionCheckout';
 import { useAuth } from '../hooks/useAuth';
 
 const navigate = vi.fn();
@@ -17,6 +18,8 @@ vi.mock('../lib/api', () => ({
 }));
 
 vi.mock('../lib/invoiceCheckout', () => ({ fetchInvoiceCheckoutUrl: vi.fn() }));
+
+vi.mock('../lib/subscriptionCheckout', () => ({ fetchSubscriptionCheckoutUrl: vi.fn() }));
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: vi.fn(),
@@ -62,6 +65,7 @@ describe('Plans', () => {
     vi.clearAllMocks();
     subscribePlan.mockResolvedValue({ data: { invoice_id: 'invoice-1', checkout_url: null } });
     fetchInvoiceCheckoutUrl.mockResolvedValue(null);
+    fetchSubscriptionCheckoutUrl.mockResolvedValue(null);
     delete window.location;
     window.location = { href: '' };
     localStorage.clear();
@@ -234,6 +238,62 @@ describe('Plans', () => {
     await waitFor(() => expect(track).toHaveBeenCalledWith('checkout_completed', {
       plan_id: 'plan-essential', billing_mode: 'invoice', outcome: 'invoice_pending',
     }));
+  });
+
+  it('polls for the subscription checkout url instead of expecting it in the subscribe response', async () => {
+    const user = userEvent.setup();
+    subscribePlan.mockResolvedValue({ data: { subscription_id: 'sub-local-1', job_id: 'job-1' } });
+    fetchSubscriptionCheckoutUrl.mockResolvedValue('https://pay/mp/x');
+    renderPlans({ user: { name: 'Ana', plan_id: null, document_masked: '***.456.789-**' } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /cartão de crédito/i }));
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    await waitFor(() => expect(fetchSubscriptionCheckoutUrl).toHaveBeenCalledWith('sub-local-1'));
+    expect(window.location.href).toBe('https://pay/mp/x');
+  });
+
+  it('sends the user to invoices with a helpful message when the recurring checkout link is delayed', async () => {
+    const user = userEvent.setup();
+    subscribePlan.mockResolvedValue({ data: { subscription_id: 'sub-local-1', job_id: 'job-1' } });
+    renderPlans({ user: { name: 'Ana', plan_id: null, document_masked: '***.456.789-**' } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /cartão de crédito/i }));
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/dashboard/settings'));
+  });
+
+  it('sends a fresh idempotency key each time the modal is opened', async () => {
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+    const firstKey = subscribePlan.mock.calls[0][0].idempotency_key;
+
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+    const secondKey = subscribePlan.mock.calls[1][0].idempotency_key;
+
+    expect(firstKey).toBeTruthy();
+    expect(secondKey).toBeTruthy();
+    expect(firstKey).not.toBe(secondKey);
+  });
+
+  it('does not mention boleto in the payment method copy', async () => {
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+
+    expect(screen.queryByText(/boleto/i)).not.toBeInTheDocument();
   });
 
   it('tracks trial_activated when the free trial is activated from this page', async () => {
