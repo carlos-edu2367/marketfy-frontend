@@ -167,7 +167,7 @@ export default function FunilDiaDoMercado() {
               fiscal e fechamento. Você responde como sua operação lida com cada uma. No final,
               mostramos seu nível de controle.
             </p>
-            <Button onClick={handleStart} className="mt-7 font-bold" size="lg">
+            <Button onClick={handleStart} className="mx-auto mt-7 font-bold" size="lg">
               Simular meu dia →
             </Button>
             <p className="mt-3 text-xs text-gray-400">Não é prova. É um raio-x prático da operação.</p>

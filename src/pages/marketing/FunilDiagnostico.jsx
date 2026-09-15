@@ -249,7 +249,7 @@ export default function FunilDiagnostico() {
               final, o Marketfy monta um diagnóstico do seu nível de controle e recomenda a
               configuração mais adequada para sua operação.
             </p>
-            <Button onClick={handleStart} className="mt-7 font-bold" size="lg">
+            <Button onClick={handleStart} className="mx-auto mt-7 font-bold" size="lg">
               Começar meu diagnóstico →
             </Button>
             <p className="mt-3 text-xs text-gray-400">Sem formulário gigante. Uma pergunta por vez.</p>
