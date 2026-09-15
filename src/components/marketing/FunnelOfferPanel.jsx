@@ -52,8 +52,8 @@ export default function FunnelOfferPanel({ funnelVariant }) {
           </span>
           <h3 className="mt-4 text-2xl font-black tracking-tight text-gray-950">{recommendedPlan.name}</h3>
           <p className="mt-2 text-sm leading-6 text-gray-500">
-            Você não precisa de "mais uma tela de vendas". Precisa de uma operação que continue
-            funcionando e gere informação pra decisão.
+            Você não precisa de &ldquo;mais uma tela de vendas&rdquo;. Precisa de uma operação que
+            continue funcionando e gere informação pra decisão.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-2.5 text-sm">
             {OFFER_FEATURES.map((feature) => (

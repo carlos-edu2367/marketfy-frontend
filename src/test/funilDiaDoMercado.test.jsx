@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import FunilDiaDoMercado from '../pages/marketing/FunilDiaDoMercado';
 import { createFunnelLead } from '../lib/marketingFunnelApi';
-import { trackFunnelEvent, getFunnelVisitorId } from '../lib/funnelTracking';
+import { trackFunnelEvent } from '../lib/funnelTracking';
 
 vi.mock('../lib/marketingFunnelApi', () => ({
   createFunnelLead: vi.fn().mockResolvedValue({}),
