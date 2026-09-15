@@ -33,6 +33,7 @@ const Support = React.lazy(() => import('./pages/support/Support'));
 const SaaSAdminDashboard = React.lazy(() => import('./pages/admin/SaaSAdminDashboard'));
 const PlansManagement = React.lazy(() => import('./pages/admin/PlansManagement'));
 const AdminTickets = React.lazy(() => import('./pages/admin/AdminTickets'));
+const FunilDiaDoMercado = React.lazy(() => import('./pages/marketing/FunilDiaDoMercado'));
 
 const FullPageLoader = () => (
   <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -101,6 +102,7 @@ function App() {
             <Route path="/termos" element={<Terms />} />
             <Route path="/privacidade" element={<Privacy />} />
             <Route path="/precos" element={<Pricing />} />
+            <Route path="/funil-b" element={<FunilDiaDoMercado />} />
             <Route path="/billing/retorno" element={<BillingReturn />} />
             <Route path="/billing/success" element={<Navigate to="/billing/retorno" replace />} />
             <Route path="/billing/cancel" element={<Navigate to="/billing/retorno?status=cancel" replace />} />
