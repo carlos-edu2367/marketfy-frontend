@@ -115,7 +115,6 @@ export default function Plans() {
       window.removeEventListener('keydown', handleKeyDown);
       previouslyFocused?.focus?.();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showModal]);
 
   const handleSelectPlan = (plan) => {
