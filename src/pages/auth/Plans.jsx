@@ -25,6 +25,7 @@ import {
 import toast from 'react-hot-toast';
 import { formatCurrency } from '../../lib/utils';
 import { formatFiscalLimit, getCycleTotal, getRecommendedPlanId } from '../../lib/pricing';
+import { track } from '../../lib/analytics';
 
 // Estagio do usuario em relacao ao plano, usado para adaptar o titulo da
 // pagina (visitante novo, trial ativo, plano expirado ou renovacao/upgrade).
@@ -116,6 +117,7 @@ export default function Plans() {
   }, [showModal]);
 
   const handleSelectPlan = (plan) => {
+    track('checkout_modal_opened', { plan_id: plan.id });
     setSelectedPlan(plan);
     setBillingMode('invoice');
     setBillingDocument('');
@@ -130,6 +132,10 @@ export default function Plans() {
       toast.error('Informe um CPF ou CNPJ válido para cobrança recorrente.');
       return;
     }
+
+    track('checkout_started', {
+      plan_id: selectedPlan.id, billing_mode: billingMode, subscription_type: cycleKey,
+    });
 
     try {
       setSubmitting(true);
@@ -148,9 +154,11 @@ export default function Plans() {
           ? await fetchInvoiceCheckoutUrl(data.invoice_id).catch(() => null)
           : null;
         if (checkoutUrl) {
+          track('checkout_completed', { plan_id: selectedPlan.id, billing_mode: billingMode, outcome: 'redirected_to_payment' });
           window.location.href = checkoutUrl;
           return;
         }
+        track('checkout_completed', { plan_id: selectedPlan.id, billing_mode: billingMode, outcome: 'invoice_pending' });
         toast.success('Fatura gerada! O link de pagamento fica disponível em Configurações > Faturas.');
         setShowModal(false);
         await refreshUser();
@@ -159,10 +167,12 @@ export default function Plans() {
       }
 
       if (data.checkout_url) {
+        track('checkout_completed', { plan_id: selectedPlan.id, billing_mode: billingMode, outcome: 'redirected_to_payment' });
         window.location.href = data.checkout_url;
         return;
       }
 
+      track('checkout_completed', { plan_id: selectedPlan.id, billing_mode: billingMode, outcome: 'invoice_pending' });
       toast.success('Assinatura iniciada. Acompanhe suas faturas em Configurações.');
       setShowModal(false);
       await refreshUser();
@@ -177,6 +187,7 @@ export default function Plans() {
     try {
       setActivatingTrial(true);
       await api.post('/auth/trial', {});
+      track('trial_activated');
       await refreshUser();
       toast.success('Período de testes ativado com sucesso!');
       navigate('/dashboard');

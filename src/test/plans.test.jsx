@@ -27,6 +27,8 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => navigate };
 });
 
+vi.mock('../lib/analytics', () => ({ track: vi.fn() }));
+
 const paidPlan = {
   id: 'plan-essential',
   name: 'Plano Essencial',
@@ -189,5 +191,59 @@ describe('Plans', () => {
     await user.click(screen.getByRole('button', { name: /sair/i }));
 
     expect(logout).toHaveBeenCalled();
+  });
+
+  it('tracks checkout_modal_opened when a plan is selected', async () => {
+    const { track } = await import('../lib/analytics');
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+
+    expect(track).toHaveBeenCalledWith('checkout_modal_opened', { plan_id: 'plan-essential' });
+  });
+
+  it('tracks checkout_started and checkout_completed for an invoice checkout redirect', async () => {
+    const { track } = await import('../lib/analytics');
+    const user = userEvent.setup();
+    fetchInvoiceCheckoutUrl.mockResolvedValue('https://pay.example/checkout');
+    renderPlans({ user: { name: 'Ana', plan_id: null } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    expect(track).toHaveBeenCalledWith('checkout_started', {
+      plan_id: 'plan-essential', billing_mode: 'invoice', subscription_type: 'monthly',
+    });
+    await waitFor(() => expect(track).toHaveBeenCalledWith('checkout_completed', {
+      plan_id: 'plan-essential', billing_mode: 'invoice', outcome: 'redirected_to_payment',
+    }));
+  });
+
+  it('tracks checkout_completed as invoice_pending when the payment link is not ready', async () => {
+    const { track } = await import('../lib/analytics');
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null } });
+
+    await screen.findByText('Plano Essencial');
+    await user.click(screen.getByRole('button', { name: /assinar plano/i }));
+    await user.click(screen.getByRole('button', { name: /ir para o pagamento/i }));
+
+    await waitFor(() => expect(track).toHaveBeenCalledWith('checkout_completed', {
+      plan_id: 'plan-essential', billing_mode: 'invoice', outcome: 'invoice_pending',
+    }));
+  });
+
+  it('tracks trial_activated when the free trial is activated from this page', async () => {
+    const { track } = await import('../lib/analytics');
+    const user = userEvent.setup();
+    renderPlans({ user: { name: 'Ana', plan_id: null } });
+
+    await screen.findByText('Comece grátis por 14 dias');
+    await user.click(screen.getByRole('button', { name: /ativar teste grátis/i }));
+
+    await waitFor(() => expect(track).toHaveBeenCalledWith('trial_activated'));
   });
 });
