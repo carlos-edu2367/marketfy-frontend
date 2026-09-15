@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 vi.mock('../lib/api', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
 vi.mock('../hooks/useAuth', () => ({ useAuth: vi.fn() }));
 vi.mock('react-hot-toast', () => ({ default: { error: vi.fn(), success: vi.fn() } }));
+vi.mock('../lib/analytics', () => ({ track: vi.fn() }));
 
 const registerUser = vi.fn();
 const login = vi.fn();
@@ -54,5 +55,37 @@ describe('Register', () => {
 
     expect(await screen.findByText(/nome muito curto/i)).toBeInTheDocument();
     expect(registerUser).not.toHaveBeenCalled();
+  });
+
+  it('tracks register_submitted with the plan intent flag after a successful signup', async () => {
+    const { track } = await import('../lib/analytics');
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/register?plan=plan-1']}>
+        <Register />
+      </MemoryRouter>
+    );
+
+    await user.type(screen.getByPlaceholderText('Seu nome'), 'Ana Souza');
+    await user.type(screen.getByPlaceholderText('seu@email.com'), 'ana@example.com');
+    await user.type(screen.getByPlaceholderText('Mínimo 6 caracteres'), 'segredo123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /começar meu teste grátis/i }));
+
+    await waitFor(() => expect(track).toHaveBeenCalledWith('register_submitted', { has_plan_intent: true }));
+  });
+
+  it('tracks trial_activated after the trial endpoint succeeds', async () => {
+    const { track } = await import('../lib/analytics');
+    const user = userEvent.setup();
+    render(<MemoryRouter><Register /></MemoryRouter>);
+
+    await user.type(screen.getByPlaceholderText('Seu nome'), 'Ana Souza');
+    await user.type(screen.getByPlaceholderText('seu@email.com'), 'ana@example.com');
+    await user.type(screen.getByPlaceholderText('Mínimo 6 caracteres'), 'segredo123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /começar meu teste grátis/i }));
+
+    await waitFor(() => expect(track).toHaveBeenCalledWith('trial_activated'));
   });
 });

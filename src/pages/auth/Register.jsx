@@ -9,6 +9,7 @@ import { User, Mail, Lock, ArrowRight, Check, ShieldCheck, Store } from 'lucide-
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { savePlanIntent } from '../../lib/planIntent';
+import { track } from '../../lib/analytics';
 
 const registerSchema = z.object({
   name: z.string().min(3, 'Nome muito curto'),
@@ -52,6 +53,8 @@ export default function Register() {
       return;
     }
 
+    track('register_submitted', { has_plan_intent: Boolean(searchParams.get('plan')) });
+
     savePlanIntent({ planId: searchParams.get('plan'), cycle: searchParams.get('cycle') });
 
     try {
@@ -67,6 +70,7 @@ export default function Register() {
     // ja decidiu, entao nao ha uma segunda decisao (modal) depois do cadastro.
     try {
       await api.post('/auth/trial', {});
+      track('trial_activated');
       toast.success('Conta criada! Seu teste grátis de 14 dias já está ativo.');
     } catch {
       // Se o trial nao puder ser ativado (ex.: politica de elegibilidade),
