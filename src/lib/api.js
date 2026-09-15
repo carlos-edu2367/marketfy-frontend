@@ -134,6 +134,15 @@ export const requestInvoiceCheckout = (invoiceId) =>
 export const retryInvoice = (invoiceId) =>
   api.post(`/billing/invoices/${invoiceId}/retry`);
 
+export const ensureSubscriptionCheckout = (subscriptionId) =>
+  api.post(`/billing/subscriptions/${subscriptionId}/checkout`);
+
+export const getSubscriptionLiveStatus = (subscriptionId) =>
+  api.get(`/billing/subscriptions/${subscriptionId}/status`);
+
+export const cancelSubscription = () =>
+  api.post('/billing/subscription/cancel');
+
 export const pixOauthAuthorize = (marketId) => api.post(`/pix/${marketId}/oauth/authorize`);
 
 export const pixOauthStatus = (marketId) => api.get(`/pix/${marketId}/oauth/status`);
