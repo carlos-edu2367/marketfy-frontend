@@ -10,10 +10,14 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Plus, Store, MapPin, Loader2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { maskDocument, onlyDigits } from '../../lib/documentMask';
 
 const marketSchema = z.object({
   name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
-  document: z.string().min(14, 'CNPJ inválido'),
+  document: z.string().refine(
+    (value) => [11, 14].includes(onlyDigits(value).length),
+    'CPF ou CNPJ inválido'
+  ),
   address: z.string().min(5, 'Endereço obrigatório'),
 });
 
@@ -30,6 +34,7 @@ export default function Dashboard() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(marketSchema)
   });
+  const documentField = register('document');
 
   const fetchMarkets = useCallback(async () => {
     try {
@@ -56,7 +61,7 @@ export default function Dashboard() {
 
   const handleCreateMarket = async (data) => {
     try {
-      await api.post('/identity/markets', data);
+      await api.post('/identity/markets', { ...data, document: onlyDigits(data.document) });
       toast.success('Loja criada com sucesso!');
       setShowCreateModal(false);
       fetchMarkets();
@@ -150,11 +155,17 @@ export default function Dashboard() {
                 {...register('name')} 
                 error={errors.name?.message} 
               />
-              <Input 
-                label="CNPJ" 
-                placeholder="00.000.000/0001-00" 
-                {...register('document')} 
-                error={errors.document?.message} 
+              <Input
+                label="CPF ou CNPJ"
+                placeholder="00.000.000/0001-00"
+                inputMode="numeric"
+                maxLength={18}
+                error={errors.document?.message}
+                {...documentField}
+                onChange={(event) => {
+                  event.target.value = maskDocument(event.target.value);
+                  documentField.onChange(event);
+                }}
               />
               <Input 
                 label="Endereço Completo" 
