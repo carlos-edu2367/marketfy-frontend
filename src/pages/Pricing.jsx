@@ -6,6 +6,7 @@ import BillingCycleToggle from '../components/billing/BillingCycleToggle';
 import PlanCard from '../components/billing/PlanCard';
 import PlanIncludesStrip from '../components/billing/PlanIncludesStrip';
 import PlanComparisonTable from '../components/billing/PlanComparisonTable';
+import CookieConsentBanner from '../components/CookieConsentBanner';
 import { usePublicPlans } from '../hooks/usePublicPlans';
 import { getRecommendedPlanId } from '../lib/pricing';
 
@@ -99,6 +100,8 @@ export default function Pricing() {
           </div>
         </section>
       </main>
+
+      <CookieConsentBanner />
     </div>
   );
 }

@@ -1,9 +1,10 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { Toaster } from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
+import { initAnalytics } from './lib/analytics';
 
 import PlanGuard from './components/route/PlanGuard';
 import Home from './pages/Home';
@@ -77,6 +78,16 @@ const AppRedirect = () => {
 };
 
 function App() {
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('marketfy_cookie_consent') === 'accepted') {
+        initAnalytics();
+      }
+    } catch {
+      // localStorage indisponível — segue sem analytics
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <BrowserRouter>

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Store } from 'lucide-react';
+import CookieConsentBanner from '../../components/CookieConsentBanner';
 
 export default function LegalPageLayout({ title, updatedNote, children }) {
   return (
@@ -25,6 +26,8 @@ export default function LegalPageLayout({ title, updatedNote, children }) {
           {children}
         </div>
       </main>
+
+      <CookieConsentBanner />
     </div>
   );
 }

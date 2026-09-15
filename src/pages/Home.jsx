@@ -14,6 +14,7 @@ import { getRecommendedPlanId } from '../lib/pricing';
 import BillingCycleToggle from '../components/billing/BillingCycleToggle';
 import PlanCard from '../components/billing/PlanCard';
 import PlanIncludesStrip from '../components/billing/PlanIncludesStrip';
+import CookieConsentBanner from '../components/CookieConsentBanner';
 import { Loader2 } from 'lucide-react';
 
 export default function Home() {
@@ -437,6 +438,8 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <CookieConsentBanner />
     </div>
   );
 }
