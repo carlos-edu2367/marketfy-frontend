@@ -14,11 +14,15 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, import.meta.en
 export async function fetchInvoiceCheckoutUrl(invoiceId) {
   const { data } = await requestInvoiceCheckout(invoiceId);
   let url = data?.checkout_url || null;
+  if (!url && data?.status === 'failed') return null;
 
   for (let attempt = 0; !url && attempt < POLL_ATTEMPTS; attempt += 1) {
     await wait(POLL_INTERVAL_MS);
     const response = await requestInvoiceCheckout(invoiceId);
     url = response.data?.checkout_url || null;
+    // Job falhado nao vira link esperando: insistir so gasta tentativa e,
+    // do outro lado, mantem o Billing Core sob rajada de requisicoes.
+    if (!url && response.data?.status === 'failed') return null;
   }
 
   return url;

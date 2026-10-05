@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { subscribePlan } from '../../lib/api';
 import { fetchInvoiceCheckoutUrl } from '../../lib/invoiceCheckout';
+import { fetchSubscriptionCheckoutUrl } from '../../lib/subscriptionCheckout';
 import { clearPlanIntent, resolvePlanIntent } from '../../lib/planIntent';
 import { claimFunnelSession, rememberCheckoutFsid, resolveCheckoutFsid } from '../../lib/funnels';
 import { useAuth } from '../../hooks/useAuth';
@@ -67,6 +68,7 @@ export default function Plans() {
   const [billingDocument, setBillingDocument] = useState('');
   const [useRegisteredDocument, setUseRegisteredDocument] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [checkoutIdempotencyKey, setCheckoutIdempotencyKey] = useState(null);
   const modalRef = useRef(null);
 
   const { user, subscription, refreshUser, logout } = useAuth();
@@ -124,7 +126,6 @@ export default function Plans() {
       window.removeEventListener('keydown', handleKeyDown);
       previouslyFocused?.focus?.();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showModal]);
 
   const handleSelectPlan = (plan) => {
@@ -133,6 +134,7 @@ export default function Plans() {
     setBillingMode('invoice');
     setBillingDocument('');
     setUseRegisteredDocument(true);
+    setCheckoutIdempotencyKey(`mktf-sub:${user?.id || 'anon'}:${plan.id}:${Date.now()}`);
     setShowModal(true);
   };
 
@@ -155,6 +157,7 @@ export default function Plans() {
         subscription_type: cycleKey,
         billing_mode: billingMode,
         document: typesDocument ? billingDocument : undefined,
+        idempotency_key: checkoutIdempotencyKey,
       });
       clearPlanIntent();
 
@@ -177,16 +180,21 @@ export default function Plans() {
         return;
       }
 
-      if (data.checkout_url) {
+      // recurring: a assinatura ja foi criada, mas o checkout do cartao ainda
+      // esta sendo montado no gateway — confirma em polling, igual ao invoice.
+      const checkoutUrl = data.subscription_id
+        ? await fetchSubscriptionCheckoutUrl(data.subscription_id).catch(() => null)
+        : null;
+      if (checkoutUrl) {
         track('checkout_completed', { plan_id: selectedPlan.id, billing_mode: billingMode, outcome: 'redirected_to_payment' });
-        window.location.href = data.checkout_url;
+        window.location.href = checkoutUrl;
         return;
       }
-
-      track('checkout_completed', { plan_id: selectedPlan.id, billing_mode: billingMode, outcome: 'invoice_pending' });
-      toast.success('Assinatura iniciada. Acompanhe suas faturas em Configurações.');
+      track('checkout_completed', { plan_id: selectedPlan.id, billing_mode: billingMode, outcome: 'checkout_link_delayed' });
+      toast.error('O link de pagamento está demorando para ficar pronto. Tente novamente em instantes em Configurações.');
       setShowModal(false);
       await refreshUser();
+      navigate('/dashboard/settings');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao iniciar assinatura. Tente novamente.');
     } finally {
@@ -389,8 +397,8 @@ export default function Plans() {
                     onClick={() => setBillingMode('invoice')}
                     className={`rounded-xl border-2 p-3 text-left text-sm transition-colors ${billingMode === 'invoice' ? 'border-brand-yellow bg-yellow-50' : 'border-gray-200 hover:border-gray-300'}`}
                   >
-                    <span className="flex items-center gap-2 font-bold"><FileText size={16} /> PIX ou boleto</span>
-                    <span className="mt-1 block text-xs text-gray-500">Você recebe a fatura a cada período e paga manualmente.</span>
+                    <span className="flex items-center gap-2 font-bold"><FileText size={16} /> Pix ou cartão</span>
+                    <span className="mt-1 block text-xs text-gray-500">Você paga a cada período; sem renovação automática.</span>
                   </button>
                   <button
                     type="button"
@@ -433,7 +441,7 @@ export default function Plans() {
               </Button>
               <p className="text-center text-xs leading-5 text-gray-400">
                 {billingMode === 'invoice'
-                  ? 'Você será direcionado para pagar com PIX ou boleto.'
+                  ? 'Você será direcionado para pagar com Pix ou cartão.'
                   : 'Você será direcionado para concluir o pagamento com segurança.'}
               </p>
             </form>

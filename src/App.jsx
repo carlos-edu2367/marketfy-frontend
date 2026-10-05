@@ -28,6 +28,7 @@ const Settings = React.lazy(() => import('./pages/dashboard/Settings'));
 const PDV = React.lazy(() => import('./pages/pdv/Pdv'));
 const FiscalCredits = React.lazy(() => import('./pages/FiscalCredits'));
 const CreditPaymentReturn = React.lazy(() => import('./pages/CreditPaymentReturn'));
+const BillingReturn = React.lazy(() => import('./pages/BillingReturn'));
 const Support = React.lazy(() => import('./pages/support/Support'));
 const SaaSAdminDashboard = React.lazy(() => import('./pages/admin/SaaSAdminDashboard'));
 const PlansManagement = React.lazy(() => import('./pages/admin/PlansManagement'));
@@ -35,6 +36,9 @@ const AdminTickets = React.lazy(() => import('./pages/admin/AdminTickets'));
 const FunnelPlayer = React.lazy(() => import('./pages/funnels/FunnelPlayer'));
 const FunnelsList = React.lazy(() => import('./pages/admin/funnels/FunnelsList'));
 const FunnelEditor = React.lazy(() => import('./pages/admin/funnels/FunnelEditor'));
+const MarketingFunnels = React.lazy(() => import('./pages/admin/MarketingFunnels'));
+const FunilDiaDoMercado = React.lazy(() => import('./pages/marketing/FunilDiaDoMercado'));
+const FunilDiagnostico = React.lazy(() => import('./pages/marketing/FunilDiagnostico'));
 
 const FullPageLoader = () => (
   <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -103,6 +107,12 @@ function App() {
             <Route path="/termos" element={<Terms />} />
             <Route path="/privacidade" element={<Privacy />} />
             <Route path="/precos" element={<Pricing />} />
+            <Route path="/funil-a" element={<FunilDiagnostico />} />
+            <Route path="/funil-b" element={<FunilDiaDoMercado />} />
+            <Route path="/billing/retorno" element={<BillingReturn />} />
+            <Route path="/billing/success" element={<Navigate to="/billing/retorno" replace />} />
+            <Route path="/billing/cancel" element={<Navigate to="/billing/retorno?status=cancel" replace />} />
+            <Route path="/billing/expired" element={<Navigate to="/billing/retorno?status=expired" replace />} />
             <Route
               path="/plans"
               element={
@@ -149,6 +159,7 @@ function App() {
             >
               <Route index element={<SaaSAdminDashboard />} />
               <Route path="plans" element={<PlansManagement />} />
+              <Route path="funis" element={<MarketingFunnels />} />
               <Route path="tickets" element={<AdminTickets />} />
               <Route path="funnels" element={<FunnelsList />} />
               <Route path="funnels/:funnelId" element={<FunnelEditor />} />

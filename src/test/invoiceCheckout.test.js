@@ -30,4 +30,11 @@ describe('fetchInvoiceCheckoutUrl', () => {
     await expect(fetchInvoiceCheckoutUrl('inv-3')).resolves.toBeNull();
     expect(requestInvoiceCheckout).toHaveBeenCalledTimes(11);
   });
+
+  it('stops polling as soon as the backend reports a failed job', async () => {
+    requestInvoiceCheckout.mockResolvedValue({ data: { checkout_url: null, status: 'failed' } });
+
+    await expect(fetchInvoiceCheckoutUrl('inv-4')).resolves.toBeNull();
+    expect(requestInvoiceCheckout).toHaveBeenCalledTimes(1);
+  });
 });

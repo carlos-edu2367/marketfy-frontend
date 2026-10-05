@@ -1,12 +1,13 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { 
-  LayoutDashboard, 
-  Package, 
-  MessageSquare, 
-  Filter, 
-  LogOut, 
-  ShieldAlert 
+import {
+  LayoutDashboard,
+  Package,
+  MessageSquare,
+  Filter,
+  LogOut,
+  ShieldAlert,
+  TrendingUp
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -22,7 +23,8 @@ export default function SaaSLayout() {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Visão Geral', path: '/admin' },
     { icon: Package, label: 'Gestão de Planos', path: '/admin/plans' },
-    { icon: Filter, label: 'Funis', path: '/admin/funnels' },
+    { icon: Filter, label: 'Funis de venda', path: '/admin/funnels' },
+    { icon: TrendingUp, label: 'Funis A/B', path: '/admin/funis' },
     { icon: MessageSquare, label: 'Chamados / Suporte', path: '/admin/tickets' },
   ];
 
