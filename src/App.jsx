@@ -33,6 +33,8 @@ const SaaSAdminDashboard = React.lazy(() => import('./pages/admin/SaaSAdminDashb
 const PlansManagement = React.lazy(() => import('./pages/admin/PlansManagement'));
 const AdminTickets = React.lazy(() => import('./pages/admin/AdminTickets'));
 const FunnelPlayer = React.lazy(() => import('./pages/funnels/FunnelPlayer'));
+const FunnelsList = React.lazy(() => import('./pages/admin/funnels/FunnelsList'));
+const FunnelEditor = React.lazy(() => import('./pages/admin/funnels/FunnelEditor'));
 
 const FullPageLoader = () => (
   <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -148,6 +150,8 @@ function App() {
               <Route index element={<SaaSAdminDashboard />} />
               <Route path="plans" element={<PlansManagement />} />
               <Route path="tickets" element={<AdminTickets />} />
+              <Route path="funnels" element={<FunnelsList />} />
+              <Route path="funnels/:funnelId" element={<FunnelEditor />} />
             </Route>
 
             <Route

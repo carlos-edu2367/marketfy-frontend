@@ -4,6 +4,7 @@ import {
   LayoutDashboard, 
   Package, 
   MessageSquare, 
+  Filter, 
   LogOut, 
   ShieldAlert 
 } from 'lucide-react';
@@ -21,6 +22,7 @@ export default function SaaSLayout() {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Visão Geral', path: '/admin' },
     { icon: Package, label: 'Gestão de Planos', path: '/admin/plans' },
+    { icon: Filter, label: 'Funis', path: '/admin/funnels' },
     { icon: MessageSquare, label: 'Chamados / Suporte', path: '/admin/tickets' },
   ];
 
@@ -46,7 +48,8 @@ export default function SaaSLayout() {
 
           <nav className="p-4 space-y-2 mt-4">
             {menuItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = location.pathname === item.path
+                || (item.path !== '/admin' && location.pathname.startsWith(`${item.path}/`));
               return (
                 <button
                   key={item.path}
