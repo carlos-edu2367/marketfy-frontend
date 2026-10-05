@@ -82,3 +82,8 @@ export async function claimFunnelSession(fsid) {
     // atribuição nunca bloqueia o checkout
   }
 }
+
+/** fsid de funil: a URL tem prioridade; senão, o guardado na sessão (vindo do funil/cadastro). */
+export function resolveCheckoutFsid(search) {
+  return new URLSearchParams(search).get('fsid') || readCheckoutFsid();
+}

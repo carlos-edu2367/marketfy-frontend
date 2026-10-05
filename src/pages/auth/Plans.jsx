@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api, { subscribePlan } from '../../lib/api';
 import { fetchInvoiceCheckoutUrl } from '../../lib/invoiceCheckout';
-import { clearPlanIntent, readPlanIntent } from '../../lib/planIntent';
+import { clearPlanIntent, resolvePlanIntent } from '../../lib/planIntent';
+import { claimFunnelSession, rememberCheckoutFsid, resolveCheckoutFsid } from '../../lib/funnels';
 import { useAuth } from '../../hooks/useAuth';
 import { usePublicPlans } from '../../hooks/usePublicPlans';
 import { Button } from '../../components/ui/Button';
@@ -58,7 +59,7 @@ const STAGE_COPY = {
 export default function Plans() {
   const { plans, trialPlan, loading } = usePublicPlans();
   const [activatingTrial, setActivatingTrial] = useState(false);
-  const [planIntent, setPlanIntent] = useState(() => readPlanIntent());
+  const [planIntent, setPlanIntent] = useState(() => resolvePlanIntent(window.location.search));
   const [cycleKey, setCycleKey] = useState(() => planIntent?.cycle || 'monthly');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -76,6 +77,16 @@ export default function Plans() {
   const stageCopy = STAGE_COPY[stage];
 
   const intendedPlan = planIntent ? plans.find((plan) => plan.id === planIntent.planId) : null;
+
+  // Usuário logado que veio de um funil de venda: liga a sessão do funil à conta
+  // (idempotente no backend; se o cadastro já ligou, só devolve linked=false).
+  useEffect(() => {
+    if (!user) return;
+    const fsid = resolveCheckoutFsid(window.location.search);
+    if (!fsid) return;
+    rememberCheckoutFsid(fsid);
+    claimFunnelSession(fsid);
+  }, [user]);
 
   const handleDismissIntent = () => {
     clearPlanIntent();

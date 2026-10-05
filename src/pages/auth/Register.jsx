@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { savePlanIntent } from '../../lib/planIntent';
 import { track } from '../../lib/analytics';
+import { readCheckoutFsid, rememberCheckoutFsid } from '../../lib/funnels';
 
 const registerSchema = z.object({
   name: z.string().min(3, 'Nome muito curto'),
@@ -42,7 +43,9 @@ export default function Register() {
 
   const onSubmit = async (data) => {
     const safePassword = truncateTo72Bytes(data.password);
-    const userData = { name: data.name, email: data.email };
+    const fsid = searchParams.get('fsid') || readCheckoutFsid();
+    if (fsid) rememberCheckoutFsid(fsid);
+    const userData = { name: data.name, email: data.email, ...(fsid ? { funnel_session_id: fsid } : {}) };
 
     try {
       await registerUser({ ...userData, password: safePassword });

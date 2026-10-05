@@ -36,3 +36,11 @@ export function clearPlanIntent() {
     // nada a limpar
   }
 }
+
+/** Intenção de plano: ?plan= da URL (ex.: fim de um funil de venda) tem prioridade sobre o storage. */
+export function resolvePlanIntent(search) {
+  const params = new URLSearchParams(search);
+  const planId = params.get('plan');
+  if (planId) savePlanIntent({ planId, cycle: params.get('cycle') });
+  return readPlanIntent();
+}
