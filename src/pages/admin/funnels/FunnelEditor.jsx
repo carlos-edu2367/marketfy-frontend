@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api, { getApiErrorMessage } from '../../../lib/api';
 import FunnelConfigTab from '../../../components/admin/funnels/FunnelConfigTab';
 import FunnelStepsTab from '../../../components/admin/funnels/FunnelStepsTab';
+import FunnelMetricsTab from '../../../components/admin/funnels/FunnelMetricsTab';
 import { STATUS_LABEL } from '../../../lib/funnelFormat';
 
 const TABS = [['config', 'Configuração'], ['steps', 'Etapas'], ['metrics', 'Métricas']];
@@ -76,7 +77,7 @@ export default function FunnelEditor() {
 
       {tab === 'config' && <FunnelConfigTab detail={detail} onSaved={load} />}
       {tab === 'steps' && <FunnelStepsTab detail={detail} onChanged={load} onWarnings={setWarnings} />}
-      {tab === 'metrics' && <p className="text-gray-500">Em breve.</p>}
+      {tab === 'metrics' && <FunnelMetricsTab detail={detail} />}
     </div>
   );
 }
