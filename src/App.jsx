@@ -32,6 +32,7 @@ const Support = React.lazy(() => import('./pages/support/Support'));
 const SaaSAdminDashboard = React.lazy(() => import('./pages/admin/SaaSAdminDashboard'));
 const PlansManagement = React.lazy(() => import('./pages/admin/PlansManagement'));
 const AdminTickets = React.lazy(() => import('./pages/admin/AdminTickets'));
+const FunnelPlayer = React.lazy(() => import('./pages/funnels/FunnelPlayer'));
 
 const FullPageLoader = () => (
   <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -158,6 +159,7 @@ function App() {
               }
             />
 
+            <Route path="/f/:slug" element={<FunnelPlayer />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
