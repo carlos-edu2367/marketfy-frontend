@@ -14,7 +14,7 @@ export default function PlanComparisonTable({ plans, cycleKey }) {
     <div className="mt-12 overflow-x-auto rounded-[24px] border-2 border-brand-ink bg-white shadow-sticker">
       <table className="w-full min-w-[520px] text-left text-sm">
         <caption className="sr-only">Comparar planos</caption>
-        <thead className="bg-brand-yellow text-xs uppercase tracking-wider text-brand-ink">
+        <thead className="border-b-2 border-brand-ink bg-brand-sand text-xs uppercase tracking-wider text-brand-ink">
           <tr>
             <th scope="col" className="px-4 py-3">Recurso</th>
             {plans.map((plan) => (

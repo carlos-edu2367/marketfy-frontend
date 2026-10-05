@@ -39,17 +39,17 @@ export default function PlanCard({
 
   const surface = isDark
     ? (highlighted
-      ? 'bg-brand-yellow text-brand-ink border-white shadow-[8px_8px_0_0_#FFFFFF]'
+      ? 'bg-white text-brand-ink border-brand-yellow shadow-[6px_6px_0_0_#FDD403]'
       : 'bg-white/[0.04] border-white/25 text-white hover:border-brand-yellow')
     : (highlighted
-      ? 'bg-brand-yellow border-brand-ink shadow-sticker-lg'
+      ? 'bg-white border-brand-ink shadow-[6px_6px_0_0_#FDD403] ring-4 ring-brand-yellow/25'
       : 'bg-white border-brand-ink shadow-sticker');
 
-  const mutedText = isDark ? (highlighted ? 'text-brand-ink/70' : 'text-white/55') : (highlighted ? 'text-brand-ink/70' : 'text-gray-500');
+  const mutedText = isDark ? (highlighted ? 'text-gray-600' : 'text-white/55') : (highlighted ? 'text-gray-600' : 'text-gray-500');
   const headingText = isDark ? (highlighted ? 'text-brand-ink' : 'text-white') : 'text-brand-ink';
   const limitBg = isDark
-    ? (highlighted ? 'bg-white/70 border-brand-ink/20' : 'bg-white/5 border-white/15')
-    : (highlighted ? 'bg-white/70 border-brand-ink/20' : 'bg-gray-50 border-gray-100');
+    ? (highlighted ? 'bg-brand-cream border-brand-ink/10' : 'bg-white/5 border-white/15')
+    : (highlighted ? 'bg-brand-cream border-brand-ink/10' : 'bg-gray-50 border-gray-100');
   const limitText = isDark ? (highlighted ? 'text-brand-ink' : 'text-white/85') : 'text-gray-700';
   const limitIcon = highlighted ? 'text-brand-ink' : (isDark ? 'text-brand-yellow' : 'text-brand-ink');
 
@@ -63,7 +63,7 @@ export default function PlanCard({
         </div>
       )}
 
-      <div className={`mb-5 border-b pb-5 ${isDark ? (highlighted ? 'border-brand-ink/25' : 'border-white/15') : (highlighted ? 'border-brand-ink/25' : 'border-gray-100')}`}>
+      <div className={`mb-5 border-b pb-5 ${isDark ? (highlighted ? 'border-brand-ink/10' : 'border-white/15') : (highlighted ? 'border-brand-ink/10' : 'border-gray-100')}`}>
         <h3 className={`font-display text-2xl font-black tracking-tight ${headingText}`}>{plan.name}</h3>
         {plan.description && (
           <p className={`mt-2 text-sm leading-6 ${mutedText}`}>{plan.description}</p>
@@ -81,7 +81,7 @@ export default function PlanCard({
         ) : (
           <p className={`mt-1 text-xs font-medium ${mutedText}`}>
             {formatCurrency(total)} cobrados {cycle.key === 'semiannual' ? 'a cada 6 meses' : 'uma vez por ano'}
-            {savingsLabel ? <span className="font-bold text-emerald-500"> · {savingsLabel}</span> : null}
+            {savingsLabel ? <span className={`font-bold ${isDark && !highlighted ? 'text-emerald-400' : 'text-emerald-700'}`}> · {savingsLabel}</span> : null}
           </p>
         )}
       </div>
@@ -109,9 +109,9 @@ export default function PlanCard({
           type={ctaTo ? undefined : 'button'}
           onClick={onCtaClick}
           isLoading={isLoading}
-          variant={highlighted ? 'ink' : (isDark ? undefined : 'brand')}
+          variant={highlighted ? 'ink' : (isDark ? undefined : 'secondary')}
           className={`h-12 w-full font-bold ${
-            isDark && !highlighted ? 'border-2 border-white/30 bg-transparent text-white hover:border-brand-yellow hover:text-brand-yellow' : ''
+            isDark && !highlighted ? 'border-2 border-white/30 bg-transparent text-white hover:border-brand-yellow hover:text-brand-yellow' : (!highlighted ? 'border-2 border-brand-ink bg-white text-brand-ink hover:bg-brand-cream' : '')
           } rounded-xl`}
         >
           {ctaLabel} <ArrowRight size={18} />

@@ -6,6 +6,11 @@
   body {
     @apply antialiased text-gray-900 bg-gray-50;
   }
+  a:focus-visible, button:focus-visible, summary:focus-visible, input[type="checkbox"]:focus-visible {
+    outline: 3px solid #141414;
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+  }
   h1, h2, h3 {
     font-family: Outfit, 'DM Sans', system-ui, sans-serif;
     letter-spacing: -0.02em;
@@ -16,13 +21,32 @@
 @layer components {
   .mf-grid-bg {
     background-image:
-      linear-gradient(to right, rgba(20,20,20,.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(20,20,20,.06) 1px, transparent 1px);
+      linear-gradient(to right, rgba(20,20,20,.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(20,20,20,.045) 1px, transparent 1px);
     background-size: 44px 44px;
   }
   .mf-dots-bg {
     background-image: radial-gradient(rgba(20,20,20,.18) 1.5px, transparent 1.5px);
     background-size: 22px 22px;
+  }
+  /* Marca-texto: destaca palavras com uma faixa amarela na metade de baixo,
+     em vez de um bloco inteiro de amarelo chapado. */
+  .mf-marker {
+    background-image: linear-gradient(transparent 58%, rgba(253, 212, 3, .55) 58%, rgba(253, 212, 3, .55) 92%, transparent 92%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    padding: 0 .08em;
+  }
+  /* Fundo de hero: creme com brilho amarelo suave e grade discreta,
+     no lugar do fundo amarelo chapado (cansava a vista). */
+  .mf-hero-bg {
+    background-color: #FFFCF5;
+    background-image:
+      radial-gradient(56rem 28rem at 88% -12%, rgba(253, 212, 3, .24), transparent 62%),
+      radial-gradient(36rem 22rem at -8% 108%, rgba(253, 212, 3, .14), transparent 60%),
+      linear-gradient(to right, rgba(20,20,20,.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(20,20,20,.04) 1px, transparent 1px);
+    background-size: auto, auto, 44px 44px, 44px 44px;
   }
   .mf-card {
     @apply rounded-[28px] border-2 border-brand-ink bg-white shadow-sticker;

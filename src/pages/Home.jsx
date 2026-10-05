@@ -39,19 +39,19 @@ export default function Home() {
     <div className="min-h-screen bg-white font-sans text-brand-ink scroll-smooth">
 
       {/* --- HEADER / NAVBAR --- */}
-      <header className="sticky top-0 z-50 w-full border-b-2 border-brand-ink bg-brand-yellow">
-        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-6">
-          <Logo size={42} />
+      <header className="sticky top-0 z-50 w-full border-b border-brand-ink/10 bg-brand-cream/85 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:h-[72px] sm:px-6">
+          <Logo size={36} />
 
           <nav className="hidden items-center gap-8 text-sm font-bold md:flex">
-            <a href="#funcionalidades" className="decoration-2 underline-offset-4 hover:underline">Funcionalidades</a>
-            <a href="#planos" className="decoration-2 underline-offset-4 hover:underline">Planos</a>
-            <a href="#faq" className="decoration-2 underline-offset-4 hover:underline">Dúvidas</a>
+            <a href="#funcionalidades" className="text-brand-ink/70 transition-colors hover:text-brand-ink">Funcionalidades</a>
+            <a href="#planos" className="text-brand-ink/70 transition-colors hover:text-brand-ink">Planos</a>
+            <a href="#faq" className="text-brand-ink/70 transition-colors hover:text-brand-ink">Dúvidas</a>
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link to="/login" className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-brand-ink/10">Entrar</Link>
-            <Button as={Link} to="/register" variant="ink" size="sm" className="rounded-xl px-4 font-bold">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+            <Link to="/login" className="whitespace-nowrap rounded-xl px-3 py-2 text-sm font-bold hover:bg-brand-ink/5">Entrar</Link>
+            <Button as={Link} to="/register" variant="ink" size="sm" className="whitespace-nowrap rounded-xl px-4 font-bold shadow-none hover:translate-x-0 hover:translate-y-0 hover:shadow-none hover:bg-black">
               Testar grátis
             </Button>
           </div>
@@ -59,21 +59,21 @@ export default function Home() {
       </header>
 
       {/* --- HERO SECTION --- */}
-      <section className="mf-grid-bg relative overflow-hidden bg-brand-yellow px-5 pb-24 pt-14 sm:px-6 lg:pt-20">
+      <section className="mf-hero-bg relative overflow-hidden px-5 pb-24 pt-12 sm:px-6 lg:pt-20">
         <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 lg:grid-cols-[1.05fr_1fr]">
           <div className="z-10 text-center lg:text-left">
-            <div className="mf-rise inline-flex items-center gap-2 rounded-full border-2 border-brand-ink bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider shadow-sticker">
+            <div className="mf-rise inline-flex items-center gap-2 rounded-full border border-brand-ink/15 bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider shadow-sm">
               <span className="h-2 w-2 animate-pulse rounded-full bg-brand-green motion-reduce:animate-none" />
               Sistema Online &amp; Offline
             </div>
 
-            <h1 className="mf-rise mb-6 mt-6 text-balance text-5xl font-black leading-[1.02] sm:text-6xl lg:text-[4.5rem]" style={{ animationDelay: '.08s' }}>
+            <h1 className="mf-rise mb-6 mt-6 text-balance text-[2.6rem] font-black leading-[1.04] sm:text-6xl lg:text-[4.25rem]" style={{ animationDelay: '.08s' }}>
               O caixa do seu mercado{' '}
-              <span className="whitespace-nowrap bg-brand-ink px-3 text-brand-yellow [box-decoration-break:clone]">não para</span>
+              <span className="mf-marker whitespace-nowrap">não para</span>
               . Nem quando a internet cai.
             </h1>
 
-            <p className="mf-rise mx-auto mb-9 max-w-xl text-lg font-medium leading-relaxed text-brand-ink/75 sm:text-xl lg:mx-0" style={{ animationDelay: '.16s' }}>
+            <p className="mf-rise mx-auto mb-9 max-w-xl text-lg font-medium leading-relaxed text-gray-600 sm:text-xl lg:mx-0" style={{ animationDelay: '.16s' }}>
               PDV, estoque, fiado e emissão de NFC-e em um só sistema. Se a conexão cair no meio de uma venda, o Marketfy continua vendendo e sincroniza tudo depois.
             </p>
 
@@ -92,16 +92,16 @@ export default function Home() {
                 href="#funcionalidades"
                 variant="ghost"
                 size="lg"
-                className="w-full rounded-2xl px-6 text-base font-bold underline decoration-2 underline-offset-4 hover:bg-brand-ink/10 sm:w-auto"
+                className="w-full rounded-2xl px-6 border-2 border-brand-ink/15 bg-white text-base font-bold text-brand-ink hover:border-brand-ink/40 hover:bg-white sm:w-auto"
               >
                 Ver funcionalidades
               </Button>
             </div>
 
-            <div className="mf-rise flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-bold lg:justify-start" style={{ animationDelay: '.32s' }}>
-              <span className="flex items-center gap-1.5"><CheckCircle size={17} strokeWidth={3} /> Sem cartão de crédito</span>
-              <span className="flex items-center gap-1.5"><CheckCircle size={17} strokeWidth={3} /> Sem instalação</span>
-              <span className="flex items-center gap-1.5"><CheckCircle size={17} strokeWidth={3} /> Emissor de NFC-e incluso</span>
+            <div className="mf-rise flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-bold text-brand-ink/80 lg:justify-start" style={{ animationDelay: '.32s' }}>
+              <span className="flex items-center gap-1.5"><CheckCircle size={17} strokeWidth={3} className="text-brand-green" /> Sem cartão de crédito</span>
+              <span className="flex items-center gap-1.5"><CheckCircle size={17} strokeWidth={3} className="text-brand-green" /> Sem instalação</span>
+              <span className="flex items-center gap-1.5"><CheckCircle size={17} strokeWidth={3} className="text-brand-green" /> Emissor de NFC-e incluso</span>
             </div>
           </div>
 
@@ -115,8 +115,8 @@ export default function Home() {
               </div>
 
               <div className="relative flex aspect-[16/10] cursor-default select-none overflow-hidden rounded-b-[20px] bg-white text-xs md:text-sm">
-                <div className="flex w-14 shrink-0 flex-col items-center gap-4 border-r-2 border-brand-ink bg-brand-yellow py-4">
-                  <LogoMark size={34} className="!bg-brand-ink" />
+                <div className="flex w-14 shrink-0 flex-col items-center gap-4 border-r-2 border-brand-ink bg-brand-cream py-4">
+                  <LogoMark size={34} />
                   <div className="my-1 h-[2px] w-8 bg-brand-ink/30" />
                   <div className="p-2 text-brand-ink"><ShoppingCart size={18} /></div>
                   <div className="p-2 text-brand-ink/60"><Users size={18} /></div>
@@ -140,7 +140,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div className="flex flex-1 flex-col gap-3 overflow-hidden bg-brand-yellowSoft/60 p-4">
+                  <div className="flex flex-1 flex-col gap-3 overflow-hidden bg-brand-sand/70 p-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="flex flex-col gap-1 rounded-xl border-2 border-brand-ink bg-white p-3">
                         <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green">
@@ -161,7 +161,7 @@ export default function Home() {
                     <div className="flex min-h-0 flex-1 flex-col rounded-xl border-2 border-brand-ink bg-white p-3">
                       <div className="mb-2 flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase text-gray-500">Fluxo Semanal</span>
-                        <span className="rounded bg-brand-yellow px-1.5 py-0.5 text-[10px] font-black">+12% vs. anterior</span>
+                        <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-black text-green-800">+12% vs. anterior</span>
                       </div>
                       <div className="flex flex-1 items-end justify-between gap-2 px-1 md:gap-3">
                         {[35, 55, 40, 70, 50, 90, 65].map((h, i) => (
@@ -187,7 +187,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="absolute -bottom-7 -left-4 z-20 flex items-center gap-3 rounded-2xl border-2 border-brand-ink bg-brand-ink p-4 text-white shadow-[4px_4px_0_0_#FFFFFF]">
+            <div className="absolute -bottom-7 -left-4 z-20 flex items-center gap-3 rounded-2xl border-2 border-brand-ink bg-brand-ink p-4 text-white shadow-sticker">
               <div className="rounded-lg bg-brand-yellow p-2 text-brand-ink"><WifiOff size={24} /></div>
               <div>
                 <p className="text-xs font-black uppercase text-brand-yellow">Conexão perdida?</p>
@@ -242,7 +242,7 @@ export default function Home() {
       </section>
 
       {/* --- FUNCIONALIDADES --- */}
-      <section id="funcionalidades" className="mf-dots-bg border-y-2 border-brand-ink bg-brand-yellowSoft px-5 py-24 sm:px-6">
+      <section id="funcionalidades" className="border-y border-brand-ink/10 bg-brand-sand px-5 py-24 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <div className="mb-14 max-w-3xl">
             <h2 className="mb-4 text-4xl font-black sm:text-5xl">Tudo o que seu negócio precisa em um só lugar</h2>
@@ -288,7 +288,7 @@ export default function Home() {
 
       {/* --- PLANOS --- */}
       <section id="planos" className="relative overflow-hidden bg-brand-ink px-5 py-24 text-white sm:px-6">
-        <div className="pointer-events-none absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-brand-yellow/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-brand-yellow/[0.06] blur-3xl" />
 
         <div className="relative z-10 mx-auto max-w-7xl">
           <div className="mb-16 flex flex-col items-center justify-between gap-8 text-center lg:flex-row lg:items-end lg:text-left">
@@ -406,20 +406,21 @@ export default function Home() {
       </section>
 
       {/* --- CTA FINAL --- */}
-      <section className="mf-grid-bg border-t-2 border-brand-ink bg-brand-yellow px-5 py-24 sm:px-6">
-        <div className="mx-auto flex max-w-5xl flex-col items-center gap-8 text-center md:flex-row md:text-left">
-          <LogoBadge size={140} className="shrink-0 shadow-sticker-lg ring-2 ring-brand-ink" />
-          <div>
-            <h2 className="mb-4 text-4xl font-black md:text-5xl">Pronto para o caixa parar de te preocupar?</h2>
-            <p className="mb-8 max-w-2xl text-xl font-medium text-brand-ink/75">
+      <section className="bg-white px-5 pb-24 sm:px-6">
+        <div className="relative mx-auto flex max-w-5xl flex-col items-center gap-8 overflow-hidden rounded-[32px] bg-brand-ink px-6 py-12 text-center text-white sm:px-12 md:flex-row md:text-left">
+          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-yellow/15 blur-3xl" />
+          <LogoBadge size={120} className="relative shrink-0" />
+          <div className="relative">
+            <h2 className="mb-4 text-3xl font-black sm:text-4xl md:text-5xl">Pronto para o caixa parar de te preocupar?</h2>
+            <p className="mb-8 max-w-2xl text-lg font-medium text-white/70 sm:text-xl">
               Comece agora com 14 dias grátis. Sem cartão de crédito, sem instalação.
             </p>
             <Button
               as={Link}
               to="/register"
-              variant="ink"
+              variant="brand"
               size="xl"
-              className="h-16 rounded-2xl px-10 text-xl font-black"
+              className="h-14 w-full rounded-2xl border-brand-yellow px-8 text-lg font-black shadow-none hover:translate-x-0 hover:translate-y-0 hover:bg-brand-yellowHover hover:shadow-none sm:w-auto"
             >
               Testar grátis por 14 dias
             </Button>
@@ -428,7 +429,7 @@ export default function Home() {
       </section>
 
       {/* --- FOOTER --- */}
-      <footer className="border-t-2 border-brand-ink bg-brand-ink px-5 py-12 text-white sm:px-6">
+      <footer className="border-t border-white/10 bg-brand-ink px-5 py-12 text-white sm:px-6">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
           <Logo tone="light" size={38} />
           <div className="text-center md:text-left">
@@ -457,7 +458,7 @@ export default function Home() {
 const ProblemCard = ({ n, icon: Icon, title, desc }) => (
   <div className="mf-card group relative p-7 transition-all hover:-translate-y-1 hover:shadow-sticker-lg">
     <span className="absolute right-6 top-5 font-display text-5xl font-black text-brand-ink/10">{n}</span>
-    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-brand-ink bg-brand-yellow transition-transform duration-300 group-hover:-rotate-6">
+    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-brand-ink bg-brand-yellowSoft transition-transform duration-300 group-hover:-rotate-6">
       <Icon size={30} strokeWidth={2.5} />
     </div>
     <h3 className="mb-3 text-xl font-black">{title}</h3>
@@ -480,13 +481,13 @@ const SolutionCard = ({ icon: Icon, title, desc }) => (
 const FaqItem = ({ index, question, answer, isOpen, onClick }) => {
   const panelId = useId();
   return (
-    <div className={`overflow-hidden rounded-2xl border-2 border-brand-ink transition-shadow ${isOpen ? 'bg-brand-yellowSoft shadow-sticker' : 'bg-white'}`}>
+    <div className={`overflow-hidden rounded-2xl border-2 transition-all ${isOpen ? 'border-brand-ink bg-brand-cream shadow-sticker' : 'border-brand-ink/15 bg-white hover:border-brand-ink/40'}`}>
       <button
         id={`faq-trigger-${index}`}
         onClick={onClick}
         aria-expanded={isOpen}
         aria-controls={panelId}
-        className="flex w-full items-center justify-between gap-4 p-5 text-left font-display text-lg font-black"
+        className="flex w-full items-center justify-between gap-4 p-5 text-left font-display text-base font-black sm:text-lg"
       >
         {question}
         <ChevronDown size={22} strokeWidth={3} className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />

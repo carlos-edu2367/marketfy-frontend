@@ -145,7 +145,7 @@ export default function FunilDiaDoMercado() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-brand-ink">
+    <div className="mf-hero-bg min-h-screen font-sans text-brand-ink">
       {screen !== 'intro' && (
         <FunnelProgressBar
           current={currentIndex >= 0 ? currentIndex + 1 : SCENARIOS.length}
@@ -158,7 +158,7 @@ export default function FunilDiaDoMercado() {
       <main className="mx-auto max-w-3xl px-5 py-10 sm:px-8">
         {screen === 'intro' && (
           <section className="py-10 text-center">
-            <span className="inline-flex rounded-full border-2 border-brand-ink bg-brand-yellow px-3 py-1 text-[11px] font-black uppercase tracking-wider text-brand-ink">
+            <span className="inline-flex rounded-full border border-brand-ink/20 bg-brand-yellowSoft px-3 py-1 text-[11px] font-black uppercase tracking-wider text-brand-ink">
               Teste rápido · menos de 2 minutos
             </span>
             <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight text-brand-ink sm:text-5xl">

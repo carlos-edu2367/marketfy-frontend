@@ -45,10 +45,10 @@ export default function BillingReturn() {
   const confirmed = status === 'active';
 
   return (
-    <main className="mf-grid-bg min-h-screen bg-brand-yellow p-6 md:p-10 flex flex-col items-center justify-center gap-6">
+    <main className="mf-hero-bg min-h-screen p-6 md:p-10 flex flex-col items-center justify-center gap-6">
       <Logo size={44} />
       <div className="mx-auto max-w-lg rounded-[28px] border-2 border-brand-ink bg-white p-8 text-center shadow-sticker-lg w-full">
-        <div className={`mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-brand-ink ${confirmed ? 'text-white bg-brand-green' : 'text-brand-ink bg-brand-yellow'}`}>
+        <div className={`mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-brand-ink ${confirmed ? 'text-white bg-brand-green' : 'text-brand-ink bg-brand-yellowSoft'}`}>
           {confirmed ? <CheckCircle2 size={44} /> : <Clock size={44} className="animate-spin" />}
         </div>
         <h1 className="text-3xl font-black text-brand-ink">

@@ -37,20 +37,20 @@ export default function Pricing() {
   const recommendedPlanId = getRecommendedPlanId(plans);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-brand-ink">
-      <header className="border-b-2 border-brand-ink bg-brand-yellow px-5 py-3 sm:px-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Logo size={40} />
-          <div className="flex items-center gap-2">
-            <Link to="/login" className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-brand-ink/10">Entrar</Link>
-            <Button as={Link} to="/register" variant="ink" size="sm" className="rounded-xl font-bold">Testar grátis</Button>
+    <div className="min-h-screen bg-brand-cream font-sans text-brand-ink">
+      <header className="sticky top-0 z-40 border-b border-brand-ink/10 bg-brand-cream/85 px-4 py-3 backdrop-blur-md sm:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+          <Logo size={36} />
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <Link to="/login" className="whitespace-nowrap rounded-xl px-3 py-2 text-sm font-bold hover:bg-brand-ink/5">Entrar</Link>
+            <Button as={Link} to="/register" variant="ink" size="sm" className="whitespace-nowrap rounded-xl font-bold shadow-none hover:translate-x-0 hover:translate-y-0 hover:bg-black hover:shadow-none">Testar grátis</Button>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
         <section className="mx-auto max-w-3xl text-center">
-          <h1 className="text-5xl font-black leading-tight tracking-tight sm:text-6xl">Preços do <span className="bg-brand-yellow px-2">Marketfy</span></h1>
+          <h1 className="text-4xl font-black leading-tight tracking-tight sm:text-6xl">Preços do <span className="mf-marker">Marketfy</span></h1>
           <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-7 text-gray-600 sm:text-lg">
             Comece com 14 dias grátis, sem cartão. Escolha um plano pelos limites que o seu negócio precisa.
           </p>
@@ -62,7 +62,7 @@ export default function Pricing() {
 
         {loading ? (
           <div className="flex justify-center py-24" role="status" aria-label="Carregando planos">
-            <Loader2 className="animate-spin text-brand-yellow" size={40} />
+            <Loader2 className="animate-spin text-brand-ink/40" size={40} />
           </div>
         ) : plans.length === 0 ? (
           <p className="mx-auto mt-10 max-w-xl text-center text-sm text-gray-500">Nenhum plano está disponível no momento. Tente novamente em instantes.</p>
@@ -92,7 +92,7 @@ export default function Pricing() {
           <h2 id="billing-faq" className="text-3xl font-black">Dúvidas sobre cobrança</h2>
           <div className="mt-5 space-y-3">
             {BILLING_FAQ.map((item) => (
-              <details key={item.question} className="rounded-2xl border-2 border-brand-ink bg-white p-4 open:bg-brand-yellowSoft open:shadow-sticker">
+              <details key={item.question} className="rounded-2xl border-2 border-brand-ink/15 bg-white p-4 transition-all hover:border-brand-ink/40 open:border-brand-ink open:shadow-sticker">
                 <summary className="cursor-pointer font-display text-lg font-black">{item.question}</summary>
                 <p className="mt-3 text-sm leading-6 text-gray-600">{item.answer}</p>
               </details>

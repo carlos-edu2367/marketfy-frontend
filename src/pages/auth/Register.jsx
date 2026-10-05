@@ -93,7 +93,7 @@ export default function Register() {
   };
 
   return (
-    <div className="mf-grid-bg min-h-screen flex items-center justify-center bg-brand-yellow p-4 py-10">
+    <div className="mf-hero-bg min-h-screen flex items-center justify-center p-4 py-10">
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-0 bg-white rounded-[28px] border-2 border-brand-ink shadow-sticker-lg overflow-hidden">
 
         <div className="p-8">
@@ -145,7 +145,7 @@ export default function Register() {
             <Button
               variant="ink"
               size="lg"
-              className="w-full mt-2 font-black rounded-xl"
+              className="w-full mt-2 whitespace-nowrap font-black rounded-xl text-base sm:text-lg"
               isLoading={isSubmitting}
               type="submit"
             >
@@ -155,7 +155,7 @@ export default function Register() {
 
           <div className="mt-6 text-center text-sm">
              <span className="text-gray-500">Já tem uma conta? </span>
-             <Link to="/login" className="text-brand-ink font-black underline decoration-brand-yellow decoration-4 underline-offset-2 hover:bg-brand-yellow">
+             <Link to="/login" className="text-brand-ink font-black underline decoration-brand-yellow decoration-[3px] underline-offset-4 hover:decoration-brand-ink">
                Fazer Login
              </Link>
           </div>

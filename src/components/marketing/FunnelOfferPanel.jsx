@@ -47,7 +47,7 @@ export default function FunnelOfferPanel({ funnelVariant }) {
     <div className="mt-8">
       <div className="grid overflow-hidden rounded-[28px] border-2 border-brand-ink shadow-sticker-lg md:grid-cols-2">
         <div className="bg-white p-7 sm:p-8">
-          <span className="inline-flex rounded-full border-2 border-brand-ink bg-brand-yellow px-3 py-1 text-[11px] font-black uppercase tracking-wider text-brand-ink">
+          <span className="inline-flex rounded-full border border-brand-ink/20 bg-brand-yellowSoft px-3 py-1 text-[11px] font-black uppercase tracking-wider text-brand-ink">
             Configuração recomendada
           </span>
           <h3 className="mt-4 text-2xl font-black tracking-tight text-gray-950">{recommendedPlan.name}</h3>

@@ -221,7 +221,7 @@ export default function FunilDiagnostico() {
       : 'Você já tem uma boa base. O ganho está em centralizar e enxergar melhor a operação.';
 
   return (
-    <div className="min-h-screen bg-white font-sans text-brand-ink">
+    <div className="mf-hero-bg min-h-screen font-sans text-brand-ink">
       {screen !== 'intro' && (
         <FunnelProgressBar
           current={questionIndex >= 0 ? questionIndex + 1 : QUESTIONS.length}
@@ -240,7 +240,7 @@ export default function FunilDiagnostico() {
       <main className="mx-auto max-w-2xl px-5 py-12 sm:px-8">
         {screen === 'intro' && (
           <section className="text-center">
-            <span className="inline-flex rounded-full border-2 border-brand-ink bg-brand-yellow px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-brand-ink">
+            <span className="inline-flex rounded-full border border-brand-ink/20 bg-brand-yellowSoft px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-brand-ink">
               Diagnóstico gratuito · 2 a 4 minutos
             </span>
             <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight text-brand-ink sm:text-5xl">

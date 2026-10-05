@@ -10,7 +10,9 @@ export default {
         brand: {
           yellow: '#FDD403', // Amarelo da logo SGM Marketfy (Primário)
           yellowHover: '#EEC500',
-          yellowSoft: '#FFF6C2',
+          yellowSoft: '#FEF6D8', // Amarelo bem diluído para fundos de destaque
+          cream: '#FFFCF5',  // Fundo quente das páginas públicas (substitui o amarelo chapado)
+          sand: '#F7F2E6',   // Fundo de seções alternadas
           ink: '#141414',    // Preto da logo
           green: '#16A34A',  // Verde Sucesso (Dinheiro/Confirmação)
           greenHover: '#15803D',

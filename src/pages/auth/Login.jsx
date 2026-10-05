@@ -45,7 +45,7 @@ export default function Login() {
   };
 
   return (
-    <div className="mf-grid-bg min-h-screen flex items-center justify-center bg-brand-yellow p-4">
+    <div className="mf-hero-bg min-h-screen flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-[28px] border-2 border-brand-ink shadow-sticker-lg p-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4"><Logo size={56} to="/" /></div>
@@ -82,7 +82,7 @@ export default function Login() {
         
         <div className="mt-6 text-center text-sm">
            <span className="text-gray-500">Não tem conta? </span>
-           <Link to="/register" className="text-brand-ink font-black underline decoration-brand-yellow decoration-4 underline-offset-2 hover:bg-brand-yellow">
+           <Link to="/register" className="text-brand-ink font-black underline decoration-brand-yellow decoration-[3px] underline-offset-4 hover:decoration-brand-ink">
              Criar conta grátis
            </Link>
         </div>
