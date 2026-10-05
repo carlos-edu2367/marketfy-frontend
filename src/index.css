@@ -6,6 +6,41 @@
   body {
     @apply antialiased text-gray-900 bg-gray-50;
   }
+  h1, h2, h3 {
+    font-family: Outfit, 'DM Sans', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* --- Identidade SGM Marketfy (páginas públicas) --- */
+@layer components {
+  .mf-grid-bg {
+    background-image:
+      linear-gradient(to right, rgba(20,20,20,.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(20,20,20,.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .mf-dots-bg {
+    background-image: radial-gradient(rgba(20,20,20,.18) 1.5px, transparent 1.5px);
+    background-size: 22px 22px;
+  }
+  .mf-card {
+    @apply rounded-[28px] border-2 border-brand-ink bg-white shadow-sticker;
+  }
+}
+
+@keyframes mf-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.mf-rise { animation: mf-rise .6s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes mf-bars {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.mf-bar { transform-origin: bottom; animation: mf-bars .7s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .mf-rise, .mf-bar { animation: none; }
 }
 
 /* Animações customizadas */

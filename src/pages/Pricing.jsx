@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import Logo from '../components/brand/Logo';
 import BillingCycleToggle from '../components/billing/BillingCycleToggle';
 import PlanCard from '../components/billing/PlanCard';
 import PlanIncludesStrip from '../components/billing/PlanIncludesStrip';
@@ -36,24 +37,21 @@ export default function Pricing() {
   const recommendedPlanId = getRecommendedPlanId(plans);
 
   return (
-    <div className="min-h-screen bg-[#f7f8fa] font-sans text-gray-800">
-      <header className="border-b border-gray-200 bg-white px-5 py-4 sm:px-8">
+    <div className="min-h-screen bg-white font-sans text-brand-ink">
+      <header className="border-b-2 border-brand-ink bg-brand-yellow px-5 py-3 sm:px-8">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 text-xl font-black tracking-tight text-gray-900">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-yellow text-lg text-brand-dark">M</span>
-            Marketfy
-          </Link>
+          <Logo size={40} />
           <div className="flex items-center gap-2">
-            <Button as={Link} to="/login" variant="ghost" className="font-bold">Entrar</Button>
-            <Button as={Link} to="/register" className="font-bold">Testar grátis</Button>
+            <Link to="/login" className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-brand-ink/10">Entrar</Link>
+            <Button as={Link} to="/register" variant="ink" size="sm" className="rounded-xl font-bold">Testar grátis</Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
+      <main className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
         <section className="mx-auto max-w-3xl text-center">
-          <h1 className="text-4xl font-black leading-tight tracking-tight text-gray-950 sm:text-5xl">Preços do Marketfy</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-gray-500 sm:text-lg">
+          <h1 className="text-5xl font-black leading-tight tracking-tight sm:text-6xl">Preços do <span className="bg-brand-yellow px-2">Marketfy</span></h1>
+          <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-7 text-gray-600 sm:text-lg">
             Comece com 14 dias grátis, sem cartão. Escolha um plano pelos limites que o seu negócio precisa.
           </p>
         </section>
@@ -91,11 +89,11 @@ export default function Pricing() {
         )}
 
         <section aria-labelledby="billing-faq" className="mx-auto mt-14 max-w-3xl">
-          <h2 id="billing-faq" className="text-2xl font-black text-gray-950">Dúvidas sobre cobrança</h2>
+          <h2 id="billing-faq" className="text-3xl font-black">Dúvidas sobre cobrança</h2>
           <div className="mt-5 space-y-3">
             {BILLING_FAQ.map((item) => (
-              <details key={item.question} className="rounded-xl border border-gray-200 bg-white p-4">
-                <summary className="cursor-pointer font-bold text-gray-900">{item.question}</summary>
+              <details key={item.question} className="rounded-2xl border-2 border-brand-ink bg-white p-4 open:bg-brand-yellowSoft open:shadow-sticker">
+                <summary className="cursor-pointer font-display text-lg font-black">{item.question}</summary>
                 <p className="mt-3 text-sm leading-6 text-gray-600">{item.answer}</p>
               </details>
             ))}

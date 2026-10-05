@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { User, Lock, ArrowRight } from 'lucide-react';
+import Logo from '../../components/brand/Logo';
 import toast from 'react-hot-toast';
 
 const loginSchema = z.object({
@@ -44,14 +45,12 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="mf-grid-bg min-h-screen flex items-center justify-center bg-brand-yellow p-4">
+      <div className="max-w-md w-full bg-white rounded-[28px] border-2 border-brand-ink shadow-sticker-lg p-8">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-brand-yellow rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-yellow-200">
-             <User size={32} className="text-brand-dark" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Marketfy</h1>
-          <p className="text-gray-500 mt-2">Sistema de Gestão para Mercados</p>
+          <div className="flex justify-center mb-4"><Logo size={56} to="/" /></div>
+          <h1 className="sr-only">Marketfy</h1>
+          <p className="text-gray-600 font-medium mt-2">Sistema de Gestão para Mercados</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -71,9 +70,9 @@ export default function Login() {
             {...register('password')}
           />
           <Button 
-            variant="primary" 
+            variant="ink" 
             size="lg" 
-            className="w-full mt-4 font-bold"
+            className="w-full mt-4 font-black rounded-xl"
             isLoading={isSubmitting}
             type="submit"
           >
@@ -83,7 +82,7 @@ export default function Login() {
         
         <div className="mt-6 text-center text-sm">
            <span className="text-gray-500">Não tem conta? </span>
-           <Link to="/register" className="text-brand-dark font-bold hover:underline">
+           <Link to="/register" className="text-brand-ink font-black underline decoration-brand-yellow decoration-4 underline-offset-2 hover:bg-brand-yellow">
              Criar conta grátis
            </Link>
         </div>

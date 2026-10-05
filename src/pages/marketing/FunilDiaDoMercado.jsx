@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import FunnelProgressBar from '../../components/marketing/FunnelProgressBar';
 import FunnelScoreRing from '../../components/marketing/FunnelScoreRing';
 import FunnelOfferPanel from '../../components/marketing/FunnelOfferPanel';
+import Logo from '../../components/brand/Logo';
 import CookieConsentBanner from '../../components/CookieConsentBanner';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -144,7 +145,7 @@ export default function FunilDiaDoMercado() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900">
+    <div className="min-h-screen bg-white font-sans text-brand-ink">
       {screen !== 'intro' && (
         <FunnelProgressBar
           current={currentIndex >= 0 ? currentIndex + 1 : SCENARIOS.length}
@@ -153,13 +154,14 @@ export default function FunilDiaDoMercado() {
         />
       )}
 
+      <div className="mx-auto max-w-3xl px-5 pt-6 sm:px-8"><Logo size={36} /></div>
       <main className="mx-auto max-w-3xl px-5 py-10 sm:px-8">
         {screen === 'intro' && (
           <section className="py-10 text-center">
-            <span className="inline-flex rounded-full bg-lime-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-brand-green">
+            <span className="inline-flex rounded-full border-2 border-brand-ink bg-brand-yellow px-3 py-1 text-[11px] font-black uppercase tracking-wider text-brand-ink">
               Teste rápido · menos de 2 minutos
             </span>
-            <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight text-gray-950 sm:text-5xl">
+            <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight text-brand-ink sm:text-5xl">
               Seu mercado aguenta um dia ruim sem virar um caos?
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-gray-500">
@@ -167,7 +169,7 @@ export default function FunilDiaDoMercado() {
               fiscal e fechamento. Você responde como sua operação lida com cada uma. No final,
               mostramos seu nível de controle.
             </p>
-            <Button onClick={handleStart} className="mx-auto mt-7 font-bold" size="lg">
+            <Button onClick={handleStart} variant="ink" className="mx-auto mt-7 rounded-2xl font-black" size="lg">
               Simular meu dia →
             </Button>
             <p className="mt-3 text-xs text-gray-400">Não é prova. É um raio-x prático da operação.</p>
@@ -176,7 +178,7 @@ export default function FunilDiaDoMercado() {
 
         {scenario && (
           <section>
-            <h2 className="mt-2 text-3xl font-black leading-tight tracking-tight text-gray-950 sm:text-4xl">
+            <h2 className="mt-2 text-3xl font-black leading-tight tracking-tight text-brand-ink sm:text-4xl">
               {scenario.title}
             </h2>
             <p className="mt-4 text-base leading-7 text-gray-600">{scenario.story}</p>
@@ -186,11 +188,11 @@ export default function FunilDiaDoMercado() {
                   key={choice.label}
                   type="button"
                   onClick={() => handleAnswer(scenario.painKey, choice.pain)}
-                  className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
-                    choice.danger ? 'border-red-200 hover:border-red-300' : 'border-gray-200 hover:border-brand-yellow'
+                  className={`rounded-2xl border-2 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-sticker ${
+                    choice.danger ? 'border-brand-ink/30 hover:border-red-500' : 'border-brand-ink hover:bg-brand-yellowSoft'
                   }`}
                 >
-                  <strong className="block text-sm text-gray-950">{choice.label}</strong>
+                  <strong className="block text-sm text-brand-ink">{choice.label}</strong>
                   <span className="mt-1.5 block text-xs leading-5 text-gray-500">{choice.sub}</span>
                 </button>
               ))}
@@ -203,10 +205,10 @@ export default function FunilDiaDoMercado() {
             <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
               <FunnelScoreRing score={score} />
               <div>
-                <span className="text-xs font-black uppercase tracking-wider text-brand-green">
+                <span className="text-xs font-black uppercase tracking-wider text-brand-ink underline decoration-brand-yellow decoration-4 underline-offset-4">
                   Resultado do teste
                 </span>
-                <h2 className="mt-2 text-3xl font-black leading-tight tracking-tight text-gray-950">
+                <h2 className="mt-2 text-3xl font-black leading-tight tracking-tight text-brand-ink">
                   {totalPain >= 17
                     ? 'Seu mercado vende, mas o dono ainda precisa "segurar" a operação.'
                     : totalPain >= 8
@@ -222,8 +224,8 @@ export default function FunilDiaDoMercado() {
 
             <div className="mt-7 grid gap-3 sm:grid-cols-3">
               {buildProblemCards(pain).map((card) => (
-                <div key={card.title} className="rounded-2xl border border-gray-200 bg-gray-50/60 p-4">
-                  <strong className="text-sm text-gray-950">{card.title}</strong>
+                <div key={card.title} className="rounded-2xl border-2 border-brand-ink bg-brand-yellowSoft p-4">
+                  <strong className="text-sm text-brand-ink">{card.title}</strong>
                   <p className="mt-2 text-xs leading-5 text-gray-500">{card.text}</p>
                 </div>
               ))}
@@ -234,7 +236,7 @@ export default function FunilDiaDoMercado() {
                 <Input placeholder="Seu nome" value={name} onChange={(e) => setName(e.target.value)} />
                 <Input placeholder="WhatsApp" value={phone} onChange={(e) => setPhone(e.target.value)} />
                 <Input placeholder="Cidade / UF" value={city} onChange={(e) => setCity(e.target.value)} />
-                <Button type="submit" className="font-bold">
+                <Button type="submit" variant="ink" className="rounded-xl font-black">
                   Ver plano indicado →
                 </Button>
                 {leadError && <p className="text-xs font-medium text-red-500 sm:col-span-4">{leadError}</p>}

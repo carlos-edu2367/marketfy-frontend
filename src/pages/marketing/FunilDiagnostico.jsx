@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import FunnelProgressBar from '../../components/marketing/FunnelProgressBar';
 import FunnelScoreRing from '../../components/marketing/FunnelScoreRing';
 import FunnelOfferPanel from '../../components/marketing/FunnelOfferPanel';
+import Logo from '../../components/brand/Logo';
+import Logo from '../../components/brand/Logo';
 import CookieConsentBanner from '../../components/CookieConsentBanner';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -220,7 +222,7 @@ export default function FunilDiagnostico() {
       : 'Você já tem uma boa base. O ganho está em centralizar e enxergar melhor a operação.';
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900">
+    <div className="min-h-screen bg-white font-sans text-brand-ink">
       {screen !== 'intro' && (
         <FunnelProgressBar
           current={questionIndex >= 0 ? questionIndex + 1 : QUESTIONS.length}
@@ -235,13 +237,14 @@ export default function FunilDiagnostico() {
         />
       )}
 
+      <div className="mx-auto max-w-2xl px-5 pt-6 sm:px-8"><Logo size={36} /></div>
       <main className="mx-auto max-w-2xl px-5 py-12 sm:px-8">
         {screen === 'intro' && (
           <section className="text-center">
-            <span className="inline-flex rounded-full bg-lime-100 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-brand-green">
+            <span className="inline-flex rounded-full border-2 border-brand-ink bg-brand-yellow px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-brand-ink">
               Diagnóstico gratuito · 2 a 4 minutos
             </span>
-            <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight text-gray-950 sm:text-5xl">
+            <h1 className="mt-5 text-4xl font-black leading-[0.98] tracking-tight text-brand-ink sm:text-5xl">
               Seu mercado está sob controle — ou você só descobre os problemas no fim do dia?
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-gray-500">
@@ -249,7 +252,7 @@ export default function FunilDiagnostico() {
               final, o Marketfy monta um diagnóstico do seu nível de controle e recomenda a
               configuração mais adequada para sua operação.
             </p>
-            <Button onClick={handleStart} className="mx-auto mt-7 font-bold" size="lg">
+            <Button onClick={handleStart} variant="ink" className="mx-auto mt-7 rounded-2xl font-black" size="lg">
               Começar meu diagnóstico →
             </Button>
             <p className="mt-3 text-xs text-gray-400">Sem formulário gigante. Uma pergunta por vez.</p>
@@ -258,8 +261,8 @@ export default function FunilDiagnostico() {
 
         {question && (
           <section>
-            <span className="text-xs font-black uppercase tracking-wider text-brand-green">{question.index}</span>
-            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-gray-950 sm:text-4xl">
+            <span className="text-xs font-black uppercase tracking-wider text-brand-ink underline decoration-brand-yellow decoration-4 underline-offset-4">{question.index}</span>
+            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-brand-ink sm:text-4xl">
               {question.title}
             </h2>
             {question.lead && <p className="mt-3 text-sm leading-6 text-gray-500">{question.lead}</p>}
@@ -269,10 +272,10 @@ export default function FunilDiagnostico() {
                   key={option.label}
                   type="button"
                   onClick={() => handleAnswer(question.key, option.value, option.pain)}
-                  className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-brand-yellow hover:shadow-md"
+                  className="flex items-center gap-3 rounded-2xl border-2 border-brand-ink bg-white p-4 text-left transition hover:-translate-y-0.5 hover:bg-brand-yellowSoft hover:shadow-sticker"
                 >
                   <span>
-                    <strong className="block text-sm text-gray-950">{option.label}</strong>
+                    <strong className="block text-sm text-brand-ink">{option.label}</strong>
                     {option.sub && <span className="mt-1 block text-xs leading-5 text-gray-500">{option.sub}</span>}
                   </span>
                 </button>
@@ -283,8 +286,8 @@ export default function FunilDiagnostico() {
 
         {screen === 'lead' && (
           <section>
-            <span className="text-xs font-black uppercase tracking-wider text-brand-green">Última etapa</span>
-            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-gray-950 sm:text-4xl">
+            <span className="text-xs font-black uppercase tracking-wider text-brand-ink underline decoration-brand-yellow decoration-4 underline-offset-4">Última etapa</span>
+            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-brand-ink sm:text-4xl">
               Para onde enviamos sua recomendação?
             </h2>
             <form onSubmit={handleLeadSubmit} className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -296,7 +299,7 @@ export default function FunilDiagnostico() {
               <div className="sm:col-span-2">
                 <Input placeholder="Cidade / UF" value={city} onChange={(e) => setCity(e.target.value)} />
               </div>
-              <Button type="submit" className="font-bold sm:col-span-2" size="lg">
+              <Button type="submit" variant="ink" className="rounded-xl font-black sm:col-span-2" size="lg">
                 Analisar meu perfil →
               </Button>
               {leadError && <p className="text-xs font-medium text-red-500 sm:col-span-2">{leadError}</p>}
@@ -306,8 +309,8 @@ export default function FunilDiagnostico() {
 
         {screen === 'analysis' && (
           <section className="py-16 text-center">
-            <div className="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-gray-100 border-t-brand-green" />
-            <h2 className="mt-6 text-2xl font-black text-gray-950">Estamos cruzando suas respostas...</h2>
+            <div className="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-brand-yellow border-t-brand-ink" />
+            <h2 className="mt-6 text-2xl font-black text-brand-ink">Estamos cruzando suas respostas...</h2>
           </section>
         )}
 
@@ -319,7 +322,7 @@ export default function FunilDiagnostico() {
                 <span className="inline-flex rounded-full bg-amber-50 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-amber-600">
                   {riskLabel}
                 </span>
-                <h2 className="mt-3 text-2xl font-black leading-tight tracking-tight text-gray-950 sm:text-3xl">
+                <h2 className="mt-3 text-2xl font-black leading-tight tracking-tight text-brand-ink sm:text-3xl">
                   {resultTitle}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-gray-500">
@@ -332,8 +335,8 @@ export default function FunilDiagnostico() {
 
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
               {buildGaps(answers).map((gap) => (
-                <div key={gap.title} className="rounded-2xl border border-gray-200 bg-gray-50/60 p-4">
-                  <strong className="text-sm text-gray-950">{gap.title}</strong>
+                <div key={gap.title} className="rounded-2xl border-2 border-brand-ink bg-brand-yellowSoft p-4">
+                  <strong className="text-sm text-brand-ink">{gap.title}</strong>
                   <p className="mt-1.5 text-xs leading-5 text-gray-500">{gap.text}</p>
                 </div>
               ))}
@@ -345,7 +348,7 @@ export default function FunilDiagnostico() {
             </div>
 
             {!offerRevealed ? (
-              <Button onClick={() => setOfferRevealed(true)} className="mt-6 font-bold" size="lg">
+              <Button onClick={() => setOfferRevealed(true)} variant="ink" className="mt-6 rounded-xl font-black" size="lg">
                 Ver minha recomendação →
               </Button>
             ) : (

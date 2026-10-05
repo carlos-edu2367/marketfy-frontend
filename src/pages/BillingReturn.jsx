@@ -4,6 +4,7 @@ import { CheckCircle2, Clock } from 'lucide-react';
 
 import api from '../lib/api';
 import { Button } from '../components/ui/Button';
+import Logo from '../components/brand/Logo';
 
 const POLL_ATTEMPTS = 15;
 const POLL_INTERVAL_MS = 2000;
@@ -44,12 +45,13 @@ export default function BillingReturn() {
   const confirmed = status === 'active';
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6 md:p-10 flex items-center justify-center">
-      <div className="mx-auto max-w-lg rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm w-full">
-        <div className={`mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl ${confirmed ? 'text-green-700 bg-green-50' : 'text-yellow-700 bg-yellow-50'}`}>
+    <main className="mf-grid-bg min-h-screen bg-brand-yellow p-6 md:p-10 flex flex-col items-center justify-center gap-6">
+      <Logo size={44} />
+      <div className="mx-auto max-w-lg rounded-[28px] border-2 border-brand-ink bg-white p-8 text-center shadow-sticker-lg w-full">
+        <div className={`mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-brand-ink ${confirmed ? 'text-white bg-brand-green' : 'text-brand-ink bg-brand-yellow'}`}>
           {confirmed ? <CheckCircle2 size={44} /> : <Clock size={44} className="animate-spin" />}
         </div>
-        <h1 className="text-2xl font-black text-gray-900">
+        <h1 className="text-3xl font-black text-brand-ink">
           {confirmed ? 'Acesso liberado!' : 'Pagamento está sendo processado'}
         </h1>
         <p className="mx-auto mt-3 max-w-md text-gray-500">
@@ -63,7 +65,7 @@ export default function BillingReturn() {
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link to="/dashboard">
-            <Button className="font-black">Ir para o painel</Button>
+            <Button variant="ink" className="rounded-xl font-black">Ir para o painel</Button>
           </Link>
         </div>
       </div>

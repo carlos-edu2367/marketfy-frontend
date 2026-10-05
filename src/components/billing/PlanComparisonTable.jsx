@@ -11,14 +11,14 @@ export default function PlanComparisonTable({ plans, cycleKey }) {
   ];
 
   return (
-    <div className="mt-12 overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div className="mt-12 overflow-x-auto rounded-[24px] border-2 border-brand-ink bg-white shadow-sticker">
       <table className="w-full min-w-[520px] text-left text-sm">
         <caption className="sr-only">Comparar planos</caption>
-        <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
+        <thead className="bg-brand-yellow text-xs uppercase tracking-wider text-brand-ink">
           <tr>
             <th scope="col" className="px-4 py-3">Recurso</th>
             {plans.map((plan) => (
-              <th key={plan.id} scope="col" className="px-4 py-3 text-gray-900">{plan.name}</th>
+              <th key={plan.id} scope="col" className="px-4 py-3 font-display text-sm font-black text-brand-ink">{plan.name}</th>
             ))}
           </tr>
         </thead>

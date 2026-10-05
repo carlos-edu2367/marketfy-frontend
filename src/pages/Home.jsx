@@ -1,13 +1,14 @@
 import { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Store, WifiOff, ShoppingCart,
+  WifiOff, ShoppingCart,
   BarChart3, FileText, CheckCircle, ArrowRight,
   Package, DollarSign, ShieldCheck, ChevronDown,
   AlertTriangle, BookOpen,
   TrendingUp, Wallet, Settings, Bell, Search, Users
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import Logo, { LogoMark, LogoBadge } from '../components/brand/Logo';
 import { usePublicPlans } from '../hooks/usePublicPlans';
 import { getCompanyInfo } from '../lib/company';
 import { getRecommendedPlanId } from '../lib/pricing';
@@ -35,31 +36,22 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900 scroll-smooth">
+    <div className="min-h-screen bg-white font-sans text-brand-ink scroll-smooth">
 
       {/* --- HEADER / NAVBAR --- */}
-      <header className="sticky top-0 w-full bg-white/90 backdrop-blur-md border-b border-gray-100 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-brand-dark">
-            <div className="bg-brand-yellow p-2 rounded-lg shadow-lg shadow-yellow-200/50">
-              <Store size={24} className="text-gray-900" />
-            </div>
-            <span className="text-xl font-black tracking-tight">Marketfy</span>
-          </Link>
+      <header className="sticky top-0 z-50 w-full border-b-2 border-brand-ink bg-brand-yellow">
+        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-6">
+          <Logo size={42} />
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
-            <a href="#funcionalidades" className="hover:text-brand-dark transition-colors">Funcionalidades</a>
-            <a href="#planos" className="hover:text-brand-dark transition-colors">Planos</a>
-            <a href="#faq" className="hover:text-brand-dark transition-colors">Dúvidas</a>
+          <nav className="hidden items-center gap-8 text-sm font-bold md:flex">
+            <a href="#funcionalidades" className="decoration-2 underline-offset-4 hover:underline">Funcionalidades</a>
+            <a href="#planos" className="decoration-2 underline-offset-4 hover:underline">Planos</a>
+            <a href="#faq" className="decoration-2 underline-offset-4 hover:underline">Dúvidas</a>
           </nav>
 
-          <div className="flex items-center gap-3">
-            <Button as={Link} to="/login" variant="ghost" className="font-bold">Entrar</Button>
-            <Button
-              as={Link}
-              to="/register"
-              className="font-bold shadow-lg shadow-yellow-100 bg-brand-yellow hover:bg-yellow-400 text-brand-dark transition-transform hover:-translate-y-0.5 border-none"
-            >
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link to="/login" className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-brand-ink/10">Entrar</Link>
+            <Button as={Link} to="/register" variant="ink" size="sm" className="rounded-xl px-4 font-bold">
               Testar grátis
             </Button>
           </div>
@@ -67,190 +59,199 @@ export default function Home() {
       </header>
 
       {/* --- HERO SECTION --- */}
-      <section className="pt-20 pb-20 px-6 bg-gradient-to-b from-yellow-50/50 via-white to-white overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-yellow-50 to-transparent opacity-50 -z-10" />
-
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="text-center lg:text-left z-10">
-            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6 border border-green-200 shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse motion-reduce:animate-none"></span>
-              Sistema Online & Offline
+      <section className="mf-grid-bg relative overflow-hidden bg-brand-yellow px-5 pb-24 pt-14 sm:px-6 lg:pt-20">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-14 lg:grid-cols-[1.05fr_1fr]">
+          <div className="z-10 text-center lg:text-left">
+            <div className="mf-rise inline-flex items-center gap-2 rounded-full border-2 border-brand-ink bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wider shadow-sticker">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-brand-green motion-reduce:animate-none" />
+              Sistema Online &amp; Offline
             </div>
 
-            <h1 className="text-5xl lg:text-6xl font-black text-gray-900 leading-[1.1] mb-6 text-balance">
-              O caixa do seu mercado <span className="bg-brand-yellow/50 px-1.5 rounded">não para</span>. Nem quando a internet cai.
+            <h1 className="mf-rise mb-6 mt-6 text-balance text-5xl font-black leading-[1.02] sm:text-6xl lg:text-[4.5rem]" style={{ animationDelay: '.08s' }}>
+              O caixa do seu mercado{' '}
+              <span className="whitespace-nowrap bg-brand-ink px-3 text-brand-yellow [box-decoration-break:clone]">não para</span>
+              . Nem quando a internet cai.
             </h1>
 
-            <p className="text-xl text-gray-500 mb-8 leading-relaxed max-w-xl mx-auto lg:mx-0">
+            <p className="mf-rise mx-auto mb-9 max-w-xl text-lg font-medium leading-relaxed text-brand-ink/75 sm:text-xl lg:mx-0" style={{ animationDelay: '.16s' }}>
               PDV, estoque, fiado e emissão de NFC-e em um só sistema. Se a conexão cair no meio de uma venda, o Marketfy continua vendendo e sincroniza tudo depois.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start mb-6">
+            <div className="mf-rise mb-7 flex flex-col items-center justify-center gap-4 sm:flex-row lg:justify-start" style={{ animationDelay: '.24s' }}>
               <Button
                 as={Link}
                 to="/register"
+                variant="ink"
                 size="xl"
-                className="w-full sm:w-auto rounded-full px-8 text-lg h-14 shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 bg-brand-yellow text-brand-dark hover:bg-yellow-400 font-black border-none"
+                className="h-14 w-full rounded-2xl px-8 text-lg font-black sm:w-auto"
               >
-                Testar grátis por 14 dias <ArrowRight className="ml-2" />
+                Testar grátis por 14 dias <ArrowRight className="ml-1" />
               </Button>
               <Button
                 as="a"
                 href="#funcionalidades"
                 variant="ghost"
                 size="lg"
-                className="w-full sm:w-auto rounded-full px-6 text-base font-bold text-gray-600 hover:text-brand-dark"
+                className="w-full rounded-2xl px-6 text-base font-bold underline decoration-2 underline-offset-4 hover:bg-brand-ink/10 sm:w-auto"
               >
                 Ver funcionalidades
               </Button>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-sm font-medium text-gray-500">
-              <span className="flex items-center gap-1"><CheckCircle size={16} className="text-green-500"/> Sem cartão de crédito</span>
-              <span className="flex items-center gap-1"><CheckCircle size={16} className="text-green-500"/> Sem instalação</span>
-              <span className="flex items-center gap-1"><CheckCircle size={16} className="text-green-500"/> Emissor de NFC-e incluso</span>
+            <div className="mf-rise flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-bold lg:justify-start" style={{ animationDelay: '.32s' }}>
+              <span className="flex items-center gap-1.5"><CheckCircle size={17} strokeWidth={3} /> Sem cartão de crédito</span>
+              <span className="flex items-center gap-1.5"><CheckCircle size={17} strokeWidth={3} /> Sem instalação</span>
+              <span className="flex items-center gap-1.5"><CheckCircle size={17} strokeWidth={3} /> Emissor de NFC-e incluso</span>
             </div>
           </div>
 
           {/* Preview ilustrativo do dashboard (mockup, nao uma captura de tela real) */}
-          <div className="relative mx-auto w-full max-w-lg lg:max-w-full z-10">
-            <div className="relative bg-slate-900 rounded-2xl shadow-2xl border-4 border-slate-800 p-2 transform rotate-1 hover:rotate-0 transition-transform duration-500">
-               <div className="h-8 bg-slate-800 rounded-t-xl flex items-center px-4 gap-2 border-b border-slate-700/50">
-                 <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                 <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
-               </div>
+          <div className="mf-rise relative z-10 mx-auto w-full max-w-lg lg:max-w-full" style={{ animationDelay: '.2s' }}>
+            <div className="relative -rotate-1 rounded-[28px] border-2 border-brand-ink bg-brand-ink p-2 shadow-sticker-lg transition-transform duration-500 hover:rotate-0">
+              <div className="flex h-8 items-center gap-2 rounded-t-[20px] bg-brand-ink px-4">
+                <div className="h-3 w-3 rounded-full bg-brand-yellow" />
+                <div className="h-3 w-3 rounded-full bg-white/80" />
+                <div className="h-3 w-3 rounded-full bg-white/30" />
+              </div>
 
-               <div className="bg-gray-50 rounded-b-xl overflow-hidden aspect-[16/10] flex text-xs md:text-sm relative select-none cursor-default">
-                  <div className="w-14 bg-slate-900 flex flex-col items-center py-4 gap-4 border-t border-slate-800 shrink-0">
-                      <div className="p-2 bg-brand-yellow rounded-lg text-slate-900 shadow-lg shadow-yellow-500/20"><Store size={18} /></div>
-                      <div className="w-8 h-[1px] bg-slate-800 my-1"></div>
-                      <div className="p-2 text-slate-400"><ShoppingCart size={18} /></div>
-                      <div className="p-2 text-slate-400"><Users size={18} /></div>
-                      <div className="p-2 text-slate-400"><BarChart3 size={18} /></div>
-                      <div className="mt-auto p-2 text-slate-600"><Settings size={18} /></div>
+              <div className="relative flex aspect-[16/10] cursor-default select-none overflow-hidden rounded-b-[20px] bg-white text-xs md:text-sm">
+                <div className="flex w-14 shrink-0 flex-col items-center gap-4 border-r-2 border-brand-ink bg-brand-yellow py-4">
+                  <LogoMark size={34} className="!bg-brand-ink" />
+                  <div className="my-1 h-[2px] w-8 bg-brand-ink/30" />
+                  <div className="p-2 text-brand-ink"><ShoppingCart size={18} /></div>
+                  <div className="p-2 text-brand-ink/60"><Users size={18} /></div>
+                  <div className="p-2 text-brand-ink/60"><BarChart3 size={18} /></div>
+                  <div className="mt-auto p-2 text-brand-ink/40"><Settings size={18} /></div>
+                </div>
+
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex h-14 shrink-0 items-center justify-between border-b-2 border-brand-ink px-5">
+                    <div className="flex flex-col">
+                      <span className="font-display text-sm font-black">Dashboard</span>
+                      <span className="hidden text-[10px] text-gray-500 sm:block">Visão geral da loja</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-full bg-gray-100 p-1.5 text-gray-500"><Search size={14} /></div>
+                      <div className="relative rounded-full bg-gray-100 p-1.5 text-gray-500">
+                        <Bell size={14} />
+                        <span className="absolute right-0 top-0 h-2 w-2 rounded-full border border-white bg-red-500" />
+                      </div>
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-ink text-xs font-black text-brand-yellow">M</div>
+                    </div>
                   </div>
 
-                  <div className="flex-1 flex flex-col min-w-0">
-                      <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
-                          <div className="flex flex-col">
-                              <span className="font-bold text-gray-800 text-sm">Dashboard</span>
-                              <span className="text-[10px] text-gray-400 hidden sm:block">Visão geral da loja</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                             <div className="p-1.5 text-gray-400 bg-gray-50 rounded-full"><Search size={14} /></div>
-                             <div className="p-1.5 text-gray-400 bg-gray-50 rounded-full relative">
-                                <Bell size={14} />
-                                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-                             </div>
-                             <div className="w-8 h-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs">M</div>
-                          </div>
+                  <div className="flex flex-1 flex-col gap-3 overflow-hidden bg-brand-yellowSoft/60 p-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1 rounded-xl border-2 border-brand-ink bg-white p-3">
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-green">
+                          <TrendingUp size={12} /> Vendas Hoje
+                        </div>
+                        <div className="font-display text-xl font-black">R$ 1.250<span className="text-sm text-gray-400">,00</span></div>
+                        <div className="text-[10px] text-gray-500">15 pedidos realizados</div>
                       </div>
-
-                      <div className="p-4 overflow-hidden flex-1 bg-gray-50 flex flex-col gap-4">
-                          <div className="grid grid-cols-2 gap-3">
-                              <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-1 relative overflow-hidden">
-                                  <div className="absolute right-0 top-0 w-16 h-16 bg-green-50 rounded-bl-full -mr-8 -mt-8"></div>
-                                  <div className="flex items-center gap-1.5 text-green-600 text-[10px] font-bold uppercase tracking-wider relative z-10">
-                                      <TrendingUp size={12} /> Vendas Hoje
-                                  </div>
-                                  <div className="text-xl font-black text-gray-900 relative z-10">R$ 1.250<span className="text-sm text-gray-400">,00</span></div>
-                                  <div className="text-[10px] text-gray-400 relative z-10">15 pedidos realizados</div>
-                              </div>
-                              <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-1 relative overflow-hidden">
-                                  <div className="absolute right-0 top-0 w-16 h-16 bg-yellow-50 rounded-bl-full -mr-8 -mt-8"></div>
-                                  <div className="flex items-center gap-1.5 text-yellow-600 text-[10px] font-bold uppercase tracking-wider relative z-10">
-                                      <Wallet size={12} /> A Receber
-                                  </div>
-                                  <div className="text-xl font-black text-gray-900 relative z-10">R$ 450<span className="text-sm text-gray-400">,00</span></div>
-                                  <div className="text-[10px] text-gray-400 relative z-10">Controle de Fiado</div>
-                              </div>
-                          </div>
-
-                          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex-1 flex flex-col min-h-0">
-                              <div className="flex justify-between items-center mb-3">
-                                 <span className="text-[10px] font-bold text-gray-500 uppercase">Fluxo Semanal</span>
-                                 <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+12% vs. anterior</span>
-                              </div>
-                              <div className="flex-1 flex items-end justify-between gap-2 md:gap-4 px-1 pb-1">
-                                  {[35, 55, 40, 70, 50, 90, 65].map((h, i) => (
-                                      <div key={i} className="flex-1 flex flex-col justify-end h-full">
-                                          <div className="w-full bg-gray-100 rounded-t-sm relative h-full flex items-end overflow-hidden">
-                                              <div style={{height: `${h}%`}} className="w-full bg-brand-yellow rounded-t-sm"></div>
-                                          </div>
-                                      </div>
-                                  ))}
-                              </div>
-                          </div>
+                      <div className="flex flex-col gap-1 rounded-xl border-2 border-brand-ink bg-brand-ink p-3 text-white">
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-brand-yellow">
+                          <Wallet size={12} /> A Receber
+                        </div>
+                        <div className="font-display text-xl font-black">R$ 450<span className="text-sm text-white/50">,00</span></div>
+                        <div className="text-[10px] text-white/60">Controle de Fiado</div>
                       </div>
+                    </div>
+
+                    <div className="flex min-h-0 flex-1 flex-col rounded-xl border-2 border-brand-ink bg-white p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase text-gray-500">Fluxo Semanal</span>
+                        <span className="rounded bg-brand-yellow px-1.5 py-0.5 text-[10px] font-black">+12% vs. anterior</span>
+                      </div>
+                      <div className="flex flex-1 items-end justify-between gap-2 px-1 md:gap-3">
+                        {[35, 55, 40, 70, 50, 90, 65].map((h, i) => (
+                          <div key={i} className="flex h-full flex-1 flex-col justify-end">
+                            <div
+                              style={{ height: `${h}%`, animationDelay: `${0.5 + i * 0.07}s` }}
+                              className={`mf-bar w-full rounded-t-md border-2 border-brand-ink ${i === 5 ? 'bg-brand-yellow' : 'bg-white'}`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-               </div>
+                </div>
+              </div>
             </div>
 
-            <div className="absolute top-10 -right-6 bg-white p-3 rounded-xl shadow-lg border border-gray-100 items-center gap-3 z-20 hidden md:flex">
-                <div className="bg-green-100 p-2 rounded-lg text-green-600"><CheckCircle size={20} /></div>
-                <div>
-                    <p className="text-[10px] text-gray-500 font-bold uppercase">NFC-e</p>
-                    <p className="font-black text-gray-800 text-sm">Emitida OK</p>
-                </div>
+            <div className="absolute -right-4 top-8 z-20 hidden items-center gap-3 rounded-2xl border-2 border-brand-ink bg-white p-3 shadow-sticker md:flex">
+              <div className="rounded-lg bg-brand-green p-2 text-white"><CheckCircle size={20} strokeWidth={3} /></div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-gray-500">NFC-e</p>
+                <p className="font-display text-sm font-black">Emitida OK</p>
+              </div>
             </div>
 
-            <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-lg border border-gray-100 flex items-center gap-3 z-20">
-                <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><WifiOff size={24} /></div>
-                <div>
-                    <p className="text-xs text-gray-500 font-bold uppercase">Conexão perdida?</p>
-                    <p className="font-black text-gray-800">PDV continua vendendo</p>
-                </div>
+            <div className="absolute -bottom-7 -left-4 z-20 flex items-center gap-3 rounded-2xl border-2 border-brand-ink bg-brand-ink p-4 text-white shadow-[4px_4px_0_0_#FFFFFF]">
+              <div className="rounded-lg bg-brand-yellow p-2 text-brand-ink"><WifiOff size={24} /></div>
+              <div>
+                <p className="text-xs font-black uppercase text-brand-yellow">Conexão perdida?</p>
+                <p className="font-display font-black">PDV continua vendendo</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
+      {/* --- FAIXA --- */}
+      <div className="border-y-2 border-brand-ink bg-brand-ink py-3 text-brand-yellow" aria-hidden="true">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-8 gap-y-1 px-6 font-display text-sm font-black uppercase tracking-[0.18em]">
+          {['PDV offline', 'Estoque', 'Fiado', 'NFC-e', 'Financeiro'].map((t) => (
+            <span key={t} className="flex items-center gap-8">
+              {t} <span className="text-white/30">●</span>
+            </span>
+          ))}
+          <span>Marketfy</span>
+        </div>
+      </div>
+
       {/* --- SEÇÃO DE PROBLEMAS --- */}
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-black text-gray-900">Sua loja sofre com isso?</h2>
-            <p className="text-gray-500 mt-2">Os gargalos mais comuns do pequeno varejo — e o que o Marketfy faz sobre cada um.</p>
+      <section className="bg-white px-5 py-24 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-14 max-w-2xl">
+            <h2 className="text-4xl font-black sm:text-5xl">Sua loja sofre com isso?</h2>
+            <p className="mt-3 text-lg font-medium text-gray-600">Os gargalos mais comuns do pequeno varejo — e o que o Marketfy faz sobre cada um.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <ProblemCard
+              n="01"
               icon={AlertTriangle}
               title="Internet caiu, venda parou?"
               desc="No Marketfy, o caixa continua funcionando com a internet fora do ar e sincroniza as vendas com o servidor assim que a conexão voltar."
-              color="text-red-500"
-              bg="bg-red-50"
             />
             <ProblemCard
+              n="02"
               icon={BookOpen}
               title="Fiado anotado no caderno?"
               desc="Registre o crédito de cada cliente, defina um limite e acompanhe o extrato completo em vez de depender de papel."
-              color="text-orange-500"
-              bg="bg-orange-50"
             />
             <ProblemCard
+              n="03"
               icon={Package}
               title="Não sabe o que tem no estoque?"
               desc="Acompanhe entradas, saídas e histórico de cada produto, com busca rápida por código de barras no caixa."
-              color="text-blue-500"
-              bg="bg-blue-50"
             />
           </div>
         </div>
       </section>
 
       {/* --- FUNCIONALIDADES --- */}
-      <section id="funcionalidades" className="py-24 px-6 bg-slate-50 border-y border-slate-200">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-black text-gray-900 mb-4">Tudo o que seu negócio precisa em um só lugar</h2>
-            <p className="text-gray-500 max-w-2xl mx-auto text-lg">
+      <section id="funcionalidades" className="mf-dots-bg border-y-2 border-brand-ink bg-brand-yellowSoft px-5 py-24 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-14 max-w-3xl">
+            <h2 className="mb-4 text-4xl font-black sm:text-5xl">Tudo o que seu negócio precisa em um só lugar</h2>
+            <p className="text-lg font-medium text-gray-700">
               Funcionalidades pensadas para a agilidade do balcão e a organização do escritório.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             <SolutionCard
               icon={ShoppingCart}
               title="PDV que não para"
@@ -286,14 +287,16 @@ export default function Home() {
       </section>
 
       {/* --- PLANOS --- */}
-      <section id="planos" className="py-24 px-6 bg-slate-900 text-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-950 opacity-50"></div>
+      <section id="planos" className="relative overflow-hidden bg-brand-ink px-5 py-24 text-white sm:px-6">
+        <div className="pointer-events-none absolute -right-40 -top-40 h-[28rem] w-[28rem] rounded-full bg-brand-yellow/10 blur-3xl" />
 
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col lg:flex-row justify-between items-end mb-16 gap-8 text-center lg:text-left">
+        <div className="relative z-10 mx-auto max-w-7xl">
+          <div className="mb-16 flex flex-col items-center justify-between gap-8 text-center lg:flex-row lg:items-end lg:text-left">
             <div>
-              <h2 className="text-4xl font-black mb-4 tracking-tight">Escolha o plano ideal para crescer</h2>
-              <p className="text-slate-400 max-w-lg mx-auto lg:mx-0 text-lg">
+              <h2 className="mb-4 text-4xl font-black tracking-tight sm:text-5xl">
+                Escolha o plano ideal para <span className="text-brand-yellow">crescer</span>
+              </h2>
+              <p className="mx-auto max-w-lg text-lg text-white/60 lg:mx-0">
                 Sem taxas de implantação. Cancele quando quiser.
               </p>
             </div>
@@ -306,7 +309,7 @@ export default function Home() {
               <Loader2 className="animate-spin text-brand-yellow" size={40} />
             </div>
           ) : plans.length === 0 ? (
-            <div className="mx-auto max-w-xl rounded-2xl border border-slate-700 bg-slate-800/60 p-6 text-center text-sm text-slate-300">
+            <div className="mx-auto max-w-xl rounded-2xl border-2 border-white/20 p-6 text-center text-sm text-white/70">
               Nenhum plano está disponível no momento. Tente novamente em instantes.
             </div>
           ) : (
@@ -331,13 +334,13 @@ export default function Home() {
 
           {company.salesContactUrl && (
             <div className="mt-10 text-center">
-              <p className="text-slate-400 text-sm">
+              <p className="text-sm text-white/60">
                 Rede com várias lojas ou operação de alto volume?{' '}
                 <a
                   href={company.salesContactUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-bold text-brand-yellow hover:underline"
+                  className="font-bold text-brand-yellow underline underline-offset-4"
                 >
                   Fale com a gente
                 </a>
@@ -349,10 +352,10 @@ export default function Home() {
       </section>
 
       {/* --- FAQ --- */}
-      <section id="faq" className="py-24 px-6 bg-white">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900">Perguntas Frequentes</h2>
+      <section id="faq" className="bg-white px-5 py-24 sm:px-6">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-12">
+            <h2 className="text-4xl font-black sm:text-5xl">Perguntas Frequentes</h2>
           </div>
 
           <div className="space-y-4">
@@ -403,44 +406,43 @@ export default function Home() {
       </section>
 
       {/* --- CTA FINAL --- */}
-      <section className="py-20 px-6 bg-brand-yellow">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-black text-brand-dark mb-6">Pronto para o caixa parar de te preocupar?</h2>
-          <p className="text-xl text-brand-dark/80 mb-8 max-w-2xl mx-auto">
-            Comece agora com 14 dias grátis. Sem cartão de crédito, sem instalação.
-          </p>
-          <Button
-            as={Link}
-            to="/register"
-            size="xl"
-            className="rounded-full px-12 h-16 text-xl bg-slate-900 text-white hover:bg-slate-800 shadow-2xl hover:scale-105 transition-transform border-none"
-          >
-            Testar grátis por 14 dias
-          </Button>
+      <section className="mf-grid-bg border-t-2 border-brand-ink bg-brand-yellow px-5 py-24 sm:px-6">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-8 text-center md:flex-row md:text-left">
+          <LogoBadge size={140} className="shrink-0 shadow-sticker-lg ring-2 ring-brand-ink" />
+          <div>
+            <h2 className="mb-4 text-4xl font-black md:text-5xl">Pronto para o caixa parar de te preocupar?</h2>
+            <p className="mb-8 max-w-2xl text-xl font-medium text-brand-ink/75">
+              Comece agora com 14 dias grátis. Sem cartão de crédito, sem instalação.
+            </p>
+            <Button
+              as={Link}
+              to="/register"
+              variant="ink"
+              size="xl"
+              className="h-16 rounded-2xl px-10 text-xl font-black"
+            >
+              Testar grátis por 14 dias
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* --- FOOTER --- */}
-      <footer className="bg-white border-t border-gray-200 py-12 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2 opacity-80">
-            <div className="bg-slate-900 p-2 rounded-lg text-white">
-               <Store size={20} />
-            </div>
-            <span className="font-bold text-xl text-slate-900">Marketfy</span>
-          </div>
+      <footer className="border-t-2 border-brand-ink bg-brand-ink px-5 py-12 text-white sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
+          <Logo tone="light" size={38} />
           <div className="text-center md:text-left">
-            <p className="text-sm text-gray-500">© {new Date().getFullYear()} Marketfy. Todos os direitos reservados.</p>
+            <p className="text-sm text-white/60">© {new Date().getFullYear()} Marketfy. Todos os direitos reservados.</p>
             {company.legalName && company.cnpj && (
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-white/40">
                 {company.legalName} · CNPJ {company.cnpj}{company.address ? ` · ${company.address}` : ''}
               </p>
             )}
           </div>
-          <div className="flex gap-6 text-sm text-gray-500 font-medium">
-            <Link to="/precos" className="hover:text-brand-dark hover:underline">Preços</Link>
-            <Link to="/termos" className="hover:text-brand-dark hover:underline">Termos</Link>
-            <Link to="/privacidade" className="hover:text-brand-dark hover:underline">Privacidade</Link>
+          <div className="flex gap-6 text-sm font-bold text-white/70">
+            <Link to="/precos" className="hover:text-brand-yellow hover:underline">Preços</Link>
+            <Link to="/termos" className="hover:text-brand-yellow hover:underline">Termos</Link>
+            <Link to="/privacidade" className="hover:text-brand-yellow hover:underline">Privacidade</Link>
           </div>
         </div>
       </footer>
@@ -452,24 +454,25 @@ export default function Home() {
 
 // --- COMPONENTES AUXILIARES ---
 
-const ProblemCard = ({ icon: Icon, title, desc, color, bg }) => (
-  <div className="flex flex-col items-center text-center group">
-    <div className={`w-20 h-20 rounded-3xl ${bg} ${color} flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-      <Icon size={32} />
+const ProblemCard = ({ n, icon: Icon, title, desc }) => (
+  <div className="mf-card group relative p-7 transition-all hover:-translate-y-1 hover:shadow-sticker-lg">
+    <span className="absolute right-6 top-5 font-display text-5xl font-black text-brand-ink/10">{n}</span>
+    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-brand-ink bg-brand-yellow transition-transform duration-300 group-hover:-rotate-6">
+      <Icon size={30} strokeWidth={2.5} />
     </div>
-    <h3 className="text-xl font-bold text-gray-900 mb-3">{title}</h3>
-    <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+    <h3 className="mb-3 text-xl font-black">{title}</h3>
+    <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
   </div>
 );
 
 const SolutionCard = ({ icon: Icon, title, desc }) => (
-  <div className="flex gap-4 items-start">
-    <div className="shrink-0 w-12 h-12 bg-white rounded-xl flex items-center justify-center text-brand-dark shadow-sm border border-gray-100">
+  <div className="mf-card flex items-start gap-4 p-6 transition-all hover:-translate-y-1 hover:shadow-sticker-lg">
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-ink text-brand-yellow">
       <Icon size={24} />
     </div>
     <div>
-      <h3 className="font-bold text-gray-900 mb-2">{title}</h3>
-      <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+      <h3 className="mb-2 text-lg font-black">{title}</h3>
+      <p className="text-sm leading-relaxed text-gray-600">{desc}</p>
     </div>
   </div>
 );
@@ -477,25 +480,25 @@ const SolutionCard = ({ icon: Icon, title, desc }) => (
 const FaqItem = ({ index, question, answer, isOpen, onClick }) => {
   const panelId = useId();
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50">
+    <div className={`overflow-hidden rounded-2xl border-2 border-brand-ink transition-shadow ${isOpen ? 'bg-brand-yellowSoft shadow-sticker' : 'bg-white'}`}>
       <button
         id={`faq-trigger-${index}`}
         onClick={onClick}
         aria-expanded={isOpen}
         aria-controls={panelId}
-        className="w-full flex justify-between items-center gap-4 p-4 text-left font-bold text-gray-900 bg-white hover:bg-gray-50 transition-colors"
+        className="flex w-full items-center justify-between gap-4 p-5 text-left font-display text-lg font-black"
       >
         {question}
-        <ChevronDown size={20} className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={22} strokeWidth={3} className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       <div
         id={panelId}
         role="region"
         aria-labelledby={`faq-trigger-${index}`}
         hidden={!isOpen}
-        className="p-4 pt-0 border-t border-gray-100"
+        className="border-t-2 border-brand-ink/10 p-5 pt-4"
       >
-        <p className="text-sm text-gray-600 leading-relaxed">{answer}</p>
+        <p className="text-sm leading-relaxed text-gray-700">{answer}</p>
       </div>
     </div>
   );

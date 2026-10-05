@@ -14,7 +14,7 @@ export const Input = forwardRef(({ label, icon: Icon, error, className, ...props
         <input 
           ref={ref}
           className={twMerge(
-            "w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-yellow focus:border-brand-yellow outline-none transition-all py-2.5",
+            "w-full border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-brand-yellow/60 focus:border-brand-ink outline-none transition-all py-2.5",
             Icon ? 'pl-10' : 'pl-3',
             error ? 'border-red-500 focus:ring-red-200' : '',
             className

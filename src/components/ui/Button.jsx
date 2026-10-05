@@ -22,7 +22,9 @@ export const Button = ({
     secondary: "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50",
     danger: "bg-red-500 hover:bg-red-600 text-white",
     ghost: "bg-transparent hover:bg-gray-100 text-gray-600",
-    outline: "border-2 border-gray-200 hover:border-gray-900 text-gray-900 bg-transparent",
+    brand: "bg-brand-yellow text-brand-ink border-2 border-brand-ink shadow-sticker hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#141414] active:shadow-none",
+    ink: "bg-brand-ink text-white border-2 border-brand-ink shadow-[4px_4px_0_0_#FDD403] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#FDD403] active:shadow-none",
+    outline:"border-2 border-gray-200 hover:border-gray-900 text-gray-900 bg-transparent",
   };
 
   const sizes = {

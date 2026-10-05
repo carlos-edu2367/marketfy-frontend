@@ -39,41 +39,39 @@ export default function PlanCard({
 
   const surface = isDark
     ? (highlighted
-      ? 'bg-white text-slate-900 border-brand-yellow ring-4 ring-brand-yellow/25 shadow-2xl'
-      : 'bg-slate-800/60 border-slate-700 text-white backdrop-blur-sm hover:bg-slate-800')
+      ? 'bg-brand-yellow text-brand-ink border-white shadow-[8px_8px_0_0_#FFFFFF]'
+      : 'bg-white/[0.04] border-white/25 text-white hover:border-brand-yellow')
     : (highlighted
-      ? 'bg-white border-gray-950 shadow-lg shadow-gray-200/70'
-      : 'bg-white border-gray-200 shadow-sm');
+      ? 'bg-brand-yellow border-brand-ink shadow-sticker-lg'
+      : 'bg-white border-brand-ink shadow-sticker');
 
-  const mutedText = isDark ? (highlighted ? 'text-gray-500' : 'text-slate-400') : 'text-gray-500';
-  const headingText = isDark ? (highlighted ? 'text-gray-950' : 'text-gray-50') : 'text-gray-950';
+  const mutedText = isDark ? (highlighted ? 'text-brand-ink/70' : 'text-white/55') : (highlighted ? 'text-brand-ink/70' : 'text-gray-500');
+  const headingText = isDark ? (highlighted ? 'text-brand-ink' : 'text-white') : 'text-brand-ink';
   const limitBg = isDark
-    ? (highlighted ? 'bg-gray-50 border-gray-100' : 'bg-slate-900/60 border-slate-700')
-    : 'bg-gray-50/80 border-gray-100';
-  const limitText = isDark ? (highlighted ? 'text-gray-700' : 'text-slate-200') : 'text-gray-700';
-  const limitIcon = isDark
-    ? (highlighted ? 'text-brand-yellow' : 'text-brand-yellow')
-    : 'text-brand-yellow';
+    ? (highlighted ? 'bg-white/70 border-brand-ink/20' : 'bg-white/5 border-white/15')
+    : (highlighted ? 'bg-white/70 border-brand-ink/20' : 'bg-gray-50 border-gray-100');
+  const limitText = isDark ? (highlighted ? 'text-brand-ink' : 'text-white/85') : 'text-gray-700';
+  const limitIcon = highlighted ? 'text-brand-ink' : (isDark ? 'text-brand-yellow' : 'text-brand-ink');
 
   return (
     <article
-      className={`relative flex h-full w-full max-w-[380px] flex-col rounded-3xl border p-6 transition-all hover:-translate-y-1 ${surface}`}
+      className={`relative flex h-full w-full max-w-[380px] flex-col rounded-[28px] border-2 p-6 transition-all hover:-translate-y-1 ${surface}`}
     >
       {badgeLabel && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand-yellow px-4 py-1 text-[11px] font-black uppercase tracking-wider text-brand-dark shadow-lg">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-brand-ink bg-brand-ink px-4 py-1 text-[11px] font-black uppercase tracking-wider text-brand-yellow">
           {badgeLabel}
         </div>
       )}
 
-      <div className={`mb-5 border-b pb-5 ${isDark ? (highlighted ? 'border-gray-200/60' : 'border-slate-700') : 'border-gray-100'}`}>
-        <h3 className={`text-2xl font-black tracking-tight ${headingText}`}>{plan.name}</h3>
+      <div className={`mb-5 border-b pb-5 ${isDark ? (highlighted ? 'border-brand-ink/25' : 'border-white/15') : (highlighted ? 'border-brand-ink/25' : 'border-gray-100')}`}>
+        <h3 className={`font-display text-2xl font-black tracking-tight ${headingText}`}>{plan.name}</h3>
         {plan.description && (
           <p className={`mt-2 text-sm leading-6 ${mutedText}`}>{plan.description}</p>
         )}
 
         <div className="mt-4 flex items-baseline gap-1.5">
           <span className={`text-sm font-medium opacity-60 ${headingText}`}>R$</span>
-          <span className={`text-4xl font-black tracking-tight ${headingText}`}>
+          <span className={`font-display text-4xl font-black tracking-tight ${headingText}`}>
             {monthlyEquivalent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <span className={`text-sm font-bold opacity-60 ${headingText}`}>/mes</span>
@@ -111,10 +109,10 @@ export default function PlanCard({
           type={ctaTo ? undefined : 'button'}
           onClick={onCtaClick}
           isLoading={isLoading}
-          variant={highlighted ? 'primary' : (isDark ? undefined : 'secondary')}
+          variant={highlighted ? 'ink' : (isDark ? undefined : 'brand')}
           className={`h-12 w-full font-bold ${
-            isDark && !highlighted ? 'border border-slate-600 bg-slate-700 text-white hover:bg-slate-600' : ''
-          } ${!isDark && !highlighted ? 'border-2 border-gray-100 hover:border-brand-yellow hover:bg-yellow-50' : ''}`}
+            isDark && !highlighted ? 'border-2 border-white/30 bg-transparent text-white hover:border-brand-yellow hover:text-brand-yellow' : ''
+          } rounded-xl`}
         >
           {ctaLabel} <ArrowRight size={18} />
         </Button>

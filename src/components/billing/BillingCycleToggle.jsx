@@ -10,20 +10,20 @@ import { BILLING_CYCLES } from '../../lib/pricing';
 export default function BillingCycleToggle({ value, onChange, theme = 'light', className = '' }) {
   const isDark = theme === 'dark';
   const wrap = isDark
-    ? 'border-slate-700 bg-slate-800'
-    : 'border-gray-200 bg-white shadow-sm';
+    ? 'border-white/25 bg-white/5'
+    : 'border-brand-ink bg-white shadow-sticker';
   const active = isDark
-    ? 'bg-brand-yellow text-slate-900 shadow-lg'
-    : 'bg-gray-950 text-white shadow-md';
+    ? 'bg-brand-yellow text-brand-ink'
+    : 'bg-brand-ink text-brand-yellow';
   const inactive = isDark
-    ? 'text-slate-400 hover:text-white'
-    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900';
+    ? 'text-white/60 hover:text-white'
+    : 'text-gray-500 hover:bg-brand-yellowSoft hover:text-brand-ink';
 
   return (
     <div
       role="group"
       aria-label="Período de cobrança"
-      className={`inline-flex flex-wrap items-center justify-center gap-1 rounded-2xl border p-1.5 ${wrap} ${className}`}
+      className={`inline-flex flex-wrap items-center justify-center gap-1 rounded-2xl border-2 p-1.5 ${wrap} ${className}`}
     >
       {BILLING_CYCLES.map((cycle) => (
         <button

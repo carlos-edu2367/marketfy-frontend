@@ -45,9 +45,9 @@ export default function FunnelOfferPanel({ funnelVariant }) {
 
   return (
     <div className="mt-8">
-      <div className="grid overflow-hidden rounded-3xl border border-gray-200 shadow-xl md:grid-cols-2">
+      <div className="grid overflow-hidden rounded-[28px] border-2 border-brand-ink shadow-sticker-lg md:grid-cols-2">
         <div className="bg-white p-7 sm:p-8">
-          <span className="inline-flex rounded-full bg-lime-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-brand-green">
+          <span className="inline-flex rounded-full border-2 border-brand-ink bg-brand-yellow px-3 py-1 text-[11px] font-black uppercase tracking-wider text-brand-ink">
             Configuração recomendada
           </span>
           <h3 className="mt-4 text-2xl font-black tracking-tight text-gray-950">{recommendedPlan.name}</h3>
@@ -58,14 +58,14 @@ export default function FunnelOfferPanel({ funnelVariant }) {
           <div className="mt-5 grid grid-cols-2 gap-2.5 text-sm">
             {OFFER_FEATURES.map((feature) => (
               <div key={feature} className="flex items-center gap-2 text-gray-700">
-                <Check size={15} className="shrink-0 text-brand-green" />
+                <Check size={15} strokeWidth={3} className="shrink-0 text-brand-green" />
                 {feature}
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex flex-col justify-center bg-gray-950 p-7 text-white sm:p-8">
+        <div className="flex flex-col justify-center bg-brand-ink p-7 text-white sm:p-8">
           <div className="text-xs text-gray-400">
             Valor de referência do pacote
             <br />
@@ -73,7 +73,7 @@ export default function FunnelOfferPanel({ funnelVariant }) {
           </div>
           <div className="mt-2 flex items-baseline gap-1.5">
             <span className="text-lg font-bold opacity-70">R$</span>
-            <span className="text-5xl font-black tracking-tight">
+            <span className="font-display text-5xl font-black tracking-tight text-brand-yellow">
               {monthlyPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
             <span className="text-sm font-bold opacity-70">/mês</span>
@@ -82,7 +82,7 @@ export default function FunnelOfferPanel({ funnelVariant }) {
             as={Link}
             to={`/register?plan=${recommendedPlan.id}&cycle=monthly`}
             onClick={() => trackFunnelEvent('marketfy_offer_cta_click', { funnelVariant, plan_id: recommendedPlan.id })}
-            className="mt-5 h-12 w-full font-bold"
+            className="mt-5 h-12 w-full rounded-xl font-black" variant="brand"
           >
             Quero o {recommendedPlan.name} <ArrowRight size={18} />
           </Button>
@@ -102,7 +102,7 @@ export default function FunnelOfferPanel({ funnelVariant }) {
       </div>
 
       {basicPlan && showDownsell && (
-        <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="mt-4 rounded-2xl border-2 border-brand-ink bg-white p-6">
           <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-gray-500">
             Plano de entrada
           </span>
@@ -123,7 +123,7 @@ export default function FunnelOfferPanel({ funnelVariant }) {
                 as={Link}
                 to={`/register?plan=${basicPlan.id}&cycle=monthly`}
                 onClick={() => trackFunnelEvent('marketfy_downsell_cta_click', { funnelVariant, plan_id: basicPlan.id })}
-                className="mt-2 font-bold"
+                className="mt-2 font-bold" variant="brand"
               >
                 Escolher {basicPlan.name}
               </Button>
