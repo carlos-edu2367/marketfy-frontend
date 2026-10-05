@@ -830,7 +830,7 @@ function FiscalStatusBadge({ status, isPolling, hasTimedOut, isOnline, fiscalEmi
         return (
             <div className="flex items-center justify-center gap-2 px-4 py-2 bg-red-100 rounded-xl text-red-700 text-sm font-bold">
                 <FileX size={18} />
-                <span>Rejeitada pela SEFAZ — verifique pendências</span>
+                <span>NFC-e não emitida — verifique a regra tributária e as pendências fiscais</span>
             </div>
         );
     }

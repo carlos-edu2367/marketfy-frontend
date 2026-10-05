@@ -86,9 +86,25 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// A API devolve erros no envelope {error:{message,details}}; muitas telas leem
+// response.data.detail. Normaliza aqui para que a mensagem real chegue ao usuário.
+function normalizeErrorPayload(error) {
+  const payload = error?.response?.data;
+  if (!payload || typeof payload !== 'object' || payload.detail !== undefined) return;
+  const envelope = payload.error;
+  if (!envelope || typeof envelope !== 'object') return;
+  const details = envelope.details;
+  if (Array.isArray(details) && details.length && details.every((d) => d && typeof d.msg === 'string')) {
+    payload.detail = details.map((d) => d.msg).join(' ');
+  } else if (typeof envelope.message === 'string') {
+    payload.detail = envelope.message;
+  }
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    normalizeErrorPayload(error);
     const originalRequest = error.config;
 
     if (
@@ -99,14 +115,10 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
-        refreshPromise = refreshPromise || api.post('/auth/refresh');
-        const { data } = await refreshPromise;
-        refreshPromise = null;
-        setAccessToken(data.access_token);
+        const data = await refreshAccessToken();
         originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
         return api(originalRequest);
       } catch (refreshError) {
-        refreshPromise = null;
         clearAccessToken();
         if (!originalRequest.url?.includes('/auth/refresh')) {
           window.location.href = '/login';
@@ -118,6 +130,23 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Refresh com rotação: chamadas paralelas (StrictMode, várias abas/requests) devem
+// compartilhar uma única requisição, senão a 2ª usa um token já rotacionado e dá 401.
+export function refreshAccessToken() {
+  if (!refreshPromise) {
+    refreshPromise = api
+      .post('/auth/refresh')
+      .then(({ data }) => {
+        setAccessToken(data.access_token);
+        return data;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
 
 export const getSubscription = () => api.get('/billing/subscription');
 

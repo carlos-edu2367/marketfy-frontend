@@ -25,3 +25,12 @@ describe('selectPublicPlans ordering', () => {
     expect(selectPublicPlans(plans).map((p) => p.id)).toEqual(['no-order', 'cheap-first', 'expensive-first', 'cheap-late']);
   });
 });
+
+describe('formatPlanLimit singular', () => {
+  it('uses the singular unit when the limit is 1', async () => {
+    const { formatPlanLimit } = await import('../lib/pricing');
+    expect(formatPlanLimit(1, 'lojas')).toBe('Até 1 loja');
+    expect(formatPlanLimit(1, 'caixas')).toBe('Até 1 caixa');
+    expect(formatPlanLimit(3, 'caixas')).toBe('Até 3 caixas');
+  });
+});

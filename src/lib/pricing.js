@@ -6,7 +6,7 @@ import { formatCurrency } from './utils';
  * cobrado no periodo, nao um valor mensal.
  */
 export const BILLING_CYCLES = [
-  { key: 'monthly', days: 30, months: 1, label: 'Mensal', suffix: '/mes' },
+  { key: 'monthly', days: 30, months: 1, label: 'Mensal', suffix: '/mês' },
   { key: 'semiannual', days: 180, months: 6, label: 'Semestral', suffix: '/semestre' },
   { key: 'annual', days: 365, months: 12, label: 'Anual', suffix: '/ano' },
 ];
@@ -71,7 +71,8 @@ export function formatCycleSavings(plan, cycleKey) {
 export function formatPlanLimit(value, unitLabel) {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0) return `${unitLabel} não incluídas no plano`;
-  return `Até ${numericValue} ${unitLabel}`;
+  const label = numericValue === 1 && unitLabel.endsWith('s') ? unitLabel.slice(0, -1) : unitLabel;
+  return `Até ${numericValue} ${label}`;
 }
 
 export function formatFiscalLimit(value) {

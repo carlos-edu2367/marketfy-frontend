@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import api from '../../lib/api';
-import { formatCurrency, formatDate } from '../../lib/utils';
+import { formatCurrency, formatDate, formatDateOnly } from '../../lib/utils';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import {
@@ -232,7 +232,7 @@ export default function SaaSAdminDashboard() {
                                             </span>
                                             <span className="text-[10px] text-slate-400 flex items-center gap-1">
                                                 <Calendar size={10} />
-                                                {user.plan_expiration ? formatDate(user.plan_expiration).split(' ')[0] : 'Vitalício'}
+                                                {user.plan_expiration ? formatDateOnly(user.plan_expiration) : 'Vitalício'}
                                             </span>
                                         </div>
                                     </td>

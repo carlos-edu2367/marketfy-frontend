@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 
 import { db } from '../../lib/db';
 import { formatCurrency } from '../../lib/utils';
+import { maskCpf } from '../../lib/documentMask';
 
 export default function CustomerSelectorModal({ marketId, onSelect, onClose }) {
   const [customers, setCustomers] = useState([]);
@@ -163,11 +164,11 @@ export default function CustomerSelectorModal({ marketId, onSelect, onClose }) {
                       onClick={() => onSelect(customer)}
                     >
                       <span id={customerDescriptionId} className="sr-only">
-                        CPF: {customer.cpf || 'Não informado'} Disponível {formatCurrency(availableCredit)}
+                        CPF: {customer.cpf ? maskCpf(customer.cpf) : 'Não informado'} Disponível {formatCurrency(availableCredit)}
                       </span>
                       <span>
                         <span className="block font-bold text-gray-900">{customer.name}</span>
-                        <span className="mt-1 block text-sm text-gray-500">CPF: {customer.cpf || 'Não informado'}</span>
+                        <span className="mt-1 block text-sm text-gray-500">CPF: {customer.cpf ? maskCpf(customer.cpf) : 'Não informado'}</span>
                       </span>
                       <span className="text-right">
                         <span className="block text-xs font-bold uppercase tracking-wide text-gray-400">Disponível</span>

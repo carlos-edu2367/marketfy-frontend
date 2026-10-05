@@ -532,6 +532,7 @@ export default function Inventory() {
                         onClick={() => startEditing(p)}
                         className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 transition-colors"
                         title="Editar Produto"
+                        aria-label="Editar Produto"
                     >
                         <Edit2 size={20} />
                     </button>
@@ -540,6 +541,7 @@ export default function Inventory() {
                         onClick={() => setMovementModal({ open: true, product: p, type: 'entrada' })}
                         className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 border border-green-100 transition-colors"
                         title="Adicionar Estoque"
+                        aria-label="Adicionar Estoque"
                     >
                         <ArrowUpCircle size={20} />
                     </button>
@@ -547,6 +549,7 @@ export default function Inventory() {
                         onClick={() => setMovementModal({ open: true, product: p, type: 'saida' })}
                         className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 transition-colors"
                         title="Remover Estoque"
+                        aria-label="Remover Estoque"
                     >
                         <ArrowDownCircle size={20} />
                     </button>
@@ -554,6 +557,7 @@ export default function Inventory() {
                         onClick={() => setHistoryModalProduct(p)}
                         className="p-2 rounded-lg bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100 transition-colors"
                         title="Ver Histórico"
+                        aria-label="Ver Histórico"
                     >
                         <History size={20} />
                     </button>
@@ -599,6 +603,7 @@ export default function Inventory() {
                                     disabled={loadingEan}
                                     className="absolute right-2 top-[30px] p-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors"
                                     title="Consultar Online"
+                        aria-label="Consultar Online"
                                 >
                                     {loadingEan ? <Loader2 size={16} className="animate-spin"/> : <Wand2 size={16} />}
                                 </button>
@@ -611,6 +616,7 @@ export default function Inventory() {
                                     onClick={suggestNextCode}
                                     className="absolute right-2 top-[30px] p-1.5 text-gray-400 hover:text-brand-dark transition-colors"
                                     title="Gerar próximo código"
+                        aria-label="Gerar próximo código"
                                 >
                                     <RefreshCw size={14} />
                                 </button>

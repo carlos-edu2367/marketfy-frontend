@@ -23,7 +23,7 @@ export default function BillingCycleToggle({ value, onChange, theme = 'light', c
     <div
       role="group"
       aria-label="Período de cobrança"
-      className={`inline-flex flex-wrap items-center justify-center gap-1 rounded-2xl border-2 p-1.5 ${wrap} ${className}`}
+      className={`inline-flex max-w-full items-center justify-center gap-1 rounded-2xl border-2 p-1.5 ${wrap} ${className}`}
     >
       {BILLING_CYCLES.map((cycle) => (
         <button
@@ -31,7 +31,7 @@ export default function BillingCycleToggle({ value, onChange, theme = 'light', c
           type="button"
           aria-pressed={value === cycle.key}
           onClick={() => onChange(cycle.key)}
-          className={`min-w-[104px] rounded-xl px-4 py-2.5 text-sm font-bold transition-all sm:min-w-[124px] ${
+          className={`min-w-0 flex-1 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-bold transition-all sm:min-w-[124px] sm:flex-none sm:px-4 ${
             value === cycle.key ? active : inactive
           }`}
         >

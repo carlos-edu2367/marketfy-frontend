@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { User, FileText, Settings as Store, LogOut, Crown, Calendar, AlertTriangle, CreditCard, CheckCircle, XCircle, Clock, RefreshCw, QrCode } from 'lucide-react';
-import { formatDate } from '../../lib/utils';
+import { User, FileText, Settings as Store, Crown, Calendar, AlertTriangle, CreditCard, CheckCircle, XCircle, Clock, RefreshCw, QrCode } from 'lucide-react';
+import { formatDate, formatDateOnly } from '../../lib/utils';
 import FiscalSettings from '../../components/settings/FiscalSettings';
 import PixPaymentsSettings from '../../components/settings/PixPaymentsSettings';
 import BillingInvoices from './BillingInvoices';
@@ -13,7 +13,7 @@ import { differenceInDays, parseISO } from 'date-fns';
 import toast from 'react-hot-toast';
 
 export default function Settings() {
-  const { user, subscription, logout, refreshSubscription } = useAuth();
+  const { user, subscription, refreshSubscription, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
@@ -83,7 +83,8 @@ export default function Settings() {
   const handleRefreshSubscription = async () => {
     setRefreshingSubscription(true);
     try {
-      await refreshSubscription();
+      // Recarrega usuário e assinatura juntos, para plano/vencimento não divergirem do card.
+      await Promise.all([refreshUser().catch(() => null), refreshSubscription()]);
     } finally {
       setRefreshingSubscription(false);
     }
@@ -144,11 +145,6 @@ export default function Settings() {
             </button>
           )}
 
-          <div className="mt-auto pt-4 border-t border-gray-200">
-             <button onClick={logout} className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-all w-full text-left">
-                <LogOut size={20} /> Sair da Conta
-             </button>
-          </div>
         </div>
 
         {/* CONTEÚDO PRINCIPAL */}
@@ -185,7 +181,7 @@ export default function Settings() {
                                     <span>{planStatus.label}</span>
                                     {user?.plan_expiration && (
                                         <span className="text-gray-400 font-medium ml-1">
-                                            ({formatDate(user.plan_expiration).split(' ')[0]})
+                                            ({formatDateOnly(user.plan_expiration)})
                                         </span>
                                     )}
                                 </div>
@@ -213,6 +209,7 @@ export default function Settings() {
                                 disabled={refreshingSubscription}
                                 className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
                                 title="Atualizar status"
+                                aria-label="Atualizar status da assinatura"
                             >
                                 <RefreshCw size={16} className={refreshingSubscription ? 'animate-spin' : ''} />
                             </button>
@@ -225,7 +222,7 @@ export default function Settings() {
 
                         {subscription.expires_at && (
                             <p className="text-xs text-gray-500 mb-2">
-                                Vencimento: <span className="font-medium text-gray-700">{formatDate(subscription.expires_at).split(' ')[0]}</span>
+                                Vencimento: <span className="font-medium text-gray-700">{formatDateOnly(subscription.expires_at)}</span>
                             </p>
                         )}
 
@@ -239,7 +236,7 @@ export default function Settings() {
                         {subscription.cancel_at_period_end && subscription.expires_at && (
                             <div className="flex items-center gap-2 mt-3 p-3 bg-blue-50 rounded-xl border border-blue-100 text-blue-800 text-xs font-medium">
                                 <Clock size={14} className="shrink-0" />
-                                Assinatura cancelada — ativa até {formatDate(subscription.expires_at).split(' ')[0]}, sem nova cobrança.
+                                Assinatura cancelada — ativa até {formatDateOnly(subscription.expires_at)}, sem nova cobrança.
                             </div>
                         )}
 
@@ -255,7 +252,7 @@ export default function Settings() {
                                 ) : (
                                     <div className="mt-3 p-3 bg-red-50 rounded-xl border border-red-100 text-xs text-red-800">
                                         <p className="font-bold mb-2">
-                                            Cancelar agora? Você mantém acesso até {subscription.expires_at ? formatDate(subscription.expires_at).split(' ')[0] : 'o fim do período pago'}, sem nova cobrança depois disso.
+                                            Cancelar agora? Você mantém acesso até {subscription.expires_at ? formatDateOnly(subscription.expires_at) : 'o fim do período pago'}, sem nova cobrança depois disso.
                                         </p>
                                         <div className="flex gap-2">
                                             <Button

@@ -24,6 +24,12 @@ export function formatCurrency(value) {
  * Formata datas para exibição amigável.
  * Ex: "20/01/2026 14:30"
  */
+// Somente a data (dd/mm/aaaa), sem hora nem vírgula sobrando.
+export function formatDateOnly(dateString) {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString('pt-BR');
+}
+
 export function formatDate(dateString) {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleString('pt-BR', {

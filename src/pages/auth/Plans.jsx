@@ -19,6 +19,7 @@ import {
   CreditCard,
   FileText,
   Gift,
+  LayoutDashboard,
   LifeBuoy,
   Loader2,
   LogOut,
@@ -231,6 +232,11 @@ export default function Plans() {
             <span className="hidden text-sm text-gray-500 sm:inline">
               Logado como <span className="font-bold text-gray-900">{user?.name || 'usuário'}</span>
             </span>
+            {(user?.plan_id || user?.plan_name) && stage !== 'expired' && (
+              <Button as="a" href="/dashboard" variant="ghost" size="sm" className="font-bold text-gray-500">
+                <LayoutDashboard size={16} /> Ir para o painel
+              </Button>
+            )}
             {stage !== 'new' && (
               <Button
                 as="a"

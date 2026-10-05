@@ -3,7 +3,6 @@ import FunnelProgressBar from '../../components/marketing/FunnelProgressBar';
 import FunnelScoreRing from '../../components/marketing/FunnelScoreRing';
 import FunnelOfferPanel from '../../components/marketing/FunnelOfferPanel';
 import Logo from '../../components/brand/Logo';
-import Logo from '../../components/brand/Logo';
 import CookieConsentBanner from '../../components/CookieConsentBanner';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';

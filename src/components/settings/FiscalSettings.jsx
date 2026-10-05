@@ -247,21 +247,21 @@ export default function FiscalSettings({ marketId }) {
             <Building size={18} className="text-brand-yellow" /> 1. Dados Fiscais da Empresa
           </h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Input 
-              label="Razão Social (Legal Name)" 
+              label="Razão Social" 
               placeholder="Ex: Mercadinho do Bairro Ltda" 
               {...register('legal_name', { required: 'Razão social obrigatória' })}
               error={errors.legal_name?.message}
             />
             <Input 
-              label="Nome Fantasia (Trade Name)" 
+              label="Nome Fantasia" 
               placeholder="Ex: Mercadinho do Bairro" 
               {...register('trade_name')}
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Input 
               label="CNPJ" 
               placeholder="00.000.000/0000-00" 
@@ -289,7 +289,7 @@ export default function FiscalSettings({ marketId }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div>
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Código CRT SEFAZ</label>
               <select 
@@ -327,7 +327,7 @@ export default function FiscalSettings({ marketId }) {
             <MapPin size={18} className="text-brand-yellow" /> 2. Endereço do Estabelecimento
           </h4>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
             <Input 
               label="CEP" 
               placeholder="00000-000" 
@@ -351,7 +351,7 @@ export default function FiscalSettings({ marketId }) {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
             <Input 
               label="Complemento" 
               placeholder="Sala, Andar, Fundos..." 
@@ -393,7 +393,7 @@ export default function FiscalSettings({ marketId }) {
             <FileText size={18} className="text-brand-yellow" /> 3. Certificado Digital A1 (.pfx)
           </h4>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:bg-gray-50 transition-colors relative flex flex-col justify-center min-h-[140px]">
               <input 
                 type="file" 
@@ -440,7 +440,7 @@ export default function FiscalSettings({ marketId }) {
             <Key size={18} className="text-brand-yellow" /> 4. Código CSC (Token de Segurança SEFAZ)
           </h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Input 
               label="ID do CSC (CSC ID)" 
               placeholder="Ex: 000001" 
@@ -470,7 +470,7 @@ export default function FiscalSettings({ marketId }) {
             <SettingsIcon size={18} className="text-brand-yellow" /> 5. Parametrização Fiscal Padrão
           </h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Input 
               label="NCM Geral Padrão" 
               placeholder="Ex: 00000000" 

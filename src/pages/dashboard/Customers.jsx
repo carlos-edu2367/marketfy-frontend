@@ -10,6 +10,7 @@ import {
   ShoppingCart, CheckCircle, ExternalLink // Ícones adicionados
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { maskCpf, maskPhone } from '../../lib/documentMask';
 import { db } from '../../lib/db';
 import toast from 'react-hot-toast';
 
@@ -341,8 +342,8 @@ export default function Customers() {
                                         {c.status === 'bloqueado' && <span className="text-[10px] bg-red-100 text-red-600 px-2 rounded-full font-bold">BLOQUEADO</span>}
                                     </div>
                                     <div className="flex gap-4 text-sm text-gray-500">
-                                        <span>{c.cpf || 'Sem CPF'}</span>
-                                        <span>{c.phone || 'Sem Telefone'}</span>
+                                        <span>{c.cpf ? maskCpf(c.cpf) : 'Sem CPF'}</span>
+                                        <span>{c.phone ? maskPhone(c.phone) : 'Sem Telefone'}</span>
                                     </div>
                                     
                                     {/* Barra de Limite */}
@@ -384,6 +385,7 @@ export default function Customers() {
                                             onClick={() => setPaymentModal({ open: true, customer: c })}
                                             className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 border border-green-100 transition-colors"
                                             title="Receber Pagamento"
+                                            aria-label="Receber Pagamento"
                                         >
                                             <DollarSign size={20} />
                                         </button>
@@ -391,6 +393,7 @@ export default function Customers() {
                                             onClick={() => openLedger(c)}
                                             className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 transition-colors"
                                             title="Ver Extrato"
+                                            aria-label="Ver Extrato"
                                         >
                                             <FileText size={20} />
                                         </button>
@@ -607,6 +610,7 @@ export default function Customers() {
                                                             onClick={() => goToSale(entry.sale_id)}
                                                             className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded border border-gray-200 flex items-center gap-1 hover:bg-brand-yellow hover:text-brand-dark transition-colors" 
                                                             title="Ver Detalhes da Venda"
+                                                            aria-label="Ver Detalhes da Venda"
                                                         >
                                                             <ExternalLink size={10} /> Venda
                                                         </button>

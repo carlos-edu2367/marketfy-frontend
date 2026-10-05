@@ -76,7 +76,9 @@ export default function AdminLayout() {
         const invoiceMode = subscription?.billing_mode === 'invoice';
         const hasPendingInvoice = subscription?.invoice_pending;
 
-        if (hasNoPlan && !isPlansPage) {
+        // Contratou por fatura e ainda não pagou: precisa alcançar Configurações > Faturas.
+        const awaitingPayment = hasPendingInvoice || subscription?.status === 'pending';
+        if (hasNoPlan && !isPlansPage && !((isSettings || isSupport) && awaitingPayment)) {
             navigate('/plans');
             return;
         }
@@ -381,7 +383,7 @@ export default function AdminLayout() {
                                     ? ` (vence em ${new Date(subscription.pending_invoice.due_date).toLocaleDateString('pt-BR')})`
                                     : ''}.
                             </span>
-                            <Link to="/dashboard/settings" className="underline font-bold shrink-0 ml-4">Ver faturas</Link>
+                            <Link to="/dashboard/settings?tab=invoices" className="underline font-bold shrink-0 ml-4">Ver faturas</Link>
                         </div>
                     )}
                     <Outlet />

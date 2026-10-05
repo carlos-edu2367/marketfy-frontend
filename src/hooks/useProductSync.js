@@ -70,7 +70,11 @@ export function useProductSync() {
       await Promise.all(promises);
 
       if (totalUpdated > 0 || totalDeleted > 0 || customersCount > 0) {
-        toast.success(`Sincronizado: ${totalUpdated} produtos e ${customersCount} clientes.`);
+        toast.success(`Sincronizado: ${totalUpdated} produtos e ${customersCount} clientes.`, {
+          id: 'product-sync',
+          duration: 2500,
+          position: 'bottom-right',
+        });
       } else {
         console.log("[Sync] Dados já estavam atualizados.");
       }

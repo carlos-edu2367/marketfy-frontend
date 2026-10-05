@@ -78,12 +78,12 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Olá, {user?.name?.split(' ')[0] || 'Lojista'}! 👋</h1>
           <p className="text-gray-500">Selecione uma loja para gerenciar ou começar a vender.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => syncAllProducts(markets)} disabled={syncing}>
                <RefreshCw size={18} className={syncing ? "animate-spin" : ""} />
                {syncing ? "Sincronizando..." : "Atualizar Dados Offline"}
             </Button>
-            <Button onClick={() => setShowCreateModal(true)}>
+            <Button className="whitespace-nowrap" onClick={() => setShowCreateModal(true)}>
               <Plus size={18} /> Nova Loja
             </Button>
         </div>
@@ -100,7 +100,7 @@ export default function Dashboard() {
           </div>
           <h3 className="text-lg font-medium text-gray-900">Nenhuma loja encontrada</h3>
           <p className="text-gray-500 mb-6">Cadastre sua primeira loja para começar.</p>
-          <Button onClick={() => setShowCreateModal(true)}>
+          <Button className="mx-auto w-fit" onClick={() => setShowCreateModal(true)}>
             Criar Minha Primeira Loja
           </Button>
         </div>

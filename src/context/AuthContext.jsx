@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import api, { clearAccessToken, setAccessToken } from '../lib/api';
+import api, { clearAccessToken, refreshAccessToken } from '../lib/api';
 import { db } from '../lib/db';
 import { AuthContext } from './AuthContextDefinition';
 import { identifyUser } from '../lib/analytics';
@@ -33,8 +33,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     async function loadSession() {
       try {
-        const { data } = await api.post('/auth/refresh');
-        setAccessToken(data.access_token);
+        await refreshAccessToken();
         await refreshUser();
       } catch {
         clearAccessToken();

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../context/AuthContext';
 import { useAuth } from '../hooks/useAuth';
-import api from '../lib/api';
+import api, { refreshAccessToken } from '../lib/api';
 import { identifyUser } from '../lib/analytics';
 
 vi.mock('../lib/api', () => ({
@@ -10,6 +10,7 @@ vi.mock('../lib/api', () => ({
   setAccessToken: vi.fn(),
   clearAccessToken: vi.fn(),
   getAccessToken: vi.fn(),
+  refreshAccessToken: vi.fn(),
 }));
 vi.mock('../lib/analytics', () => ({ identifyUser: vi.fn(), track: vi.fn(), initAnalytics: vi.fn() }));
 vi.mock('../lib/db', () => ({ db: { sales_queue: { clear: vi.fn() } } }));
@@ -26,7 +27,7 @@ describe('AuthContext — identify no PostHog', () => {
   });
 
   it('identifies the user after a successful session refresh on load', async () => {
-    api.post.mockResolvedValue({ data: { access_token: 'tok' } });
+    refreshAccessToken.mockResolvedValue({ access_token: 'tok' });
     api.get.mockResolvedValue({ data: { id: 'u1', name: 'Ana', email: 'ana@t.com', plan_name: 'PRO' } });
 
     render(<AuthProvider><Probe /></AuthProvider>);
@@ -38,7 +39,7 @@ describe('AuthContext — identify no PostHog', () => {
   });
 
   it('does not identify when there is no valid session', async () => {
-    api.post.mockRejectedValue(new Error('no session'));
+    refreshAccessToken.mockRejectedValue(new Error('no session'));
 
     render(<AuthProvider><Probe /></AuthProvider>);
 

@@ -23,7 +23,7 @@ const registerSchema = z.object({
 });
 
 export default function Register() {
-  const { registerUser, login } = useAuth();
+  const { registerUser, login, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -75,6 +75,9 @@ export default function Register() {
     try {
       await api.post('/auth/trial', {});
       track('trial_activated');
+      // O login rodou antes do trial: recarrega o usuário para que ele já tenha plano
+      // e o guard do painel não o mande de volta para /plans.
+      await refreshUser().catch(() => {});
       toast.success('Conta criada! Seu teste grátis de 14 dias já está ativo.');
     } catch {
       // Se o trial nao puder ser ativado (ex.: politica de elegibilidade),

@@ -74,7 +74,7 @@ export default function PlanCard({
           <span className={`font-display text-4xl font-black tracking-tight ${headingText}`}>
             {monthlyEquivalent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
-          <span className={`text-sm font-bold opacity-60 ${headingText}`}>/mes</span>
+          <span className={`text-sm font-bold opacity-60 ${headingText}`}>/mês</span>
         </div>
         {cycle.key === 'monthly' ? (
           <p className={`mt-1 text-xs font-medium ${mutedText}`}>Cobrado mensalmente.</p>
