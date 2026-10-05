@@ -29,6 +29,9 @@ export default function Register() {
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(registerSchema),
+    // Valida ao sair do campo e revalida a cada tecla: a borda vermelha some assim que o valor fica válido.
+    mode: 'onTouched',
+    reValidateMode: 'onChange',
     defaultValues: { acceptedTerms: false },
   });
 
@@ -79,10 +82,12 @@ export default function Register() {
       // e o guard do painel não o mande de volta para /plans.
       await refreshUser().catch(() => {});
       toast.success('Conta criada! Seu teste grátis de 14 dias já está ativo.');
-    } catch {
+    } catch (trialError) {
       // Se o trial nao puder ser ativado (ex.: politica de elegibilidade),
       // o usuario segue para o dashboard e escolhe um plano em /plans.
       toast.success('Conta criada!');
+      const reason = trialError?.response?.data?.detail;
+      if (typeof reason === 'string') toast(reason, { icon: 'ℹ️' });
     }
     navigate('/dashboard');
   };

@@ -32,6 +32,11 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     async function loadSession() {
+      // Páginas públicas do funil (/f/<slug>) não precisam de sessão: evita 401 no console do visitante.
+      if (window.location.pathname.startsWith('/f/')) {
+        setLoading(false);
+        return;
+      }
       try {
         await refreshAccessToken();
         await refreshUser();

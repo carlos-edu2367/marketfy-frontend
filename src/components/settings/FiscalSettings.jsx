@@ -10,7 +10,10 @@ import {
 import toast from 'react-hot-toast';
 import FiscalCenter from '../fiscal/FiscalCenter';
 
-export default function FiscalSettings({ marketId }) {
+// Regime tributário -> CRT (1 Simples, 2 Simples c/ excesso, 3 Normal).
+const CRT_BY_REGIME = { simples_nacional: '1', mei: '1', lucro_presumido: '3', lucro_real: '3' };
+
+export default function FiscalSettings({ marketId, market }) {
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -34,12 +37,14 @@ export default function FiscalSettings({ marketId }) {
       setValue('default_ncm', data.default_ncm || '');
       setValue('default_cfop', data.default_cfop || '5102');
       setValue('default_csosn', data.default_csosn || '102');
-      setValue('legal_name', data.legal_name || '');
-      setValue('trade_name', data.trade_name || '');
-      setValue('cnpj', data.cnpj || '');
+      // Loja ainda sem config fiscal: reaproveita nome/CNPJ do cadastro da loja.
+      const marketDocument = String(market?.document || '').replace(/\D/g, '');
+      setValue('legal_name', data.legal_name || market?.name || '');
+      setValue('trade_name', data.trade_name || market?.name || '');
+      setValue('cnpj', data.cnpj || (marketDocument.length === 14 ? marketDocument : ''));
       setValue('state_registration', data.state_registration || '');
       setValue('tax_regime', data.tax_regime || 'simples_nacional');
-      setValue('crt', data.crt || '1');
+      setValue('crt', data.crt || CRT_BY_REGIME[data.tax_regime || 'simples_nacional'] || '1');
       setValue('nfce_series', data.nfce_series || 1);
 
       if (data.address_json) {
@@ -63,7 +68,7 @@ export default function FiscalSettings({ marketId }) {
     } finally {
       setLoading(false);
     }
-  }, [marketId, setValue]);
+  }, [marketId, market, setValue]);
 
   useEffect(() => {
     loadConfig();
@@ -232,6 +237,8 @@ export default function FiscalSettings({ marketId }) {
             variant="primary" 
             onClick={handleEnableFiscal} 
             isLoading={enabling}
+            disabled={!config?.cnpj}
+            title={config?.cnpj ? undefined : 'Salve os dados fiscais abaixo antes de ativar'}
             className="shrink-0 font-black shadow-md bg-green-600 hover:bg-green-700 text-white border-none"
           >
             Ativar Emissão Fiscal
@@ -278,7 +285,10 @@ export default function FiscalSettings({ marketId }) {
             <div>
               <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Regime Tributário</label>
               <select 
-                {...register('tax_regime', { required: true })} 
+                {...register('tax_regime', {
+                  required: true,
+                  onChange: (e) => setValue('crt', CRT_BY_REGIME[e.target.value] || '1'),
+                })} 
                 className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-brand-yellow outline-none bg-white text-sm"
               >
                 <option value="simples_nacional">Simples Nacional</option>

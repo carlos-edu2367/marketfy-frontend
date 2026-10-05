@@ -78,6 +78,11 @@ export default function BillingInvoices() {
           <div key={inv.invoice_id} className="flex items-center justify-between bg-white border border-gray-200 rounded-xl p-4">
             <div>
               <p className="font-bold text-gray-900">{formatCurrency(Number(inv.amount))}</p>
+              {inv.period_start && inv.period_end && (
+                <p className="text-xs text-gray-500">
+                  Período: {new Date(inv.period_start).toLocaleDateString('pt-BR')} a {new Date(inv.period_end).toLocaleDateString('pt-BR')}
+                </p>
+              )}
               <p className="text-xs text-gray-500">
                 Vencimento: {inv.due_date ? new Date(inv.due_date).toLocaleDateString('pt-BR') : '—'}
               </p>

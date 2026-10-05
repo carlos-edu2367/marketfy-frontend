@@ -1,3 +1,4 @@
+import { maskNcm, onlyDigits } from '../../lib/documentMask';
 import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import api from '../../lib/api';
@@ -164,11 +165,25 @@ export default function Inventory() {
               barcode: data.barcode || null,
               price: parseFloat(data.price), // Garante float
               cost_price: data.cost_price ? parseFloat(data.cost_price) : 0.00, // Garante float ou 0.00
-              ncm: data.ncm || null,
+              ncm: data.ncm ? onlyDigits(data.ncm) : null,
               origin: 0 // Default (Nacional) conforme spec
           };
 
-          await api.post(`/inventory/${selectedMarketId}/products`, payload);
+          const { data: created } = await api.post(`/inventory/${selectedMarketId}/products`, payload);
+          const initialStock = parseFloat(data.initial_stock);
+          if (initialStock > 0 && created?.id) {
+              try {
+                  await api.post(`/inventory/${selectedMarketId}/movements`, {
+                      market_id: selectedMarketId,
+                      product_id: created.id,
+                      movement_type: 'ajuste_entrada',
+                      quantity: initialStock,
+                      reason: 'Estoque inicial',
+                  });
+              } catch {
+                  toast.error('Produto criado, mas não foi possível registrar o estoque inicial.');
+              }
+          }
           toast.success("Produto criado com sucesso!");
           setShowCreateModal(false);
           resetCreate();
@@ -430,6 +445,11 @@ export default function Inventory() {
                 <div className="p-10 text-center text-gray-400">
                     <Package size={48} className="mx-auto mb-4 opacity-20" />
                     <p>{searchTerm ? "Nenhum produto encontrado." : "Nenhum produto cadastrado."}</p>
+                    {!searchTerm && (
+                        <Button className="mx-auto mt-4 w-fit" onClick={openCreateModal}>
+                            <Plus size={18} /> Cadastrar primeiro produto
+                        </Button>
+                    )}
                 </div>
             ) : (
                 <div className="divide-y divide-gray-100">
@@ -625,13 +645,14 @@ export default function Inventory() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Input label="Nome do Produto" placeholder="Ex: Arroz 5kg" {...registerCreate('name', { required: true })} />
-                            <Input label="NCM (Fiscal)" placeholder="0000.00.00" {...registerCreate('ncm')} />
+                            <Input label="NCM (Fiscal)" placeholder="0000.00.00" inputMode="numeric" {...registerCreate('ncm', { onChange: (e) => { e.target.value = maskNcm(e.target.value); } })} />
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
                             <Input label="Preço de Custo (R$)" placeholder="0.00" type="number" step="0.01" {...registerCreate('cost_price')} />
                             <Input label="Preço de Venda (R$)" placeholder="0.00" type="number" step="0.01" className="font-bold text-green-700" {...registerCreate('price', { required: true })} />
                         </div>
+                        <Input label="Estoque inicial (opcional)" placeholder="0" type="number" step="0.001" min="0" {...registerCreate('initial_stock')} />
                         <div className="pt-2 flex gap-3">
                             <Button type="button" variant="secondary" className="flex-1" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
                             <Button type="submit" variant="primary" className="flex-1" isLoading={creating}>Cadastrar Produto</Button>

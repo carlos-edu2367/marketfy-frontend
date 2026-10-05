@@ -70,6 +70,7 @@ export default function PDV() {
 
   const [showPayment, setShowPayment] = useState(false);
   const [showCloseBoxModal, setShowCloseBoxModal] = useState(false);
+  const [closeSummary, setCloseSummary] = useState(null);
   const [showOpenBoxModal, setShowOpenBoxModal] = useState(false);
   
   const [saleSuccess, setSaleSuccess] = useState({ open: false, change: 0, saleId: null });
@@ -431,6 +432,14 @@ export default function PDV() {
         }
       }
 
+      if (preflight?.enforcement !== 'block' && preflight?.fiscal_document_possible === false) {
+        toast('Venda sem NFC-e: falta regra tributária para algum item. Configure em Configurações > Fiscal > Central Fiscal.', {
+          id: 'pdv-fiscal-rule-missing',
+          icon: '⚠️',
+          duration: 7000,
+        });
+      }
+
       if (preflight?.enforcement === 'block') {
         if (!preflight.allowed) {
           setFiscalBlock({
@@ -535,11 +544,15 @@ export default function PDV() {
               toast.error("Sincronize as vendas pendentes antes de fechar o caixa.");
               return;
           }
+          const reported = parseFloat(closingBalance.replace(',', '.')) || 0;
+          const expected = (Number(box?.current_balance) || 0) + pendingCash;
+          const openedAt = box?.opened_at || null;
           await api.post(`/sales/${cleanUUID(marketId)}/terminals/${cleanUUID(terminalId)}/box/close`, {
-              final_balance_reported: parseFloat(closingBalance.replace(',', '.')) || 0,
+              final_balance_reported: reported,
               closing_observation: closingObservation || ""
           });
           toast.success("Caixa Fechado!"); setShowCloseBoxModal(false); setBox(null);
+          setCloseSummary({ expected, reported, difference: reported - expected, openedAt, observation: closingObservation || "" });
       } catch (error) { toast.error(error.response?.data?.detail || "Erro ao fechar caixa."); }
   };
 
@@ -613,12 +626,12 @@ export default function PDV() {
                     {searchResults.map((p, index) => (
                         <button key={p.id} onClick={() => addToCart(p)} className={clsx("flex flex-col items-start p-4 border rounded-xl transition-all text-left relative overflow-hidden group h-32 justify-between", index === selectedIndex ? "border-brand-yellow ring-2 ring-brand-yellow ring-offset-1 bg-yellow-50" : "border-gray-100 hover:border-brand-yellow hover:shadow-md bg-white")}>
                             <span className="font-bold text-gray-800 line-clamp-2 leading-tight group-hover:text-brand-dark">{p.name}</span>
-                            <div className="w-full flex justify-between items-end mt-2"><span className="text-[10px] text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded">{p.code}</span><span className="text-xl font-black text-green-700">{formatCurrency(p.price)}</span></div>
+                            <div className="w-full flex justify-between items-end mt-2"><span className="flex items-center gap-1"><span className="text-[10px] text-gray-400 font-mono bg-gray-100 px-1.5 py-0.5 rounded">{p.code}</span>{Number(p.current_stock) <= 0 && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded">Sem estoque</span>}</span><span className="text-xl font-black text-green-700">{formatCurrency(p.price)}</span></div>
                         </button>
                     ))}
                 </div>
             ) : (
-                <div className="h-full flex flex-col items-center justify-center text-gray-300 select-none"><Store size={80} className="mb-4 opacity-20" /><p className="text-xl font-medium">Bip ou digite para adicionar</p></div>
+                <div className="h-full flex flex-col items-center justify-center text-gray-300 select-none"><Store size={80} className="mb-4 opacity-20" /><p className="text-xl font-medium">Bip ou digite para adicionar</p><p className="mt-3 text-sm text-gray-400">Atalhos: <b>F4</b> buscar · <b>F2</b> pagar · <b>F9</b> abrir/fechar caixa</p></div>
             )}
         </div>
       </div>
@@ -724,6 +737,22 @@ export default function PDV() {
                 <div className="space-y-4">
                     <div><label className="text-sm font-bold text-gray-700 mb-1 block">Fundo de Troco (R$)</label><Input type="number" step="0.01" placeholder="0.00" className="text-2xl font-bold h-14" autoFocus value={openingBalance} onChange={e => setOpeningBalance(e.target.value)} onKeyDown={e => e.key === 'Enter' && confirmOpenBox()} /></div>
                     <div className="flex gap-3 pt-4"><Button variant="secondary" className="flex-1 h-12" onClick={() => setShowOpenBoxModal(false)}>Cancelar</Button><Button variant="success" className="flex-1 h-12 font-bold" onClick={confirmOpenBox}>Confirmar</Button></div>
+                </div>
+            </ModalOverlay>
+        )}
+      {closeSummary && (
+            <ModalOverlay title="Resumo do Fechamento" icon={Lock} color="bg-gray-800">
+                <div className="space-y-3" role="dialog" aria-label="Resumo do fechamento do caixa">
+                    <div className="flex justify-between text-sm"><span className="text-gray-500">Saldo esperado</span><span className="font-bold">{formatCurrency(closeSummary.expected)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-gray-500">Saldo conferido</span><span className="font-bold">{formatCurrency(closeSummary.reported)}</span></div>
+                    <div className={`flex justify-between text-lg font-black ${Math.abs(closeSummary.difference) < 0.005 ? 'text-green-600' : 'text-red-600'}`}>
+                        <span>Diferença</span><span>{formatCurrency(closeSummary.difference)}</span>
+                    </div>
+                    {closeSummary.observation && <p className="text-xs text-gray-500 border-t pt-2">Obs.: {closeSummary.observation}</p>}
+                    <div className="flex gap-3 pt-2">
+                        <Button variant="secondary" className="flex-1 h-12" onClick={() => window.print()}>Imprimir</Button>
+                        <Button variant="primary" className="flex-1 h-12 font-bold" onClick={() => setCloseSummary(null)}>Concluir</Button>
+                    </div>
                 </div>
             </ModalOverlay>
         )}

@@ -19,6 +19,7 @@ export const Input = forwardRef(({ label, icon: Icon, error, className, ...props
             error ? 'border-red-500 focus:ring-red-200' : '',
             className
           )}
+          aria-invalid={error ? true : undefined}
           {...props}
         />
       </div>

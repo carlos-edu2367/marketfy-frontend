@@ -316,7 +316,7 @@ export default function Settings() {
                         
                         {/* Componente de Configuração Fiscal (Renderiza o form) */}
                         {selectedMarketId ? (
-                            <FiscalSettings marketId={selectedMarketId} />
+                            <FiscalSettings marketId={selectedMarketId} market={markets.find((m) => m.id === selectedMarketId)} />
                         ) : (
                             <div className="text-center py-10 text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                                 <Store size={48} className="mx-auto mb-2 opacity-20" />

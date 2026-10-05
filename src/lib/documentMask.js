@@ -32,3 +32,9 @@ export function maskPhone(value) {
   if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
+
+/** NCM com 8 dígitos exibido como 0000.00.00. */
+export function maskNcm(value) {
+  const digits = onlyDigits(value).slice(0, 8);
+  return digits.replace(/^(\d{4})(\d)/, '$1.$2').replace(/^(\d{4})\.(\d{2})(\d)/, '$1.$2.$3');
+}

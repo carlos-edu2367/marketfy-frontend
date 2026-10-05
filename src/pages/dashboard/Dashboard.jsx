@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Plus, Store, MapPin, Loader2, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import OnboardingChecklist from '../../components/onboarding/OnboardingChecklist';
 import { maskDocument, onlyDigits } from '../../lib/documentMask';
 
 const marketSchema = z.object({
@@ -105,6 +106,8 @@ export default function Dashboard() {
           </Button>
         </div>
       ) : (
+        <>
+        <OnboardingChecklist market={markets[0]} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {markets.map((market) => (
             <div 
@@ -139,6 +142,7 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
+        </>
       )}
 
       {/* MODAL DE CRIAÇÃO (Mesmo código anterior) */}

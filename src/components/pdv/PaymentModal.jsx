@@ -19,6 +19,7 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId, pix
   // Totais calculados
   const totalPaid = useMemo(() => payments.reduce((acc, p) => acc + parseFloat(p.amount), 0), [payments]);
   const remaining = Math.max(0, total - totalPaid);
+  const change = Math.max(0, totalPaid - total);
 
   // Preenche o valor restante automaticamente
   useEffect(() => {
@@ -274,10 +275,17 @@ export default function PaymentModal({ total, onConfirm, onCancel, marketId, pix
                     <span className="text-gray-400 text-sm">Total Pago</span>
                     <span className="font-bold text-green-400">{formatCurrency(totalPaid)}</span>
                 </div>
-                <div className="flex justify-between items-end mb-4">
-                    <span className="text-gray-500 font-bold uppercase text-sm mb-1">Falta</span>
-                    <span className={`text-4xl font-black ${remaining > 0.01 ? 'text-red-500' : 'text-gray-300'}`}>{formatCurrency(remaining)}</span>
-                </div>
+                {change > 0.004 ? (
+                    <div className="flex justify-between items-end mb-4" role="status" aria-live="polite">
+                        <span className="text-gray-400 font-bold uppercase text-sm mb-1">Troco</span>
+                        <span className="text-4xl font-black text-yellow-400">{formatCurrency(change)}</span>
+                    </div>
+                ) : (
+                    <div className="flex justify-between items-end mb-4">
+                        <span className="text-gray-500 font-bold uppercase text-sm mb-1">Falta</span>
+                        <span className={`text-4xl font-black ${remaining > 0.01 ? 'text-red-500' : 'text-gray-300'}`}>{formatCurrency(remaining)}</span>
+                    </div>
+                )}
                 <div className="flex gap-3 pt-2">
                     <Button variant="secondary" className="flex-1 h-14 text-lg font-bold rounded-xl border-2 bg-transparent text-white border-slate-600 hover:bg-slate-700" onClick={onCancel} disabled={isProcessing}>Cancelar</Button>
                     <Button 

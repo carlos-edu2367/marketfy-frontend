@@ -58,8 +58,20 @@ export function finishUrl({ planId, fsid, loggedIn }) {
   return `${loggedIn ? '/plans' : '/register'}?${params.toString()}`;
 }
 
-export const startFunnelSession = (slug, body) =>
-  api.post(`/funnels/public/${encodeURIComponent(slug)}/session`, body).then((r) => r.data);
+// Chamadas simultâneas (StrictMode, remount) compartilham a mesma requisição,
+// senão cada uma cria uma sessão e a 2ª fica órfã, inflando as visitas.
+const inflightSessions = new Map();
+export const startFunnelSession = (slug, body) => {
+  const key = `${slug}:${body?.fsid || ''}`;
+  if (!inflightSessions.has(key)) {
+    const request = api
+      .post(`/funnels/public/${encodeURIComponent(slug)}/session`, body)
+      .then((r) => r.data)
+      .finally(() => inflightSessions.delete(key));
+    inflightSessions.set(key, request);
+  }
+  return inflightSessions.get(key);
+};
 
 export const getFunnelPreview = (variantId) =>
   api.get(`/admin/funnels/variants/${variantId}/preview`).then((r) => r.data);
@@ -75,10 +87,17 @@ export async function sendFunnelEvent(body) {
   }
 }
 
+const claimedSessions = new Set();
+
 export async function claimFunnelSession(fsid) {
+  // Efeitos repetidos (StrictMode, re-render) não devem reenviar o claim.
+  if (!fsid || claimedSessions.has(fsid)) return;
+  claimedSessions.add(fsid);
   try {
     await api.post(`/funnels/sessions/${fsid}/claim`);
+    forgetFunnelSession(fsid);
   } catch {
+    claimedSessions.delete(fsid);
     // atribuição nunca bloqueia o checkout
   }
 }
@@ -87,3 +106,14 @@ export async function claimFunnelSession(fsid) {
 export function resolveCheckoutFsid(search) {
   return new URLSearchParams(search).get('fsid') || readCheckoutFsid();
 }
+
+// Depois do cadastro a sessão do funil já foi consumida: em aparelho compartilhado
+// o próximo cadastro não deve herdar o fsid (nem os utm_*) do anterior.
+export const forgetFunnelSession = (fsid) =>
+  safe(() => {
+    clearCheckoutFsid();
+    for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('funnel:') && (!fsid || localStorage.getItem(key) === fsid)) localStorage.removeItem(key);
+    }
+  });

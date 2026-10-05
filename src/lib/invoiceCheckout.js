@@ -5,6 +5,9 @@ const POLL_INTERVAL_MS = 1000;
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, import.meta.env.MODE === 'test' ? 0 : ms));
 
+// 'failed' ou 'done' sem link: o job terminou e esperar mais nao vai gerar um link.
+const isTerminalWithoutLink = (data) => data?.status === 'failed' || data?.status === 'done';
+
 /**
  * Pede o checkout de uma fatura e espera o link ficar pronto. O checkout e
  * assincrono no Billing Core; repetir POST /billing/invoices/{id}/checkout so
@@ -14,7 +17,7 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, import.meta.en
 export async function fetchInvoiceCheckoutUrl(invoiceId) {
   const { data } = await requestInvoiceCheckout(invoiceId);
   let url = data?.checkout_url || null;
-  if (!url && data?.status === 'failed') return null;
+  if (!url && isTerminalWithoutLink(data)) return null;
 
   for (let attempt = 0; !url && attempt < POLL_ATTEMPTS; attempt += 1) {
     await wait(POLL_INTERVAL_MS);
@@ -22,7 +25,7 @@ export async function fetchInvoiceCheckoutUrl(invoiceId) {
     url = response.data?.checkout_url || null;
     // Job falhado nao vira link esperando: insistir so gasta tentativa e,
     // do outro lado, mantem o Billing Core sob rajada de requisicoes.
-    if (!url && response.data?.status === 'failed') return null;
+    if (!url && isTerminalWithoutLink(response.data)) return null;
   }
 
   return url;
